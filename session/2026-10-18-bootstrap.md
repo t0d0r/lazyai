@@ -15,6 +15,12 @@
 - Added a Makefile (help, build, test, lint, fmt, check, run, install,
   uninstall, tidy, clean). The parent ../AGENTS.md now requires a Makefile
   with standard targets in every project.
+- CLI now covers every TUI action: `show`, `watch` (change events, text or
+  JSON lines), `kill`, FLAGS column in `list`, and `stop`/`kill` by PID or
+  name. Tracking and flags moved from internal/tui to internal/watch so
+  both interfaces share them. Verified live: watch reported started,
+  busy -> idle and exited for a test Claude session launched and killed by
+  name.
 
 ## Decisions
 
@@ -34,9 +40,9 @@
 
 ## Files
 
-main.go, internal/agent/*, internal/tmux/*, internal/tui/*,
-internal/display/display.go, Makefile, README.md, AGENTS.md, specs/*,
-todo/todo.md.
+main.go, main_test.go, internal/agent/*, internal/tmux/*, internal/tui/*,
+internal/watch/*, internal/display/display.go, Makefile, README.md,
+AGENTS.md, specs/*, todo/todo.md.
 
 ## Run and verify
 

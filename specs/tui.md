@@ -30,6 +30,9 @@ Selection follows the PID across refreshes.
 
 ## Watch flags
 
+Computed by `internal/watch`, the same code the `list`, `show` and `watch`
+commands use.
+
 | flag      | condition                                            |
 |-----------|------------------------------------------------------|
 | self      | agentctl or a parent of it; cannot be stopped here   |

@@ -11,6 +11,8 @@
 - [x] TUI dashboard with watch flags (specs/tui.md)
 - [x] unit tests and a tmux integration test
 - [x] Makefile with the standard targets from ../AGENTS.md
+- [x] CLI parity with the TUI: show, watch, kill, flags in list, stop by
+      name (specs/cli.md)
 
 ## Next
 

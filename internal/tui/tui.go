@@ -15,6 +15,7 @@ import (
 	"agentctl/internal/agent"
 	"agentctl/internal/display"
 	"agentctl/internal/tmux"
+	"agentctl/internal/watch"
 )
 
 // Options configures the dashboard.
@@ -73,7 +74,7 @@ type model struct {
 	msgErr      bool
 	width       int
 	height      int
-	track       map[int]tracker
+	watcher     *watch.Watcher
 	loading     bool
 	updated     time.Time
 }
@@ -82,7 +83,7 @@ func newModel(opts Options) model {
 	if opts.Interval <= 0 {
 		opts.Interval = 2 * time.Second
 	}
-	return model{opts: opts, track: map[int]tracker{}, loading: true, width: 120, height: 30}
+	return model{opts: opts, watcher: watch.New(), loading: true, width: 120, height: 30}
 }
 
 func discover() tea.Msg {
@@ -117,7 +118,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.updated = time.Now()
 		m.all = msg.agents
-		m.track = observe(m.track, m.all, m.updated)
+		m.watcher.Update(m.all, m.updated)
 		m.applyFilter()
 	case actionMsg:
 		if msg.err != nil {
@@ -396,7 +397,7 @@ func (m model) View() string {
 
 	detailLines := 0
 	if m.detail {
-		detailLines = 9
+		detailLines = 10
 	}
 	visible := max(m.height-7-detailLines, 3)
 	top := max(m.cursor-visible+1, 0)
@@ -405,18 +406,14 @@ func (m model) View() string {
 	}
 	for i := top; i < len(m.rows) && i < top+visible; i++ {
 		a := m.rows[i]
-		t := m.track[a.PID]
-		status := a.Status
-		if t.known {
-			status += " " + display.Duration(now.Sub(t.since))
-		}
+		t, _ := m.watcher.Tracker(a.PID)
 		tmuxCol := strings.TrimPrefix(a.TmuxSession, tmux.Prefix)
 		if tmuxCol == "" {
 			tmuxCol = "-"
 		}
-		fl := strings.Join(flags(a, t, now), ",")
+		fl := strings.Join(watch.Flags(a, t, now), ",")
 		row := m.formatRow([]string{
-			fmt.Sprint(a.PID), string(a.Kind), string(a.Role), status,
+			fmt.Sprint(a.PID), string(a.Kind), string(a.Role), display.Status(a, t, now),
 			fmt.Sprintf("%.1f", a.CPU), display.Bytes(a.RSS), display.Duration(now.Sub(a.Start)),
 			tmuxCol, fl, display.Where(a),
 		})
@@ -472,35 +469,11 @@ func (m model) formatRow(cells []string) string {
 
 func (m model) detailView(a agent.Agent) string {
 	w := max(m.width-12, 20)
-	line := func(k, v string) string {
-		if v == "" {
-			v = "-"
-		}
-		return dimStyle.Render(fmt.Sprintf("%-10s ", k)) + display.Truncate(v, w) + "\n"
+	var b strings.Builder
+	for _, f := range display.Details(a) {
+		b.WriteString(dimStyle.Render(fmt.Sprintf("%-10s ", f.Name)) + display.Truncate(f.Value, w) + "\n")
 	}
-	tmuxInfo := a.TmuxSession
-	if a.TmuxPane != "" {
-		tmuxInfo += " pane " + a.TmuxPane
-	}
-	src := "CPU >= " + fmt.Sprint(agent.BusyCPU) + "% (duration shown once agentctl sees a change)"
-	if a.StatusSource == agent.SourceClaude {
-		src = "Claude Code session file"
-	}
-	return line("process", fmt.Sprintf("%d (parent %d, uid %d, tty %s)", a.PID, a.PPID, a.UID, orDash(a.TTY))) +
-		line("started", a.Start.Format("2006-01-02 15:04:05")) +
-		line("cwd", a.CWD) +
-		line("name", a.Name) +
-		line("session", a.SessionID) +
-		line("tmux", tmuxInfo) +
-		line("status", a.Status+" via "+src) +
-		line("command", a.Command)
-}
-
-func orDash(s string) string {
-	if s == "" {
-		return "-"
-	}
-	return s
+	return b.String()
 }
 
 func (m model) footer() string {

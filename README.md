@@ -25,26 +25,34 @@ Requires macOS, Go 1.24 or newer, and tmux for launch, attach and send.
 bin/agentctl                       # dashboard
 bin/agentctl list                  # table; -all adds helper processes
 bin/agentctl list -json            # machine-readable
+bin/agentctl show claude-x         # details of one agent; -json too
+bin/agentctl watch                 # agents, then changes as they happen
+bin/agentctl watch -json | jq .    # one JSON event per line
 bin/agentctl launch claude         # new Claude Code session in tmux, here
 bin/agentctl launch -dir ~/work/AI/x -name x codex
 bin/agentctl launch ollama run llama3.2
-bin/agentctl attach claude-x       # PID, tmux session or Claude session name
+bin/agentctl attach claude-x
 bin/agentctl send claude-x "run the tests"
-bin/agentctl stop 12345            # asks first; -yes skips, -force kills
+bin/agentctl stop claude-x         # asks first; -yes skips, -force kills
+bin/agentctl kill 12345            # same as stop -force
 ```
 
-Dashboard keys:
+AGENT arguments accept a PID, a tmux session name (the `agentctl-` prefix
+is optional) or a Claude Code session name.
 
-| key       | action                                            |
-|-----------|---------------------------------------------------|
-| j / k     | move                                              |
-| enter / d | toggle details                                    |
-| a         | attach to the agent's tmux session                |
-| p         | type a prompt into the agent and press Enter      |
-| n         | launch: `KIND [DIR] [NAME] [-- ARGS]`             |
-| s / K     | stop (SIGTERM) / force kill (SIGKILL), with y/N   |
-| h         | show or hide helper processes                     |
-| r / q     | refresh / quit                                    |
+Every dashboard action has a command:
+
+| key       | action                                            | command             |
+|-----------|---------------------------------------------------|---------------------|
+| j / k     | move                                              | -                   |
+| enter / d | toggle details                                    | `show AGENT`        |
+| a         | attach to the agent's tmux session                | `attach AGENT`      |
+| p         | type a prompt into the agent and press Enter      | `send AGENT TEXT`   |
+| n         | launch: `KIND [DIR] [NAME] [-- ARGS]`             | `launch`            |
+| s / K     | stop (SIGTERM) / force kill (SIGKILL), with y/N   | `stop` / `kill`     |
+| h         | show or hide helper processes                     | `list -all`         |
+| live view | status durations and flags                        | `watch`             |
+| r / q     | refresh / quit                                    | -                   |
 
 Attach and prompt only work for agents running inside tmux. Agents started
 in a plain terminal tab are listed and can be stopped, but not driven.

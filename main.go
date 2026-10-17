@@ -17,20 +17,31 @@ import (
 	"agentctl/internal/display"
 	"agentctl/internal/tmux"
 	"agentctl/internal/tui"
+	"agentctl/internal/watch"
 )
 
 const usage = `agentctl - control local AI agents
 
 Usage:
-  agentctl [tui] [-interval 2s]        interactive dashboard (default)
-  agentctl list [-json] [-all]         list running agents
-  agentctl stop [-force] [-yes] PID... stop agents (SIGTERM, or SIGKILL with -force)
+  agentctl [tui] [-interval 2s]           interactive dashboard (default)
+  agentctl list [-json] [-all]            list running agents
+  agentctl show [-json] AGENT             details of one agent
+  agentctl watch [-json] [-all] [-interval 2s]
+                                          print agents, then changes as they happen
   agentctl launch [-dir D] [-name N] KIND [ARGS...]
-                                       start an agent in a new tmux session
-  agentctl attach PID|SESSION          attach to an agent's tmux session
-  agentctl send PID|SESSION TEXT...    type a prompt into an agent and press Enter
+                                          start an agent in a new tmux session
+  agentctl attach AGENT                   attach to an agent's tmux session
+  agentctl send AGENT TEXT...             type a prompt into an agent, press Enter
+  agentctl stop [-force] [-yes] AGENT...  stop agents (SIGTERM, SIGKILL with -force)
+  agentctl kill [-yes] AGENT...           same as stop -force
+
+AGENT is a PID, a tmux session name (the agentctl- prefix is optional) or
+a Claude Code session name.
 
 Kinds: claude, codex, opencode, gemini, aider, cursor-agent, ollama
+
+TUI keys and the matching commands:
+  enter show   a attach   p send   n launch   s stop   K kill   h list -all
 `
 
 func main() {
@@ -45,14 +56,20 @@ func main() {
 		err = runTUI(args)
 	case "list", "ls":
 		err = runList(args)
-	case "stop":
-		err = runStop(args)
+	case "show":
+		err = runShow(args)
+	case "watch":
+		err = runWatch(args)
 	case "launch":
 		err = runLaunch(args)
 	case "attach":
 		err = runAttach(args)
 	case "send":
 		err = runSend(args)
+	case "stop":
+		err = runStop("stop", args, false)
+	case "kill":
+		err = runStop("kill", args, true)
 	case "help", "-h", "--help":
 		fmt.Print(usage)
 	default:
@@ -84,73 +101,90 @@ func runList(args []string) error {
 	if err != nil {
 		return err
 	}
-	if !*all {
-		kept := agents[:0]
-		for _, a := range agents {
-			if a.Role != agent.RoleHelper {
-				kept = append(kept, a)
-			}
-		}
-		agents = kept
-	}
+	agents = withoutHelpers(agents, *all)
 	if *asJSON {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(agents)
+		return printJSON(agents)
 	}
 	now := time.Now()
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "PID\tKIND\tROLE\tSTATUS\tCPU%\tMEM\tUP\tTMUX\tWHERE")
+	w := watch.New()
+	w.Update(agents, now)
+	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(tw, "PID\tKIND\tROLE\tSTATUS\tCPU%\tMEM\tUP\tTMUX\tFLAGS\tWHERE")
 	for _, a := range agents {
-		tm := a.TmuxSession
+		t, _ := w.Tracker(a.PID)
+		tm := strings.TrimPrefix(a.TmuxSession, tmux.Prefix)
 		if tm == "" {
 			tm = "-"
 		}
-		fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%.1f\t%s\t%s\t%s\t%s\n", a.PID, a.Kind, a.Role, a.Status,
-			a.CPU, display.Bytes(a.RSS), display.Duration(now.Sub(a.Start)), tm, display.Where(a))
+		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%.1f\t%s\t%s\t%s\t%s\t%s\n", a.PID, a.Kind, a.Role,
+			display.Status(a, t, now), a.CPU, display.Bytes(a.RSS), display.Duration(now.Sub(a.Start)),
+			tm, display.Flags(a, t, now), display.Where(a))
 	}
-	return w.Flush()
+	return tw.Flush()
 }
 
-func runStop(args []string) error {
-	fs := flag.NewFlagSet("stop", flag.ExitOnError)
-	force := fs.Bool("force", false, "send SIGKILL instead of SIGTERM")
-	yes := fs.Bool("yes", false, "do not ask for confirmation")
+func runShow(args []string) error {
+	fs := flag.NewFlagSet("show", flag.ExitOnError)
+	asJSON := fs.Bool("json", false, "print JSON")
 	fs.Parse(args)
-	if fs.NArg() == 0 {
-		return errors.New("usage: agentctl stop [-force] [-yes] PID...")
+	if fs.NArg() != 1 {
+		return errors.New("usage: agentctl show [-json] AGENT")
 	}
-	agents, err := agent.Discover()
+	a, err := find(fs.Arg(0))
 	if err != nil {
 		return err
 	}
-	var failed int
-	for _, ref := range fs.Args() {
-		pid, err := strconv.Atoi(ref)
-		if err != nil {
-			return fmt.Errorf("%q is not a PID", ref)
-		}
-		a, ok := byPID(agents, pid)
-		if !ok {
-			fmt.Fprintf(os.Stderr, "PID %d is not a running agent\n", pid)
-			failed++
-			continue
-		}
-		if !*yes && !confirm(fmt.Sprintf("Stop %s %s %d in %s?", a.Kind, a.Role, a.PID, display.Path(a.CWD))) {
-			fmt.Println("skipped", pid)
-			continue
-		}
-		if err := agent.Stop(a, *force, agent.StopTimeout); err != nil {
-			fmt.Fprintf(os.Stderr, "PID %d: %v\n", pid, err)
-			failed++
-			continue
-		}
-		fmt.Println("stopped", pid)
+	if *asJSON {
+		return printJSON(a)
 	}
-	if failed > 0 {
-		return fmt.Errorf("%d of %d not stopped", failed, fs.NArg())
+	now := time.Now()
+	w := watch.New()
+	w.Update([]agent.Agent{a}, now)
+	t, _ := w.Tracker(a.PID)
+	fields := append(display.Details(a),
+		display.Field{Name: "resources", Value: fmt.Sprintf("%.1f%% CPU, %s, up %s",
+			a.CPU, display.Bytes(a.RSS), display.Duration(now.Sub(a.Start)))},
+		display.Field{Name: "flags", Value: display.Flags(a, t, now)})
+	for _, f := range fields {
+		fmt.Printf("%-10s %s\n", f.Name, f.Value)
 	}
 	return nil
+}
+
+func runWatch(args []string) error {
+	fs := flag.NewFlagSet("watch", flag.ExitOnError)
+	asJSON := fs.Bool("json", false, "print one JSON object per event")
+	all := fs.Bool("all", false, "include helper processes")
+	interval := fs.Duration("interval", 2*time.Second, "refresh period")
+	fs.Parse(args)
+	w := watch.New()
+	enc := json.NewEncoder(os.Stdout)
+	for {
+		agents, err := agent.Discover()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "agentctl:", err)
+		}
+		for _, e := range w.Update(withoutHelpers(agents, *all), time.Now()) {
+			if *asJSON {
+				if err := enc.Encode(e); err != nil {
+					return err
+				}
+				continue
+			}
+			fmt.Println(formatEvent(e))
+		}
+		time.Sleep(*interval)
+	}
+}
+
+func formatEvent(e watch.Event) string {
+	change := e.To
+	if e.Type == watch.EventStatus || e.Type == watch.EventFlags {
+		change = orDash(e.From) + " -> " + orDash(e.To)
+	}
+	a := e.Agent
+	return fmt.Sprintf("%s  %-7s  %-6d  %-12s  %-11s  %-20s  %s",
+		e.Time.Format("15:04:05"), e.Type, a.PID, a.Kind, a.Role, change, display.Where(a))
 }
 
 func runLaunch(args []string) error {
@@ -171,7 +205,7 @@ func runLaunch(args []string) error {
 
 func runAttach(args []string) error {
 	if len(args) != 1 {
-		return errors.New("usage: agentctl attach PID|SESSION")
+		return errors.New("usage: agentctl attach AGENT")
 	}
 	a, err := find(args[0])
 	if err != nil {
@@ -187,7 +221,7 @@ func runAttach(args []string) error {
 
 func runSend(args []string) error {
 	if len(args) < 2 {
-		return errors.New("usage: agentctl send PID|SESSION TEXT...")
+		return errors.New("usage: agentctl send AGENT TEXT...")
 	}
 	a, err := find(args[0])
 	if err != nil {
@@ -199,16 +233,68 @@ func runSend(args []string) error {
 	return tmux.Send(a.TmuxPane, strings.Join(args[1:], " "))
 }
 
-// find resolves a PID, a tmux session name (with or without the agentctl-
-// prefix) or a Claude session name to one interactive agent.
+// runStop serves both stop and kill; kill always forces.
+func runStop(name string, args []string, kill bool) error {
+	fs := flag.NewFlagSet(name, flag.ExitOnError)
+	force := &kill
+	if !kill {
+		force = fs.Bool("force", false, "send SIGKILL instead of SIGTERM")
+	}
+	yes := fs.Bool("yes", false, "do not ask for confirmation")
+	fs.Parse(args)
+	if fs.NArg() == 0 {
+		return fmt.Errorf("usage: agentctl %s [-yes] AGENT...", name)
+	}
+	agents, err := agent.Discover()
+	if err != nil {
+		return err
+	}
+	verb, signal := "Stop", "SIGTERM"
+	if *force {
+		verb, signal = "Kill", "SIGKILL"
+	}
+	failed := 0
+	for _, ref := range fs.Args() {
+		a, err := resolve(agents, ref)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			failed++
+			continue
+		}
+		if !*yes && !confirm(fmt.Sprintf("%s (%s) %s %s %d in %s?", verb, signal, a.Kind, a.Role, a.PID, display.Path(a.CWD))) {
+			fmt.Println("skipped", a.PID)
+			continue
+		}
+		if err := agent.Stop(a, *force, agent.StopTimeout); err != nil {
+			fmt.Fprintf(os.Stderr, "PID %d: %v\n", a.PID, err)
+			failed++
+			continue
+		}
+		fmt.Println("stopped", a.PID)
+	}
+	if failed > 0 {
+		return fmt.Errorf("%d of %d not stopped", failed, fs.NArg())
+	}
+	return nil
+}
+
 func find(ref string) (agent.Agent, error) {
 	agents, err := agent.Discover()
 	if err != nil {
 		return agent.Agent{}, err
 	}
+	return resolve(agents, ref)
+}
+
+// resolve turns a PID into any agent, or a tmux session name (with or
+// without the agentctl- prefix) or a Claude session name into exactly one
+// interactive agent.
+func resolve(agents []agent.Agent, ref string) (agent.Agent, error) {
 	if pid, err := strconv.Atoi(ref); err == nil {
-		if a, ok := byPID(agents, pid); ok {
-			return a, nil
+		for _, a := range agents {
+			if a.PID == pid {
+				return a, nil
+			}
 		}
 		return agent.Agent{}, fmt.Errorf("PID %d is not a running agent", pid)
 	}
@@ -228,13 +314,30 @@ func find(ref string) (agent.Agent, error) {
 	return agent.Agent{}, fmt.Errorf("%q matches %d agents; use a PID", ref, len(matches))
 }
 
-func byPID(agents []agent.Agent, pid int) (agent.Agent, bool) {
+func withoutHelpers(agents []agent.Agent, all bool) []agent.Agent {
+	if all {
+		return agents
+	}
+	var kept []agent.Agent
 	for _, a := range agents {
-		if a.PID == pid {
-			return a, true
+		if a.Role != agent.RoleHelper {
+			kept = append(kept, a)
 		}
 	}
-	return agent.Agent{}, false
+	return kept
+}
+
+func printJSON(v any) error {
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	return enc.Encode(v)
+}
+
+func orDash(s string) string {
+	if s == "" {
+		return "-"
+	}
+	return s
 }
 
 func confirm(question string) bool {

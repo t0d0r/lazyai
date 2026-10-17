@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -30,31 +29,6 @@ func TestParseLaunch(t *testing.T) {
 		if _, _, _, _, err := parseLaunch(bad, "/base"); err == nil {
 			t.Errorf("parseLaunch(%q) accepted", bad)
 		}
-	}
-}
-
-func TestObserveAndFlags(t *testing.T) {
-	t0 := time.Now()
-	a := agent.Agent{Proc: agent.Proc{PID: 1, Start: t0.Add(-time.Hour), CPU: 95, RSS: 3 << 30}, Status: "busy"}
-	track := observe(nil, []agent.Agent{a}, t0)
-	if got := flags(a, track[1], t0); strings.Join(got, ",") != "high-mem" {
-		t.Errorf("first look: %v", got)
-	}
-	track = observe(track, []agent.Agent{a}, t0.Add(31*time.Minute))
-	got := strings.Join(flags(a, track[1], t0.Add(31*time.Minute)), ",")
-	if got != "high-cpu,high-mem,long-busy" {
-		t.Errorf("after 31m: %v", got)
-	}
-	a.Status, a.CPU = "idle", 0
-	track = observe(track, []agent.Agent{a}, t0.Add(32*time.Minute))
-	if tr := track[1]; !tr.highCPUSince.IsZero() || !tr.since.Equal(t0.Add(32*time.Minute)) || !tr.known {
-		t.Errorf("status change not tracked: %+v", tr)
-	}
-	reused := a
-	reused.Start = t0
-	track = observe(track, []agent.Agent{reused}, t0.Add(33*time.Minute))
-	if !track[1].since.Equal(t0.Add(33 * time.Minute)) {
-		t.Errorf("PID reuse not detected: %+v", track[1])
 	}
 }
 
