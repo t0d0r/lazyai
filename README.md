@@ -22,9 +22,6 @@ unless `--all`).
 brew install t0d0r/tap/lazyai
 ```
 
-The formula lives in [t0d0r/homebrew-tap](https://github.com/t0d0r/homebrew-tap),
-builds from the release tag and pulls in tmux.
-
 ## Build
 
 ```sh
