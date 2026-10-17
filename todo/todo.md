@@ -47,3 +47,7 @@
       one
 - [ ] run `make install` and confirm ~/.local/bin is on PATH in fish
 - [ ] add a gitleaks pre-commit hook
+- [ ] module path github.com/t0d0r/lazyai so `go install
+      github.com/t0d0r/lazyai@latest` works
+- [ ] choose and add a LICENSE
+- [ ] set the GitHub description and topics

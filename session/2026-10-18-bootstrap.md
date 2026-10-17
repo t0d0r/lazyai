@@ -70,6 +70,10 @@
   show `ctrl+b d: detach, back to lazyai` (or `ctrl+b L` when lazyai runs
   inside tmux) in their own tmux status-right. Verified by attaching in a
   pseudo terminal. tmux option commands need `=name:` as the target.
+- Published at operator request: branch renamed master -> main, remote
+  origin git@github.com:t0d0r/lazyai.git, pushed. Before pushing, the
+  whole history was scanned for client names, home paths, session ids,
+  emails other than the commit author, and token patterns; nothing found.
 
 ## Files
 
