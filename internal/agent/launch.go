@@ -9,12 +9,27 @@ import (
 	"agentctl/internal/tmux"
 )
 
+// LaunchKinds lists the kinds launch can start. Colibri is left out: it is
+// not on PATH and is started with its own tooling (make run in its project).
+func LaunchKinds() []Kind {
+	var kinds []Kind
+	for _, k := range Kinds {
+		if k != KindColibri {
+			kinds = append(kinds, k)
+		}
+	}
+	return kinds
+}
+
 // LaunchCommand returns the argv that starts kind with extra arguments.
 func LaunchCommand(kind Kind, extra []string) ([]string, error) {
+	if kind == KindColibri {
+		return nil, errors.New("colibri is not launched by agentctl; start it with its own tooling, for example make run in its project")
+	}
 	if kindRank(kind) == len(Kinds) {
-		names := make([]string, len(Kinds))
-		for i, k := range Kinds {
-			names[i] = string(k)
+		var names []string
+		for _, k := range LaunchKinds() {
+			names = append(names, string(k))
 		}
 		return nil, fmt.Errorf("unknown agent kind %q (known: %s)", kind, strings.Join(names, ", "))
 	}

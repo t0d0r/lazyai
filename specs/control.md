@@ -15,7 +15,9 @@
 ## Launch
 
 - `launch [-dir D] [-name N] KIND [ARGS...]`. KIND must be a supported
-  kind; ollama requires arguments.
+  kind other than colibri; ollama requires arguments. Colibri is refused
+  with a pointer to its own tooling (`make run` in its project), because
+  `coli` is not on PATH and needs its model and settings configured.
 - The command is resolved with `PATH` lookup and run directly by
   `tmux new-session -d -s SESSION -c DIR -- PATH ARGS...`; no shell is
   involved, so nothing in names, paths or arguments is expanded.

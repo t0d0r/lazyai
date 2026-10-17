@@ -28,6 +28,13 @@
   `--version` is stamped by `make build`; exit status 2 for usage errors.
   `stop` now reads confirmations through one buffered reader, so piped
   answers for several agents are no longer lost.
+- Operator reported Colibri running Qwen (driven by Hermes Agent) was not
+  shown. Causes: the `.app/Contents/` desktop-app exclusion also matched
+  Homebrew's framework Python, hiding Hermes; and Hermes, Colibri and
+  Qwen Code were not known kinds. Fixed the exclusion, added the three
+  kinds and roles `job` and `engine` (ollama runners moved from helper to
+  engine). Verified live: hermes interactive, `coli tune` job, `qwen36`
+  engine flagged high-mem.
 
 ## Decisions
 

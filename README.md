@@ -4,8 +4,15 @@ Control the AI coding agents running on this Mac from one terminal
 dashboard: see what is running and whether it is busy, start new agents in
 tmux, attach to them, type prompts into them, and stop them.
 
-Supported agents: Claude Code, Codex, opencode, Gemini CLI, aider,
-cursor-agent, ollama. Desktop apps (Claude.app, Cursor.app) are ignored.
+Supported agents: Claude Code, Codex, opencode, Gemini CLI, Qwen Code,
+aider, cursor-agent, Hermes Agent, and the local model runtimes ollama and
+Colibri (its `coli` launcher and native engines such as `qwen36`). Desktop
+apps (Claude.app, Cursor.app) are ignored. Colibri is listed, watched and
+stoppable, but started with its own tooling rather than `launch`.
+
+Roles: `interactive`, `server`, `daemon`, `job` (batch work such as
+`coli tune`), `engine` (a model inference process) and `helper` (hidden
+unless `--all`).
 
 ## Build
 

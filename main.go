@@ -126,9 +126,9 @@ Commands:
 	for _, c := range commands {
 		fmt.Fprintf(w, "  %-9s %s\n", c.name, c.summary)
 	}
-	kinds := make([]string, len(agent.Kinds))
-	for i, k := range agent.Kinds {
-		kinds[i] = string(k)
+	var kinds []string
+	for _, k := range agent.LaunchKinds() {
+		kinds = append(kinds, string(k))
 	}
 	fmt.Fprintf(w, `  %-9s show help for a command
   %-9s print the version
@@ -140,7 +140,8 @@ Options:
 AGENT is a PID, a tmux session name (the agentctl- prefix is optional) or
 a Claude Code session name.
 
-KIND is one of: %s.
+KIND (for launch) is one of: %s.
+Colibri is also listed and watched, but started with its own tooling.
 
 Exit status: 0 on success, 1 on failure, 2 on a usage error.
 

@@ -45,6 +45,8 @@ func TestParseLstartSingleDigitDay(t *testing.T) {
 	}
 }
 
+const brewPython = "/opt/homebrew/Cellar/python@3.14/3.14.8_2/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python"
+
 func TestClassify(t *testing.T) {
 	cases := []struct {
 		args string
@@ -67,7 +69,22 @@ func TestClassify(t *testing.T) {
 		{"/opt/homebrew/Cellar/aider/0.86.2/libexec/bin/python /opt/homebrew/bin/aider --model x", KindAider, RoleInteractive, true},
 		{"node /opt/homebrew/Caskroom/cursor-cli/2026.10.16/dist-package/index.js", KindCursor, RoleInteractive, true},
 		{"/opt/homebrew/bin/ollama serve", KindOllama, RoleServer, true},
-		{"/opt/homebrew/bin/ollama runner --model m", KindOllama, RoleHelper, true},
+		{"/opt/homebrew/bin/ollama runner --model m", KindOllama, RoleEngine, true},
+		// Homebrew framework Python runs from Python.app; it must not be taken for a desktop app.
+		{brewPython + " /opt/homebrew/Cellar/hermes-agent/0.22.0/libexec/bin/hermes", KindHermes, RoleInteractive, true},
+		{brewPython + " /opt/homebrew/Cellar/hermes-agent/0.22.0/libexec/bin/hermes gateway run", KindHermes, RoleServer, true},
+		{"/opt/homebrew/bin/python3 /x/hermes-agent/bin/hermes chat", KindHermes, RoleInteractive, true},
+		{brewPython + " src/c/coli tune --model /m --ram 14", KindColibri, RoleJob, true},
+		{"/opt/homebrew/bin/python3 src/c/coli serve --port 8000", KindColibri, RoleServer, true},
+		{"/opt/homebrew/bin/python3 src/c/coli start --background", KindColibri, RoleServer, true},
+		{"python3 /w/colibri/src/c/coli chat", KindColibri, RoleInteractive, true},
+		{"/Users/u/work/AI/colibri/src/c/qwen36 69", KindColibri, RoleEngine, true},
+		{"/Users/u/work/AI/colibri/src/c/colibri --model m", KindColibri, RoleEngine, true},
+		{"/Users/u/bin/qwen36 69", "", "", false},
+		{"/opt/homebrew/opt/node/bin/node /opt/homebrew/Cellar/qwen-code/0.25.2/libexec/lib/node_modules/@qwen-code/qwen-code/cli-entry.js", KindQwen, RoleInteractive, true},
+		{"node /opt/homebrew/bin/qwen", KindQwen, RoleInteractive, true},
+		{"/Applications/Xcode.app/Contents/Developer/usr/bin/make tune", "", "", false},
+		{"/opt/homebrew/bin/bash -c source /tmp/hermes-snap.sh || true", "", "", false},
 		{"/Applications/Claude.app/Contents/MacOS/Claude", "", "", false},
 		{"/System/Library/PrivateFrameworks/X.framework/XPCServices/CursorUIViewService.xpc/Contents/MacOS/CursorUIViewService", "", "", false},
 		{"grep claude", "", "", false},
@@ -199,6 +216,12 @@ func TestLaunchCommand(t *testing.T) {
 	}
 	if _, err := LaunchCommand(KindOllama, nil); err == nil {
 		t.Error("ollama without args accepted")
+	}
+	if _, err := LaunchCommand(KindColibri, nil); err == nil {
+		t.Error("colibri accepted")
+	}
+	if got, err := LaunchCommand(KindHermes, nil); err != nil || got[0] != "hermes" {
+		t.Errorf("hermes: %v %v", got, err)
 	}
 	got, err := LaunchCommand(KindClaude, []string{"--model", "x"})
 	if err != nil || len(got) != 3 || got[0] != "claude" {

@@ -17,6 +17,11 @@
       options after arguments, --version, exit status 2 for usage errors
       (specs/cli.md)
 
+- [x] fix: Homebrew framework Python (Python.app) was excluded as a desktop
+      app, hiding Python agents such as Hermes (specs/discovery.md)
+- [x] kinds hermes, qwen (Qwen Code), colibri; roles job and engine
+      (specs/discovery.md)
+
 ## Next
 
 - [ ] verify attach by hand from a real terminal, outside and inside tmux
@@ -27,5 +32,11 @@
 - [ ] decide opencode launch: the fish alias runs it in docker, agentctl
       runs the Homebrew binary
 - [ ] Codex status and session id from ~/.codex metadata (needs a spec)
+- [ ] verify Hermes server roles (gateway, proxy, lsp) and Qwen Code
+      against real processes; only interactive Hermes has been seen
+- [ ] attribute child CPU and memory to the agent that started them (for
+      example Hermes -> make -> coli tune -> qwen36), shown in details
+- [ ] colibri server status from `coli status` or its pid file, if it has
+      one
 - [ ] run `make install` and confirm ~/.local/bin is on PATH in fish
 - [ ] add a gitleaks pre-commit hook

@@ -9,7 +9,8 @@ rest is the command line with its spacing kept. Malformed lines are skipped.
 ## Classification
 
 From the command line, using argv[0], and for interpreters (node, bun, deno,
-bash, sh, zsh, python*) also the first non-flag argument:
+bash, sh, zsh, python*, compared case-insensitively) also the first
+non-flag argument:
 
 | kind         | matched by                                                      |
 |--------------|-----------------------------------------------------------------|
@@ -17,11 +18,20 @@ bash, sh, zsh, python*) also the first non-flag argument:
 | codex        | basename `codex`, `/@openai/codex/`                             |
 | opencode     | basename `opencode`                                             |
 | gemini       | basename `gemini`/`gemini.js`, `/gemini-cli/`                   |
+| qwen         | basename `qwen`, `/@qwen-code/` (Qwen Code)                     |
 | aider        | basename `aider`                                                |
 | cursor-agent | basename `cursor-agent`, `/cursor-cli/`                         |
+| hermes       | basename `hermes`, `/hermes-agent/` (Hermes Agent)              |
 | ollama       | basename `ollama`                                               |
+| colibri      | basename `coli`; or a path containing `colibri` whose basename is an engine: `qwen<N>...`, `qwenimage`, `colibri`, `glm...` |
 
-Anything whose argv[0] contains `.app/Contents/` is excluded.
+argv[0] inside a macOS app bundle (`.app/Contents/`) is excluded, so
+Claude.app, Cursor.app and their helpers are skipped. Homebrew's framework
+Python (`.../Python.app/Contents/MacOS/Python`) is not a desktop app and is
+not excluded; excluding it once hid Hermes.
+
+A bare `qwen36` outside a colibri path is not matched, so other tools with
+model-like names are not picked up.
 
 Roles:
 
@@ -29,10 +39,15 @@ Roles:
 - codex: `app-server` with `daemon` -> daemon; `app-server`, `mcp-server`
   -> server
 - opencode: `serve`, `web` -> server
-- ollama: `serve` -> server; `runner` -> helper
+- hermes: `gateway`, `proxy`, `lsp` -> server
+- ollama: `serve` -> server; `runner` -> engine
+- colibri: a native engine binary -> engine; `coli` with `serve`, `web`,
+  `cluster`, `start` -> server; `chat`, `run` or no subcommand ->
+  interactive; any other subcommand (`tune`, `bench`, `build`, ...) -> job
 - everything else -> interactive
 
-Helpers are hidden by default in the TUI and `list`.
+Helpers are hidden by default in the TUI and `list`. Engines are shown,
+because that is where model CPU and memory use shows up.
 
 ## Status
 
