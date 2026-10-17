@@ -66,6 +66,10 @@
 - Operator screenshot in iTerm: Agents took all spare rows and Services /
   Models were squeezed. Lists now split the column evenly; only very
   short terminals give the list in use the room.
+- Operator asked how to leave an attached session; lazyai sessions now
+  show `ctrl+b d: detach, back to lazyai` (or `ctrl+b L` when lazyai runs
+  inside tmux) in their own tmux status-right. Verified by attaching in a
+  pseudo terminal. tmux option commands need `=name:` as the target.
 
 ## Files
 

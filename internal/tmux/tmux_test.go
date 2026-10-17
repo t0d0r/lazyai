@@ -21,6 +21,18 @@ func TestSessionName(t *testing.T) {
 	}
 }
 
+func TestKeyName(t *testing.T) {
+	cases := map[string]string{"C-b": "ctrl+b", "C-a": "ctrl+a", "M-Space": "alt+Space", "C-M-x": "ctrl+alt+x", "`": "`"}
+	for in, want := range cases {
+		if got := KeyName(in); got != want {
+			t.Errorf("KeyName(%q) = %q, want %q", in, got, want)
+		}
+	}
+	if StatusHint("ctrl+b", true) != "ctrl+b L: back to lazyai" {
+		t.Error("nested hint")
+	}
+}
+
 // TestLaunchSendPanes runs /bin/cat in a real tmux session on the default
 // server, types into it and checks the pane shows the text unexpanded.
 func TestLaunchSendPanes(t *testing.T) {
@@ -35,6 +47,14 @@ func TestLaunchSendPanes(t *testing.T) {
 
 	if err := Launch(session, t.TempDir(), []string{"cat"}); err == nil {
 		t.Error("second launch with the same name succeeded")
+	}
+	right, _ := exec.Command("tmux", "show-options", "-t", "="+session+":", "-v", "status-right").Output()
+	if !strings.Contains(string(right), " d: detach, back to lazyai") {
+		t.Errorf("status-right: %q", right)
+	}
+	global, _ := exec.Command("tmux", "show-options", "-gv", "status-right").Output()
+	if strings.Contains(string(global), "lazyai") {
+		t.Error("hint leaked into the global status-right")
 	}
 	var pane Pane
 	for _, p := range Panes() {

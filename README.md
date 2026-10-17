@@ -84,6 +84,11 @@ Every dashboard action also has a command:
 | live view    | status durations and flags                      | `watch`             |
 | x / ? / q    | menu / keybindings / quit                       | -                   |
 
+To leave an attached agent and return to lazyai, press the tmux prefix
+and `d` (ctrl+b d by default); the agent keeps running. Sessions started by
+lazyai show this hint on the right of their tmux status line. If lazyai
+itself runs inside tmux, use the prefix and `L` instead.
+
 Attach, prompt and the Screen tab only work for agents running inside
 tmux. Agents started in a plain terminal tab are listed and can be stopped,
 but not driven.

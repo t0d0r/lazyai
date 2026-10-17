@@ -32,6 +32,13 @@
 - Outside tmux: `tmux attach-session -t =SESSION` and return on detach.
   Inside tmux: `tmux switch-client -t =SESSION`.
 - The `=` prefix forces an exact session name match.
+- Status line hint: `lazyai-*` sessions get a session-only `status-right`
+  of `PREFIX d: detach, back to lazyai | HH:MM`, where PREFIX is the tmux
+  prefix in readable form (`ctrl+b`). It is set at launch and again at
+  every attach; when lazyai itself runs inside tmux the hint is
+  `PREFIX L: back to lazyai` (last session), because detaching would leave
+  tmux altogether. Global options and sessions not started by lazyai are
+  never changed. Failures to set it are ignored.
 
 ## Send
 

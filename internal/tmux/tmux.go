@@ -103,16 +103,72 @@ func Launch(session, dir string, argv []string) error {
 	if out, err := exec.Command("tmux", args...).CombinedOutput(); err != nil {
 		return fmt.Errorf("tmux new-session: %s", strings.TrimSpace(string(out)))
 	}
+	SetStatusHint(session, false)
 	return nil
 }
 
 // AttachCmd returns the command that puts the terminal on session. Inside
 // tmux it switches the client; outside it attaches and returns on detach.
+// lazyai sessions get a status line hint for the way back.
 func AttachCmd(session string) *exec.Cmd {
-	if os.Getenv("TMUX") != "" {
+	nested := os.Getenv("TMUX") != ""
+	if strings.HasPrefix(session, Prefix) {
+		SetStatusHint(session, nested)
+	}
+	if nested {
 		return exec.Command("tmux", "switch-client", "-t", "="+session)
 	}
 	return exec.Command("tmux", "attach-session", "-t", "="+session)
+}
+
+// StatusHint is the text on the right of a lazyai session's status line.
+// When lazyai runs inside tmux the agent is reached with switch-client, so
+// the way back is the last-session key (L), not detach (d).
+func StatusHint(prefix string, nested bool) string {
+	if nested {
+		return prefix + " L: back to lazyai"
+	}
+	return prefix + " d: detach, back to lazyai"
+}
+
+// SetStatusHint puts StatusHint and the time on the right of session's
+// status line. Only that session's options change. Errors are ignored: the
+// hint is a convenience.
+func SetStatusHint(session string, nested bool) {
+	right := " " + StatusHint(prefixKey(), nested) + " | %H:%M "
+	target := "=" + session + ":" // exact session; set-option takes a pane target
+	exec.Command("tmux", "set-option", "-t", target, "status-right-length", "80").Run()
+	exec.Command("tmux", "set-option", "-t", target, "status-right", right).Run()
+}
+
+// prefixKey returns the tmux prefix in readable form, such as "ctrl+b".
+func prefixKey() string {
+	out, err := exec.Command("tmux", "show-options", "-gv", "prefix").Output()
+	if err != nil {
+		return "ctrl+b"
+	}
+	return KeyName(strings.TrimSpace(string(out)))
+}
+
+// KeyName turns tmux key notation into readable form: "C-b" -> "ctrl+b",
+// "M-a" -> "alt+a".
+func KeyName(key string) string {
+	var mods []string
+	for {
+		switch {
+		case strings.HasPrefix(key, "C-"):
+			mods, key = append(mods, "ctrl"), key[2:]
+			continue
+		case strings.HasPrefix(key, "M-"):
+			mods, key = append(mods, "alt"), key[2:]
+			continue
+		case strings.HasPrefix(key, "S-"):
+			mods, key = append(mods, "shift"), key[2:]
+			continue
+		}
+		break
+	}
+	return strings.Join(append(mods, key), "+")
 }
 
 // Capture returns a pane's visible screen plus up to history lines above
