@@ -16,6 +16,15 @@ Roles: `interactive`, `server`, `daemon`, `job` (batch work such as
 `coli tune`), `engine` (a model inference process) and `helper` (hidden
 unless `--all`).
 
+## Install
+
+```sh
+brew install t0d0r/tap/lazyai
+```
+
+The formula lives in [t0d0r/homebrew-tap](https://github.com/t0d0r/homebrew-tap),
+builds from the release tag and pulls in tmux.
+
 ## Build
 
 ```sh

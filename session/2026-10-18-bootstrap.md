@@ -76,8 +76,16 @@
   emails other than the commit author, and token patterns; nothing found.
 - Added a README screenshot (lazyai.png) and pushed it.
 - License: operator chose BSD-2-Clause (FreeBSD), copyright Todor
-  Dragnev. Next for Homebrew: tag v0.1.0, create t0d0r/homebrew-tap,
-  add Formula/lazyai.rb with license "BSD-2-Clause".
+  Dragnev.
+- Released v0.1.0 (annotated tag on 1adce7f; source tarball sha256
+  866462d199845ba14d215beba2abe9585e2e95b64416123f0bb1007096c09c14).
+- Homebrew: tap created with `brew tap-new t0d0r/tap` (local checkout at
+  $(brew --repository)/Library/Taps/t0d0r/homebrew-tap, outside ~/work/AI),
+  Formula/lazyai.rb added, `brew style`, `brew audit --strict --online`,
+  `brew install --build-from-source` and `brew test` all pass, pushed to
+  git@github.com:t0d0r/homebrew-tap.git. lazyai 0.1.0 is now installed at
+  /opt/homebrew/bin/lazyai. The tap's CI builds formulae only on pull
+  requests; its daily autobump workflow opens a PR for new tags.
 
 ## Files
 

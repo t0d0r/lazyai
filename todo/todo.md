@@ -50,4 +50,8 @@
 - [ ] module path github.com/t0d0r/lazyai so `go install
       github.com/t0d0r/lazyai@latest` works
 - [x] LICENSE: BSD-2-Clause
+- [x] release v0.1.0 and Homebrew formula in t0d0r/homebrew-tap
+- [ ] for each release: tag vX.Y.Z, then update url and sha256 in the tap
+      formula (or let the tap's autobump workflow open the PR); consider
+      GoReleaser for prebuilt binaries
 - [ ] set the GitHub description and topics
