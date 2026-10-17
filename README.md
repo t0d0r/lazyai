@@ -1,5 +1,7 @@
 # lazyai
 
+![lazyai dashboard: Agents, Services and Models panels on the left, Info tab for a Hermes agent on the right](lazyai.png)
+
 Control the AI coding agents running on this Mac from one terminal
 dashboard: see what is running and whether it is busy, start new agents in
 tmux, attach to them, type prompts into them, and stop them.
