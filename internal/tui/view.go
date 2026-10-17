@@ -30,6 +30,10 @@ var (
 	keyStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("4")).Bold(true)
 )
 
+// minEvenListH is the smallest list panel (borders plus 3 rows) for which
+// the column is split evenly.
+const minEvenListH = 5
+
 // layout is where each panel sits. Mouse handling uses it too.
 type layout struct {
 	leftW, rightW, bodyH int
@@ -42,26 +46,20 @@ func (m model) layout() layout {
 	l.leftW = max(min(m.width/3, 56), min(32, m.width/2))
 	l.rightW = max(m.width-l.leftW, 10)
 	avail := l.bodyH - l.statusH
-	var need [numLists]int
-	total := 0
-	for i := range numLists {
-		need[i] = max(len(m.lists[i].rows)+2, 3)
-		total += need[i]
-	}
-	if total <= avail {
-		// Everything fits; the spare rows go to the first panel.
-		l.listH = need
-		l.listH[listAgents] += avail - total
-	} else {
-		// Crowded: the panel in use grows, the others shrink.
-		rest := avail
+	if share := avail / numLists; share >= minEvenListH {
+		// Split evenly, as lazydocker does; leftover rows go to the top.
 		for i := range numLists {
-			if i != m.lastList {
-				l.listH[i] = min(need[i], max(3, avail/5))
-				rest -= l.listH[i]
+			l.listH[i] = share
+			if i < avail%numLists {
+				l.listH[i]++
 			}
 		}
-		l.listH[m.lastList] = max(rest, 3)
+	} else {
+		// Too short to split: the panel in use grows, the others show one row.
+		for i := range numLists {
+			l.listH[i] = 3
+		}
+		l.listH[m.lastList] = max(avail-3*(numLists-1), 3)
 	}
 	y := l.statusH
 	for i := range numLists {
@@ -209,7 +207,7 @@ func (m model) mainPanel(l layout) string {
 func (m model) mainLines(w int) []string {
 	a, ok := m.selected()
 	if !ok {
-		return []string{dimStyle.Render("no agent selected")}
+		return []string{dimStyle.Render("no " + strings.ToLower(listTitles[m.lastList]) + " running")}
 	}
 	switch m.tab {
 	case tabScreen:

@@ -106,16 +106,34 @@ func TestLayoutHeights(t *testing.T) {
 	if sum != l.bodyH {
 		t.Errorf("panels use %d rows, body has %d", sum, l.bodyH)
 	}
-	// Crowded: many agents, the focused list gets the room.
+	// Even split however many rows each list has.
 	var many []agent.Agent
 	for i := range 40 {
 		many = append(many, agent.Agent{Proc: agent.Proc{PID: 100 + i}, Role: agent.RoleServer})
 	}
 	next, _ := m.Update(agentsMsg{agents: append(sample(), many...)})
-	m = press(next.(model), "2")
+	l = next.(model).layout()
+	lo, hi := l.listH[0], l.listH[0]
+	for _, h := range l.listH {
+		lo, hi = min(lo, h), max(hi, h)
+	}
+	if hi-lo > 1 {
+		t.Errorf("uneven split: %v", l.listH)
+	}
+	// Too short to split: the list in use grows.
+	m = press(loaded(80, 14), "2")
 	l = m.layout()
-	if l.listH[listServices] <= l.listH[listAgents] || l.listY[listModels]+l.listH[listModels] > l.bodyH {
-		t.Errorf("crowded layout: %+v", l)
+	if l.listH[listServices] <= l.listH[listAgents] || l.listY[listModels]+l.listH[listModels] != l.bodyH {
+		t.Errorf("short layout: %+v", l)
+	}
+}
+
+func TestEmptyListMessage(t *testing.T) {
+	m := loaded(120, 30)
+	next, _ := m.Update(agentsMsg{agents: sample()[:2]})
+	m = press(next.(model), "3")
+	if got := ansi.Strip(m.mainLines(80)[0]); got != "no models running" {
+		t.Errorf("empty list: %q", got)
 	}
 }
 

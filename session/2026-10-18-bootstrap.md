@@ -63,6 +63,9 @@
   each agent's descendants and tree totals; the watcher keeps 150 samples
   of history. Verified in a 160x40 tmux window against the live system
   and a throwaway Claude session (Screen showed its trust prompt).
+- Operator screenshot in iTerm: Agents took all spare rows and Services /
+  Models were squeezed. Lists now split the column evenly; only very
+  short terminals give the list in use the room.
 
 ## Files
 

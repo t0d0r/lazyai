@@ -36,9 +36,12 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
   right-aligned status and tree CPU%, plus tree memory in Models. Selected
   row reversed in the focused list, bold elsewhere; flagged rows red, busy
   rows green. The bottom border shows "N of M".
-- Heights: each list gets its rows plus borders; spare rows go to Agents.
-  When crowded, the list in use takes the room and the others shrink to
-  at most a fifth of the column.
+- Heights: the three lists split the column below the status panel evenly,
+  as in lazydocker, whatever their row counts; leftover rows go to the top
+  lists. Longer lists scroll. When a third of the column would be under 5
+  rows, the list in use takes the room and the others shrink to one row.
+- An empty list says "none"; with it focused the main panel says "no
+  <list> running".
 - Main panel: the rest of the width, full height. Tabs are in the top
   border, the active one green. A scroll position shows in the bottom
   border when the content is longer than the panel.
