@@ -55,22 +55,38 @@ follow arguments (`lazyai stop claude-x -y`), except for `launch` and
 prompt. `lazyai --version` prints the git version it was built from.
 Exit status is 0 on success, 1 on failure, 2 on a usage error.
 
-Every dashboard action has a command:
+## Dashboard
 
-| key       | action                                            | command             |
-|-----------|---------------------------------------------------|---------------------|
-| j / k     | move                                              | -                   |
-| enter / d | toggle details                                    | `show AGENT`        |
-| a         | attach to the agent's tmux session                | `attach AGENT`      |
-| p         | type a prompt into the agent and press Enter      | `send AGENT TEXT`   |
-| n         | launch: `KIND [DIR] [NAME] [-- ARGS]`             | `launch`            |
-| s / K     | stop (SIGTERM) / force kill (SIGKILL), with y/N   | `stop` / `kill`     |
-| h         | show or hide helper processes                     | `list -all`         |
-| live view | status durations and flags                        | `watch`             |
-| r / q     | refresh / quit                                    | -                   |
+`lazyai` with no arguments opens a full-screen dashboard laid out like
+lazydocker: Agents, Services and Models panels on the left, and tabs about
+the selected agent on the right:
 
-Attach and prompt only work for agents running inside tmux. Agents started
-in a plain terminal tab are listed and can be stopped, but not driven.
+- Info: status, directory, session, tmux pane, resources, flags
+- Screen: the agent's live tmux pane, following the bottom like a log
+- Processes: everything the agent started, with CPU and memory
+- Stats: CPU and memory charts for the agent and its children
+
+Press `?` for all keys and `x` for a menu of actions on the selected
+agent. The mouse works: click to select, wheel to scroll.
+
+Every dashboard action also has a command:
+
+| key          | action                                          | command             |
+|--------------|-------------------------------------------------|---------------------|
+| tab, h / l   | next / previous panel                           | -                   |
+| j / k        | move, or scroll the main panel                  | -                   |
+| ] / [        | next / previous tab                             | `show AGENT`        |
+| a            | attach to the agent's tmux session              | `attach AGENT`      |
+| p            | type a prompt into the agent and press Enter    | `send AGENT TEXT`   |
+| n            | launch: `KIND [DIR] [NAME] [-- ARGS]`           | `launch`            |
+| s / K        | stop (SIGTERM) / kill (SIGKILL), with y/N       | `stop` / `kill`     |
+| H            | show or hide helper processes                   | `list --all`        |
+| live view    | status durations and flags                      | `watch`             |
+| x / ? / q    | menu / keybindings / quit                       | -                   |
+
+Attach, prompt and the Screen tab only work for agents running inside
+tmux. Agents started in a plain terminal tab are listed and can be stopped,
+but not driven.
 
 Status comes from Claude Code's own session files when they exist
 (`~/.claude/sessions/<pid>.json`); otherwise an agent is "busy" when it uses

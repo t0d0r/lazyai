@@ -16,6 +16,11 @@
 - [x] Unix-style CLI: -h/--help everywhere, long and short options,
       options after arguments, --version, exit status 2 for usage errors
       (specs/cli.md)
+- [x] rename agentctl -> lazyai
+- [x] lazydocker-style dashboard: Agents / Services / Models panels, Info,
+      Screen, Processes and Stats tabs, x menu, ? help, mouse
+      (specs/tui.md)
+- [x] process tree per agent with tree CPU and memory (specs/discovery.md)
 
 - [x] fix: Homebrew framework Python (Python.app) was excluded as a desktop
       app, hiding Python agents such as Hermes (specs/discovery.md)
@@ -34,8 +39,10 @@
 - [ ] Codex status and session id from ~/.codex metadata (needs a spec)
 - [ ] verify Hermes server roles (gateway, proxy, lsp) and Qwen Code
       against real processes; only interactive Hermes has been seen
-- [ ] attribute child CPU and memory to the agent that started them (for
-      example Hermes -> make -> coli tune -> qwen36), shown in details
+- [ ] try the dashboard in a real terminal: mouse, attach and return,
+      colors in light and dark themes
+- [ ] Screen tab with colors (`capture-pane -e`), if it stays readable when
+      lines are cut to the panel width
 - [ ] colibri server status from `coli status` or its pid file, if it has
       one
 - [ ] run `make install` and confirm ~/.local/bin is on PATH in fish

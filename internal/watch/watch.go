@@ -26,6 +26,19 @@ type Tracker struct {
 	Since        time.Time // when Status was first seen
 	Known        bool      // Since is a real transition, not just first sight
 	HighCPUSince time.Time // zero while CPU is below HighCPU
+	History      []Sample  // oldest first, at most HistoryLen
+}
+
+// HistoryLen is how many samples a Tracker keeps: 5 minutes at 2 seconds.
+const HistoryLen = 150
+
+// Sample is one refresh's resource usage for an agent and its children.
+type Sample struct {
+	Time    time.Time
+	CPU     float64
+	RSS     int64
+	TreeCPU float64
+	TreeRSS int64
 }
 
 // Event types.
@@ -93,6 +106,10 @@ func (w *Watcher) Update(agents []agent.Agent, now time.Time) []Event {
 			t.HighCPUSince = time.Time{}
 		case t.HighCPUSince.IsZero():
 			t.HighCPUSince = now
+		}
+		t.History = append(t.History, Sample{Time: now, CPU: a.CPU, RSS: a.RSS, TreeCPU: a.TreeCPU, TreeRSS: a.TreeRSS})
+		if len(t.History) > HistoryLen {
+			t.History = append([]Sample(nil), t.History[len(t.History)-HistoryLen:]...)
 		}
 		f := strings.Join(Flags(a, t, now), ",")
 		if existed && w.flags[a.PID] != f {

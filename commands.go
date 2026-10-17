@@ -24,10 +24,12 @@ var commands = []command{
 		synopsis: "[OPTIONS]",
 		summary:  "interactive dashboard (the default)",
 		about: `
-Show running agents in a live table.
+Full-screen dashboard in the style of lazydocker: Agents, Services and
+Models panels on the left; Info, Screen, Processes and Stats tabs for the
+selected agent on the right.
 
-Keys: j/k move, enter details, a attach, p send a prompt, n launch,
-s stop, K kill, h show helpers, r refresh, q quit.`,
+Keys: tab/h/l panels, j/k move, [ ] tabs, x menu, a attach, p prompt,
+n launch, s stop, K kill, H helpers, ? all keys, q quit. Mouse works.`,
 		setup: func(f *flagDefs) action {
 			interval := f.Duration("i", "interval", "DURATION", 2*time.Second, "refresh period")
 			return func(e env, args []string) error {
@@ -38,7 +40,7 @@ s stop, K kill, h show helpers, r refresh, q quit.`,
 				if err != nil {
 					return err
 				}
-				return tui.Run(tui.Options{Interval: *interval, LaunchDir: cwd})
+				return tui.Run(tui.Options{Interval: *interval, LaunchDir: cwd, Version: version})
 			}
 		},
 	},

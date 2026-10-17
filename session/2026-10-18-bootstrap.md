@@ -52,9 +52,22 @@
 - gemini, aider, cursor-agent and ollama were not running; their
   classification is tested with sample command lines only.
 
+- Renamed the project from agentctl to lazyai (directory ../lazyai, Go
+  module, binary, tmux prefix `lazyai-`). Older lines in this note were
+  rewritten with the new name.
+- Rebuilt the TUI after lazydocker: Agents / Services / Models list panels
+  plus a status panel on the left; Info, Screen (live tmux pane), Processes
+  (agent's process tree) and Stats (ASCII CPU and memory charts) tabs on
+  the right; x action menu, ? keybindings, confirm and input popups
+  overlaid in the middle; mouse select and scroll. Discovery now records
+  each agent's descendants and tree totals; the watcher keeps 150 samples
+  of history. Verified in a 160x40 tmux window against the live system
+  and a throwaway Claude session (Screen showed its trust prompt).
+
 ## Files
 
-main.go, commands.go, flags.go, main_test.go, cli_test.go, internal/agent/*, internal/tmux/*, internal/tui/*,
+main.go, commands.go, flags.go, main_test.go, cli_test.go,
+internal/agent/*, internal/tmux/*, internal/tui/{tui,view,keys,chart}.go,
 internal/watch/*, internal/display/display.go, Makefile, README.md,
 AGENTS.md, specs/*, todo/todo.md.
 
@@ -73,4 +86,5 @@ default tmux server.
 ## Next step
 
 Run `bin/lazyai` in a normal terminal, launch a Claude session with `n`,
-attach with `a`, detach with ctrl+b d, and send a prompt with `p`.
+watch it in the Screen tab (`]`), attach with `a`, detach with ctrl+b d,
+send a prompt with `p`, and try the mouse.

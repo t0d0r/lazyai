@@ -35,6 +35,21 @@ type Agent struct {
 	// Protected is set for lazyai's own ancestors: stopping one of them
 	// would kill the terminal lazyai runs in.
 	Protected bool `json:"protected,omitempty"`
+	// Children are the processes the agent started, directly or not, in
+	// tree order. TreeCPU and TreeRSS add them to the agent's own usage.
+	Children []ChildProc `json:"children,omitempty"`
+	TreeCPU  float64     `json:"tree_cpu"`
+	TreeRSS  int64       `json:"tree_rss_bytes"`
+}
+
+// ChildProc is one process below an agent in the process tree.
+type ChildProc struct {
+	PID     int     `json:"pid"`
+	PPID    int     `json:"ppid"`
+	Depth   int     `json:"depth"` // 1 for direct children
+	CPU     float64 `json:"cpu"`
+	RSS     int64   `json:"rss_bytes"`
+	Command string  `json:"command"` // redacted
 }
 
 // Discover lists running agents.
@@ -63,6 +78,10 @@ func Discover() ([]Agent, error) {
 // reading Claude session files, so it can be tested with fixed input.
 func Build(procs []Proc, self int, claudeDir string, panes []tmux.Pane) []Agent {
 	protected := Ancestors(procs, self)
+	kids := map[int][]Proc{}
+	for _, p := range procs {
+		kids[p.PPID] = append(kids[p.PPID], p)
+	}
 	byTTY := map[string]tmux.Pane{}
 	for _, p := range panes {
 		byTTY[p.TTY] = p
@@ -94,6 +113,12 @@ func Build(procs []Proc, self int, claudeDir string, panes []tmux.Pane) []Agent 
 		if pane, ok := byTTY[p.TTY]; ok && p.TTY != "" {
 			a.TmuxSession, a.TmuxPane = pane.Session, pane.ID
 		}
+		a.Children = descendants(kids, p.PID)
+		a.TreeCPU, a.TreeRSS = p.CPU, p.RSS
+		for _, c := range a.Children {
+			a.TreeCPU += c.CPU
+			a.TreeRSS += c.RSS
+		}
 		agents = append(agents, a)
 	}
 	sort.SliceStable(agents, func(i, j int) bool {
@@ -106,6 +131,26 @@ func Build(procs []Proc, self int, claudeDir string, panes []tmux.Pane) []Agent 
 		return agents[i].Start.Before(agents[j].Start)
 	})
 	return agents
+}
+
+// descendants walks the process tree below pid depth first.
+func descendants(kids map[int][]Proc, pid int) []ChildProc {
+	var out []ChildProc
+	seen := map[int]bool{pid: true}
+	var walk func(pid, depth int)
+	walk = func(pid, depth int) {
+		for _, c := range kids[pid] {
+			if seen[c.PID] {
+				continue
+			}
+			seen[c.PID] = true
+			out = append(out, ChildProc{PID: c.PID, PPID: c.PPID, Depth: depth, CPU: c.CPU, RSS: c.RSS,
+				Command: RedactArgs(c.Args)})
+			walk(c.PID, depth+1)
+		}
+	}
+	walk(pid, 1)
+	return out
 }
 
 // Ancestors returns pid and every parent of it found in procs.

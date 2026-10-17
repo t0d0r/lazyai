@@ -70,6 +70,14 @@ for all agents that still lack one.
 whose tty equals a pane tty belongs to that pane. No tmux server means no
 panes, not an error.
 
+## Process tree
+
+Each agent carries its descendants (depth first, with depth, CPU, memory
+and redacted command) and TreeCPU / TreeRSS, the sums over the agent and
+all descendants. An agent below another agent (for example a colibri
+engine started by Hermes through make) is both its own row and part of
+the parent's tree.
+
 ## Self protection
 
 lazyai's own PID and all its ancestors are marked `protected`.

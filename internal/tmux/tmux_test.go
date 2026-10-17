@@ -57,4 +57,8 @@ func TestLaunchSendPanes(t *testing.T) {
 	if strings.Count(string(out), text) != 2 { // typed echo plus cat's output
 		t.Errorf("pane content:\n%s", out)
 	}
+	screen, err := Capture(pane.ID, 100)
+	if err != nil || strings.Count(screen, text) != 2 || strings.HasSuffix(screen, "\n") {
+		t.Errorf("Capture: %v\n%q", err, screen)
+	}
 }

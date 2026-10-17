@@ -39,6 +39,20 @@ func TestTrackerAndFlags(t *testing.T) {
 	}
 }
 
+func TestHistory(t *testing.T) {
+	w := New()
+	a := agent.Agent{Proc: agent.Proc{PID: 1}, Status: "idle"}
+	t0 := time.Now()
+	for i := range HistoryLen + 10 {
+		a.TreeCPU = float64(i)
+		w.Update([]agent.Agent{a}, t0.Add(time.Duration(i)*time.Second))
+	}
+	tr, _ := w.Tracker(1)
+	if len(tr.History) != HistoryLen || tr.History[0].TreeCPU != 10 || tr.History[HistoryLen-1].TreeCPU != HistoryLen+9 {
+		t.Errorf("history: len %d first %v last %v", len(tr.History), tr.History[0].TreeCPU, tr.History[len(tr.History)-1].TreeCPU)
+	}
+}
+
 func TestClaudeStatusSinceIsKnown(t *testing.T) {
 	since := time.Now().Add(-10 * time.Minute)
 	a := agent.Agent{Proc: agent.Proc{PID: 1}, Status: "idle", StatusSince: since}

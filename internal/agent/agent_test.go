@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -164,6 +165,36 @@ func TestBuildClaudeSessionAndTmux(t *testing.T) {
 	}
 	if c := agents[2]; c.Kind != KindCodex || c.Status != "busy" || !c.Protected {
 		t.Errorf("codex agent: %+v", c)
+	}
+	// PID 300 (codex, 50% CPU) runs under claude PID 200.
+	if a.TreeCPU != 50 || len(a.Children) != 1 || a.Children[0].PID != 300 || a.Children[0].Depth != 1 {
+		t.Errorf("claude tree: cpu %v children %+v", a.TreeCPU, a.Children)
+	}
+}
+
+func TestDescendants(t *testing.T) {
+	procs := []Proc{
+		{PID: 10, PPID: 1, Args: "hermes"},
+		{PID: 11, PPID: 10, CPU: 1, RSS: 100, Args: "make tune"},
+		{PID: 12, PPID: 11, CPU: 2, RSS: 200, Args: "coli tune --api-key sk-1"},
+		{PID: 13, PPID: 12, CPU: 90, RSS: 5000, Args: "qwen36 69"},
+		{PID: 14, PPID: 10, Args: "bash"},
+		{PID: 20, PPID: 1, Args: "other"},
+	}
+	kids := map[int][]Proc{}
+	for _, p := range procs {
+		kids[p.PPID] = append(kids[p.PPID], p)
+	}
+	got := descendants(kids, 10)
+	var order []int
+	for _, c := range got {
+		order = append(order, c.PID*10+c.Depth)
+	}
+	if fmt.Sprint(order) != "[111 122 133 141]" {
+		t.Errorf("order (pid*10+depth): %v", order)
+	}
+	if got[1].Command != "coli tune --api-key [redacted]" {
+		t.Errorf("child command not redacted: %q", got[1].Command)
 	}
 }
 

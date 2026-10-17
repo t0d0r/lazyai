@@ -115,6 +115,16 @@ func AttachCmd(session string) *exec.Cmd {
 	return exec.Command("tmux", "attach-session", "-t", "="+session)
 }
 
+// Capture returns a pane's visible screen plus up to history lines above
+// it, as plain text without trailing blank lines.
+func Capture(paneID string, history int) (string, error) {
+	out, err := exec.Command("tmux", "capture-pane", "-p", "-t", paneID, "-S", "-"+strconv.Itoa(history)).Output()
+	if err != nil {
+		return "", fmt.Errorf("tmux capture-pane: %w", err)
+	}
+	return strings.TrimRight(string(out), " \n"), nil
+}
+
 // Send types text into a pane and presses Enter. The pause lets agents that
 // treat fast input as a paste finish reading it before the Enter arrives.
 func Send(paneID, text string) error {
