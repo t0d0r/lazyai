@@ -1,6 +1,7 @@
-BIN    := bin/agentctl
-PREFIX ?= $(HOME)/.local
-GO     ?= go
+BIN     := bin/agentctl
+PREFIX  ?= $(HOME)/.local
+GO      ?= go
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 .DEFAULT_GOAL := help
 
@@ -9,8 +10,8 @@ GO     ?= go
 help: ## list targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-10s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-build: ## build bin/agentctl
-	$(GO) build -o $(BIN) .
+build: ## build bin/agentctl, stamped with the git version
+	$(GO) build -ldflags "-X main.version=$(VERSION)" -o $(BIN) .
 
 test: ## run all tests (includes a tmux integration test)
 	$(GO) test ./...

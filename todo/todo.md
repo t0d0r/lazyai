@@ -13,6 +13,9 @@
 - [x] Makefile with the standard targets from ../AGENTS.md
 - [x] CLI parity with the TUI: show, watch, kill, flags in list, stop by
       name (specs/cli.md)
+- [x] Unix-style CLI: -h/--help everywhere, long and short options,
+      options after arguments, --version, exit status 2 for usage errors
+      (specs/cli.md)
 
 ## Next
 

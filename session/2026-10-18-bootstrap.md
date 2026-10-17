@@ -21,6 +21,13 @@
   both interfaces share them. Verified live: watch reported started,
   busy -> idle and exited for a test Claude session launched and killed by
   name.
+- Fixed `agentctl -h` (it went to the tui flag parser and never printed
+  the usage). The CLI is now Unix-style: commands live in a table in
+  commands.go that drives parsing and generated help; flags.go wraps
+  flag.FlagSet with long/short options and argument permutation;
+  `--version` is stamped by `make build`; exit status 2 for usage errors.
+  `stop` now reads confirmations through one buffered reader, so piped
+  answers for several agents are no longer lost.
 
 ## Decisions
 
@@ -40,7 +47,7 @@
 
 ## Files
 
-main.go, main_test.go, internal/agent/*, internal/tmux/*, internal/tui/*,
+main.go, commands.go, flags.go, main_test.go, cli_test.go, internal/agent/*, internal/tmux/*, internal/tui/*,
 internal/watch/*, internal/display/display.go, Makefile, README.md,
 AGENTS.md, specs/*, todo/todo.md.
 

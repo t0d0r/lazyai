@@ -40,6 +40,14 @@ bin/agentctl kill 12345            # same as stop -force
 AGENT arguments accept a PID, a tmux session name (the `agentctl-` prefix
 is optional) or a Claude Code session name.
 
+Help works like any Unix tool: `agentctl -h`, `agentctl --help`,
+`agentctl help COMMAND` and `agentctl COMMAND --help`. Options have long
+and short forms (`--all`/`-a`, `--json`/`-j`, `--yes`/`-y`, ...) and may
+follow arguments (`agentctl stop claude-x -y`), except for `launch` and
+`send`, where everything after KIND or AGENT belongs to the agent or the
+prompt. `agentctl --version` prints the git version it was built from.
+Exit status is 0 on success, 1 on failure, 2 on a usage error.
+
 Every dashboard action has a command:
 
 | key       | action                                            | command             |

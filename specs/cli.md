@@ -19,6 +19,39 @@ formatting.
 | `stop [-force] [-yes] AGENT...`          | s        | asks `[y/N]` per agent unless `-yes`   |
 | `kill [-yes] AGENT...`                   | K        | `stop -force`                          |
 
+## Conventions
+
+The CLI behaves like a standard Unix command:
+
+- Help: `-h`, `-help`, `--help` and `help` print the top-level usage;
+  `help COMMAND`, `COMMAND -h` and `COMMAND --help` print that command's
+  usage line, description and options. Help goes to stdout and exits 0.
+- `-V`, `--version` and `version` print `agentctl VERSION`. `make build`
+  sets VERSION from `git describe --tags --always --dirty`; otherwise it
+  is `dev`.
+- Options have a long form (`--json`) and, for common ones, a short form
+  (`-j`). Short options cannot be combined (`-ay` is not `-a -y`).
+  `--opt=value` and `--opt value` both work.
+- Options may come after positional arguments, up to a `--`. `launch` and
+  `send` stop parsing at the first positional argument, because the rest
+  belongs to the agent or is prompt text.
+- Options before any command (`agentctl --interval 1s`) go to the default
+  `tui` command.
+- Errors go to stderr. A usage error prints
+  `agentctl COMMAND: MESSAGE` and `Run 'agentctl COMMAND --help' for
+  usage.`
+
+| option            | short | commands                 |
+|-------------------|-------|--------------------------|
+| `--all`           | `-a`  | list, watch              |
+| `--json`          | `-j`  | list, show, watch        |
+| `--interval DUR`  | `-i`  | tui, watch               |
+| `--dir DIR`       | `-d`  | launch                   |
+| `--name NAME`     | `-n`  | launch                   |
+| `--force`         | `-f`  | stop                     |
+| `--yes`           | `-y`  | stop, kill               |
+| `--help`          | `-h`  | all                      |
+
 ## AGENT references
 
 - A number is a PID and matches any agent, helpers included.
@@ -54,5 +87,6 @@ object per line with `time`, `event`, `from`, `to` and the full `agent`
 
 ## Exit status
 
-0 on success, 1 on any error, including when some agents in a `stop` or
-`kill` were not stopped.
+0 on success and for help or version; 1 on a failure, including when some
+agents in a `stop` or `kill` were not stopped; 2 on a usage error
+(unknown command or option, missing or extra arguments).
