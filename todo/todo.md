@@ -10,6 +10,7 @@
 - [x] CLI: list, stop, launch, attach, send (specs/control.md)
 - [x] TUI dashboard with watch flags (specs/tui.md)
 - [x] unit tests and a tmux integration test
+- [x] Makefile with the standard targets from ../AGENTS.md
 
 ## Next
 
@@ -21,5 +22,5 @@
 - [ ] decide opencode launch: the fish alias runs it in docker, agentctl
       runs the Homebrew binary
 - [ ] Codex status and session id from ~/.codex metadata (needs a spec)
-- [ ] install: `go install` or link bin/agentctl into ~/.local/bin
+- [ ] run `make install` and confirm ~/.local/bin is on PATH in fish
 - [ ] add a gitleaks pre-commit hook

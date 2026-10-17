@@ -12,6 +12,9 @@
 - Verified on the live system: discovery of claude, codex and opencode
   processes; launch of a Claude session in tmux; TUI render and detail
   view in a 160x34 tmux window; stop through the TUI confirm flow.
+- Added a Makefile (help, build, test, lint, fmt, check, run, install,
+  uninstall, tidy, clean). The parent ../AGENTS.md now requires a Makefile
+  with standard targets in every project.
 
 ## Decisions
 
@@ -32,14 +35,17 @@
 ## Files
 
 main.go, internal/agent/*, internal/tmux/*, internal/tui/*,
-internal/display/display.go, README.md, AGENTS.md, specs/*, todo/todo.md.
+internal/display/display.go, Makefile, README.md, AGENTS.md, specs/*,
+todo/todo.md.
 
 ## Run and verify
 
 ```sh
-go vet ./... && go test ./...
-go build -o bin/agentctl . && bin/agentctl
+make check
+make run
 ```
+
+`make install` was not run; it copies the binary to ~/.local/bin.
 
 The tmux test creates and removes a session named `agentctl-test-*` on the
 default tmux server.

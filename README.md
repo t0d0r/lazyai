@@ -10,8 +10,11 @@ cursor-agent, ollama. Desktop apps (Claude.app, Cursor.app) are ignored.
 ## Build
 
 ```sh
-go build -o bin/agentctl .
-go test ./...
+make build       # bin/agentctl
+make check       # gofmt, go vet, tests
+make run         # build and start the dashboard
+make install     # copy to ~/.local/bin (PREFIX=... to change)
+make help        # all targets
 ```
 
 Requires macOS, Go 1.24 or newer, and tmux for launch, attach and send.
