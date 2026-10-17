@@ -14,8 +14,8 @@ import (
 	"time"
 )
 
-// Prefix marks sessions created by agentctl.
-const Prefix = "agentctl-"
+// Prefix marks sessions created by lazyai.
+const Prefix = "lazyai-"
 
 // Pane is one tmux pane.
 type Pane struct {
@@ -51,7 +51,7 @@ func Panes() []Pane {
 	return panes
 }
 
-// SessionName turns a user-supplied name into an agentctl session name.
+// SessionName turns a user-supplied name into an lazyai session name.
 func SessionName(name string) string {
 	name = strings.TrimPrefix(name, Prefix)
 	var b strings.Builder

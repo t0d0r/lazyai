@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"agentctl/internal/agent"
-	"agentctl/internal/watch"
+	"lazyai/internal/agent"
+	"lazyai/internal/watch"
 )
 
 // Bytes renders a size as "512K", "463M" or "1.2G".

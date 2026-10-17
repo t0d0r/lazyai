@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"agentctl/internal/tmux"
+	"lazyai/internal/tmux"
 )
 
 func TestParsePS(t *testing.T) {
@@ -89,7 +89,7 @@ func TestClassify(t *testing.T) {
 		{"/System/Library/PrivateFrameworks/X.framework/XPCServices/CursorUIViewService.xpc/Contents/MacOS/CursorUIViewService", "", "", false},
 		{"grep claude", "", "", false},
 		{"vim claude.md", "", "", false},
-		{"tmux new-session -d -s agentctl-x -- /usr/local/bin/claude", "", "", false},
+		{"tmux new-session -d -s lazyai-x -- /usr/local/bin/claude", "", "", false},
 		{"", "", "", false},
 	}
 	for _, c := range cases {
@@ -148,7 +148,7 @@ func TestBuildClaudeSessionAndTmux(t *testing.T) {
 		{PID: 201, PPID: 1, TTY: "ttys002", Start: start, Args: "claude --resume r-9"},
 		{PID: 300, PPID: 200, CPU: 50, Start: start, Args: "codex"},
 	}
-	panes := []tmux.Pane{{Session: "agentctl-p", ID: "%1", TTY: "ttys001"}}
+	panes := []tmux.Pane{{Session: "lazyai-p", ID: "%1", TTY: "ttys001"}}
 	agents := Build(procs, 300, dir, panes)
 	if len(agents) != 3 {
 		t.Fatalf("got %d agents, want 3", len(agents))

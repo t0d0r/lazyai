@@ -1,4 +1,4 @@
-BIN     := bin/agentctl
+BIN     := bin/lazyai
 PREFIX  ?= $(HOME)/.local
 GO      ?= go
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
@@ -10,7 +10,7 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 help: ## list targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-10s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-build: ## build bin/agentctl, stamped with the git version
+build: ## build bin/lazyai, stamped with the git version
 	$(GO) build -ldflags "-X main.version=$(VERSION)" -o $(BIN) .
 
 test: ## run all tests (includes a tmux integration test)
@@ -30,10 +30,10 @@ run: build ## build and start the dashboard
 
 install: build ## copy the binary to $(PREFIX)/bin
 	install -d $(PREFIX)/bin
-	install -m 0755 $(BIN) $(PREFIX)/bin/agentctl
+	install -m 0755 $(BIN) $(PREFIX)/bin/lazyai
 
 uninstall: ## remove the binary from $(PREFIX)/bin
-	rm -f $(PREFIX)/bin/agentctl
+	rm -f $(PREFIX)/bin/lazyai
 
 tidy: ## tidy go.mod from the local module cache only
 	GOPROXY=off $(GO) mod tidy -e

@@ -3,7 +3,7 @@
 ## Stop
 
 - Only agents returned by discovery can be stopped; never arbitrary PIDs.
-- Refused when the agent is protected (agentctl or a parent of it), or owned
+- Refused when the agent is protected (lazyai or a parent of it), or owned
   by another user.
 - Before signalling, the PID is looked up again; its start time and command
   line must equal the listed ones, otherwise the stop is refused as "exited
@@ -21,7 +21,7 @@
 - The command is resolved with `PATH` lookup and run directly by
   `tmux new-session -d -s SESSION -c DIR -- PATH ARGS...`; no shell is
   involved, so nothing in names, paths or arguments is expanded.
-- Session name is `agentctl-` plus the name (default `KIND-DIRBASENAME`)
+- Session name is `lazyai-` plus the name (default `KIND-DIRBASENAME`)
   with characters outside `[A-Za-z0-9_-]` replaced by `-`. If taken, `-2`,
   `-3` ... is appended.
 - The tmux session ends when the agent exits.
@@ -37,7 +37,7 @@
 
 - Requires a tmux pane. `tmux send-keys -t PANE -l -- TEXT`, a 150 ms pause,
   then `send-keys Enter`. `-l` sends the text literally.
-- CLI targets: PID, tmux session name with or without `agentctl-`, or
+- CLI targets: PID, tmux session name with or without `lazyai-`, or
   Claude session name; ambiguous names are refused.
 
 ## Redaction

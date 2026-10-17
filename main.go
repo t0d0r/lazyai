@@ -1,4 +1,4 @@
-// Command agentctl lists, watches, launches and stops local AI coding agents.
+// Command lazyai lists, watches, launches and stops local AI coding agents.
 package main
 
 import (
@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"agentctl/internal/agent"
+	"lazyai/internal/agent"
 )
 
 // version is set at build time with -ldflags "-X main.version=...".
@@ -26,7 +26,7 @@ type action func(e env, args []string) error
 type command struct {
 	name     string
 	aliases  []string
-	synopsis string // what follows "agentctl NAME" in the usage line
+	synopsis string // what follows "lazyai NAME" in the usage line
 	summary  string // one line for the command list
 	about    string // body of the command's help
 	permute  bool   // options may follow positional arguments
@@ -46,7 +46,7 @@ func run(args []string, e env) int {
 			writeUsage(e.out)
 			return 0
 		case "-V", "-version", "--version", "version":
-			fmt.Fprintln(e.out, "agentctl", version)
+			fmt.Fprintln(e.out, "lazyai", version)
 			return 0
 		case "help":
 			if len(args) == 1 {
@@ -55,7 +55,7 @@ func run(args []string, e env) int {
 			}
 			c, ok := lookup(args[1])
 			if !ok {
-				fmt.Fprintf(e.err, "agentctl: unknown command %q\nRun 'agentctl --help' for usage.\n", args[1])
+				fmt.Fprintf(e.err, "lazyai: unknown command %q\nRun 'lazyai --help' for usage.\n", args[1])
 				return 2
 			}
 			c.writeHelp(e.out)
@@ -70,7 +70,7 @@ func run(args []string, e env) int {
 	}
 	c, ok := lookup(name)
 	if !ok {
-		fmt.Fprintf(e.err, "agentctl: unknown command %q\nRun 'agentctl --help' for usage.\n", name)
+		fmt.Fprintf(e.err, "lazyai: unknown command %q\nRun 'lazyai --help' for usage.\n", name)
 		return 2
 	}
 	f := newFlagDefs(c.name)
@@ -88,14 +88,14 @@ func run(args []string, e env) int {
 		c.writeHelp(e.out)
 		return 0
 	case errors.As(err, &ue):
-		prog, hint := "agentctl "+c.name, "agentctl "+c.name+" --help"
+		prog, hint := "lazyai "+c.name, "lazyai "+c.name+" --help"
 		if implicit {
-			prog, hint = "agentctl", "agentctl --help"
+			prog, hint = "lazyai", "lazyai --help"
 		}
 		fmt.Fprintf(e.err, "%s: %s\nRun '%s' for usage.\n", prog, ue, hint)
 		return 2
 	default:
-		fmt.Fprintln(e.err, "agentctl:", err)
+		fmt.Fprintln(e.err, "lazyai:", err)
 		return 1
 	}
 }
@@ -115,7 +115,7 @@ func lookup(name string) (command, bool) {
 }
 
 func writeUsage(w io.Writer) {
-	fmt.Fprint(w, `Usage: agentctl [COMMAND] [OPTIONS] [ARGS...]
+	fmt.Fprint(w, `Usage: lazyai [COMMAND] [OPTIONS] [ARGS...]
 
 Control the AI coding agents running on this machine: list and watch them,
 launch them in tmux, attach to them, send them prompts, and stop them.
@@ -137,7 +137,7 @@ Options:
   -h, --help     show this help and exit
   -V, --version  print the version and exit
 
-AGENT is a PID, a tmux session name (the agentctl- prefix is optional) or
+AGENT is a PID, a tmux session name (the lazyai- prefix is optional) or
 a Claude Code session name.
 
 KIND (for launch) is one of: %s.
@@ -145,7 +145,7 @@ Colibri is also listed and watched, but started with its own tooling.
 
 Exit status: 0 on success, 1 on failure, 2 on a usage error.
 
-Run 'agentctl help COMMAND' or 'agentctl COMMAND --help' for details.
+Run 'lazyai help COMMAND' or 'lazyai COMMAND --help' for details.
 `, "help", "version", strings.Join(kinds, ", "))
 }
 
@@ -154,7 +154,7 @@ func (c command) writeHelp(w io.Writer) {
 	if c.name == "tui" {
 		name = "[tui]"
 	}
-	fmt.Fprintf(w, "Usage: agentctl %s %s\n\n%s\n\n", name, c.synopsis, strings.TrimSpace(c.about))
+	fmt.Fprintf(w, "Usage: lazyai %s %s\n\n%s\n\n", name, c.synopsis, strings.TrimSpace(c.about))
 	f := newFlagDefs(c.name)
 	c.setup(f)
 	f.writeOptions(w)

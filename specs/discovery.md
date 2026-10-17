@@ -72,7 +72,7 @@ panes, not an error.
 
 ## Self protection
 
-agentctl's own PID and all its ancestors are marked `protected`.
+lazyai's own PID and all its ancestors are marked `protected`.
 
 ## Output
 

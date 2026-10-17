@@ -15,7 +15,7 @@ func runCLI(args ...string) (int, string, string) {
 func TestTopLevelHelp(t *testing.T) {
 	for _, args := range [][]string{{"-h"}, {"--help"}, {"-help"}, {"help"}} {
 		code, out, errOut := runCLI(args...)
-		if code != 0 || errOut != "" || !strings.HasPrefix(out, "Usage: agentctl [COMMAND]") {
+		if code != 0 || errOut != "" || !strings.HasPrefix(out, "Usage: lazyai [COMMAND]") {
 			t.Errorf("%v: code %d, stderr %q, stdout %.40q", args, code, errOut, out)
 		}
 		for _, c := range commands {
@@ -30,7 +30,7 @@ func TestCommandHelp(t *testing.T) {
 	for _, c := range commands {
 		for _, args := range [][]string{{"help", c.name}, {c.name, "-h"}, {c.name, "--help"}} {
 			code, out, errOut := runCLI(args...)
-			if code != 0 || errOut != "" || !strings.HasPrefix(out, "Usage: agentctl ") ||
+			if code != 0 || errOut != "" || !strings.HasPrefix(out, "Usage: lazyai ") ||
 				!strings.Contains(out, "-h, --help") {
 				t.Errorf("%v: code %d, stderr %q, stdout:\n%s", args, code, errOut, out)
 			}
@@ -46,14 +46,14 @@ func TestCommandHelp(t *testing.T) {
 	if !strings.Contains(out, "-i, --interval DURATION") || !strings.Contains(out, "(default 2s)") {
 		t.Errorf("watch help:\n%s", out)
 	}
-	if _, out, _ = runCLI("ls", "-h"); !strings.HasPrefix(out, "Usage: agentctl list") {
+	if _, out, _ = runCLI("ls", "-h"); !strings.HasPrefix(out, "Usage: lazyai list") {
 		t.Errorf("alias help:\n%s", out)
 	}
 }
 
 func TestVersion(t *testing.T) {
 	for _, args := range [][]string{{"-V"}, {"--version"}, {"version"}} {
-		if code, out, _ := runCLI(args...); code != 0 || out != "agentctl dev\n" {
+		if code, out, _ := runCLI(args...); code != 0 || out != "lazyai dev\n" {
 			t.Errorf("%v: %d %q", args, code, out)
 		}
 	}
@@ -64,16 +64,16 @@ func TestUsageErrors(t *testing.T) {
 		args []string
 		want string
 	}{
-		{[]string{"nope"}, `agentctl: unknown command "nope"`},
-		{[]string{"help", "nope"}, `agentctl: unknown command "nope"`},
-		{[]string{"list", "--bogus"}, "agentctl list: flag provided but not defined: -bogus\nRun 'agentctl list --help' for usage."},
-		{[]string{"list", "extra"}, `agentctl list: unexpected argument "extra"`},
-		{[]string{"show"}, "agentctl show: expected one AGENT, got 0 arguments"},
-		{[]string{"stop"}, "agentctl stop: missing AGENT"},
-		{[]string{"launch"}, "agentctl launch: missing KIND"},
-		{[]string{"send", "x"}, "agentctl send: expected AGENT and TEXT"},
-		{[]string{"watch", "-i"}, "agentctl watch: flag needs an argument: -i"},
-		{[]string{"--bogus"}, "agentctl: flag provided but not defined: -bogus\nRun 'agentctl --help' for usage."},
+		{[]string{"nope"}, `lazyai: unknown command "nope"`},
+		{[]string{"help", "nope"}, `lazyai: unknown command "nope"`},
+		{[]string{"list", "--bogus"}, "lazyai list: flag provided but not defined: -bogus\nRun 'lazyai list --help' for usage."},
+		{[]string{"list", "extra"}, `lazyai list: unexpected argument "extra"`},
+		{[]string{"show"}, "lazyai show: expected one AGENT, got 0 arguments"},
+		{[]string{"stop"}, "lazyai stop: missing AGENT"},
+		{[]string{"launch"}, "lazyai launch: missing KIND"},
+		{[]string{"send", "x"}, "lazyai send: expected AGENT and TEXT"},
+		{[]string{"watch", "-i"}, "lazyai watch: flag needs an argument: -i"},
+		{[]string{"--bogus"}, "lazyai: flag provided but not defined: -bogus\nRun 'lazyai --help' for usage."},
 	}
 	for _, c := range cases {
 		code, out, errOut := runCLI(c.args...)

@@ -26,7 +26,7 @@ The CLI behaves like a standard Unix command:
 - Help: `-h`, `-help`, `--help` and `help` print the top-level usage;
   `help COMMAND`, `COMMAND -h` and `COMMAND --help` print that command's
   usage line, description and options. Help goes to stdout and exits 0.
-- `-V`, `--version` and `version` print `agentctl VERSION`. `make build`
+- `-V`, `--version` and `version` print `lazyai VERSION`. `make build`
   sets VERSION from `git describe --tags --always --dirty`; otherwise it
   is `dev`.
 - Options have a long form (`--json`) and, for common ones, a short form
@@ -35,10 +35,10 @@ The CLI behaves like a standard Unix command:
 - Options may come after positional arguments, up to a `--`. `launch` and
   `send` stop parsing at the first positional argument, because the rest
   belongs to the agent or is prompt text.
-- Options before any command (`agentctl --interval 1s`) go to the default
+- Options before any command (`lazyai --interval 1s`) go to the default
   `tui` command.
 - Errors go to stderr. A usage error prints
-  `agentctl COMMAND: MESSAGE` and `Run 'agentctl COMMAND --help' for
+  `lazyai COMMAND: MESSAGE` and `Run 'lazyai COMMAND --help' for
   usage.`
 
 | option            | short | commands                 |
@@ -56,7 +56,7 @@ The CLI behaves like a standard Unix command:
 
 - A number is a PID and matches any agent, helpers included.
 - Otherwise the reference matches interactive agents by tmux session name,
-  by tmux session name without the `agentctl-` prefix, or by Claude Code
+  by tmux session name without the `lazyai-` prefix, or by Claude Code
   session name. It must match exactly one agent; otherwise the command
   fails and asks for a PID.
 - `stop` and `kill` resolve all references against one discovery.

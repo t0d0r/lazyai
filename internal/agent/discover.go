@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"agentctl/internal/tmux"
+	"lazyai/internal/tmux"
 )
 
 // BusyCPU is the CPU percentage at or above which an agent without its own
@@ -32,8 +32,8 @@ type Agent struct {
 	StatusSource string    `json:"status_source"`
 	TmuxSession  string    `json:"tmux_session,omitempty"`
 	TmuxPane     string    `json:"tmux_pane,omitempty"`
-	// Protected is set for agentctl's own ancestors: stopping one of them
-	// would kill the terminal agentctl runs in.
+	// Protected is set for lazyai's own ancestors: stopping one of them
+	// would kill the terminal lazyai runs in.
 	Protected bool `json:"protected,omitempty"`
 }
 

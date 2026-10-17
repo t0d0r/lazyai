@@ -9,10 +9,10 @@ import (
 
 func TestSessionName(t *testing.T) {
 	cases := map[string]string{
-		"claude-ai":          "agentctl-claude-ai",
-		"agentctl-x":         "agentctl-x",
-		"my agent; rm -rf /": "agentctl-my-agent--rm--rf",
-		"a.b:c":              "agentctl-a-b-c",
+		"claude-ai":          "lazyai-claude-ai",
+		"lazyai-x":           "lazyai-x",
+		"my agent; rm -rf /": "lazyai-my-agent--rm--rf",
+		"a.b:c":              "lazyai-a-b-c",
 	}
 	for in, want := range cases {
 		if got := SessionName(in); got != want {

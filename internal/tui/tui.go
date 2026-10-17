@@ -12,10 +12,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"agentctl/internal/agent"
-	"agentctl/internal/display"
-	"agentctl/internal/tmux"
-	"agentctl/internal/watch"
+	"lazyai/internal/agent"
+	"lazyai/internal/display"
+	"lazyai/internal/tmux"
+	"lazyai/internal/watch"
 )
 
 // Options configures the dashboard.
@@ -386,7 +386,7 @@ func (m model) View() string {
 	if m.updated.IsZero() {
 		state = "loading ..."
 	}
-	b.WriteString(titleStyle.Render("agentctl") +
+	b.WriteString(titleStyle.Render("lazyai") +
 		dimStyle.Render(fmt.Sprintf("  %d agents, %d busy  |  %s  |  %s", len(m.rows), busy, helpers, state)) + "\n\n")
 
 	cells := make([]string, len(columns))

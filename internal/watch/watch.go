@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"agentctl/internal/agent"
+	"lazyai/internal/agent"
 )
 
 // Thresholds for flags.

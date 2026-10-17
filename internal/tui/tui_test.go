@@ -8,7 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"agentctl/internal/agent"
+	"lazyai/internal/agent"
 )
 
 func TestParseLaunch(t *testing.T) {

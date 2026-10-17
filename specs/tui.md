@@ -5,8 +5,8 @@
 - Header: agent count, busy count, helpers shown or hidden, last refresh.
 - Table: PID, KIND, ROLE, STATUS, CPU%, MEM, UP, TMUX, FLAGS, WHERE.
   - STATUS shows a duration only when it is known: from the Claude session
-    file, or after agentctl has seen the status change.
-  - TMUX drops the `agentctl-` prefix.
+    file, or after lazyai has seen the status change.
+  - TMUX drops the `lazyai-` prefix.
   - WHERE is the Claude session name (if any) and the cwd with `~`.
   - Selected row reversed; flagged rows red; busy rows green.
 - Optional detail pane: PID, parent, uid, tty, start, cwd, name, session id,
@@ -21,7 +21,7 @@ n launch, s stop, K force kill, h helpers, r refresh, q or ctrl+c quit.
 In prompts: enter submits, esc cancels, backspace, ctrl+u clears.
 
 Launch prompt syntax: `KIND [DIR] [NAME] [-- ARGS...]`; DIR may use `~` and
-is relative to the directory agentctl was started in.
+is relative to the directory lazyai was started in.
 
 ## Refresh
 
@@ -35,7 +35,7 @@ commands use.
 
 | flag      | condition                                            |
 |-----------|------------------------------------------------------|
-| self      | agentctl or a parent of it; cannot be stopped here   |
+| self      | lazyai or a parent of it; cannot be stopped here   |
 | high-cpu  | CPU >= 80% continuously for 30 seconds               |
 | high-mem  | RSS >= 2 GiB                                         |
 | long-busy | busy for 30 minutes or more                          |

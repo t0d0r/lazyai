@@ -29,7 +29,7 @@
       timing)
 - [ ] check classification against real gemini, aider, cursor-agent and
       ollama processes (only claude, codex, opencode were running)
-- [ ] decide opencode launch: the fish alias runs it in docker, agentctl
+- [ ] decide opencode launch: the fish alias runs it in docker, lazyai
       runs the Homebrew binary
 - [ ] Codex status and session id from ~/.codex metadata (needs a spec)
 - [ ] verify Hermes server roles (gateway, proxy, lsp) and Qwen Code

@@ -1,4 +1,4 @@
-module agentctl
+module lazyai
 
 go 1.24.0
 

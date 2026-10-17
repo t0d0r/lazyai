@@ -11,11 +11,11 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"agentctl/internal/agent"
-	"agentctl/internal/display"
-	"agentctl/internal/tmux"
-	"agentctl/internal/tui"
-	"agentctl/internal/watch"
+	"lazyai/internal/agent"
+	"lazyai/internal/display"
+	"lazyai/internal/tmux"
+	"lazyai/internal/tui"
+	"lazyai/internal/watch"
 )
 
 var commands = []command{
@@ -103,7 +103,7 @@ started, exited, status (busy/idle) and flags. Runs until interrupted.`,
 		synopsis: "[OPTIONS] KIND [AGENT-ARGS...]",
 		summary:  "start an agent in a new tmux session",
 		about: `
-Start KIND in a new detached tmux session named agentctl-NAME. Options must
+Start KIND in a new detached tmux session named lazyai-NAME. Options must
 come before KIND; everything after KIND is passed to the agent unchanged.`,
 		setup: func(f *flagDefs) action {
 			dir := f.String("d", "dir", "DIR", ".", "working directory")
@@ -116,7 +116,7 @@ come before KIND; everything after KIND is passed to the agent unchanged.`,
 				if err != nil {
 					return err
 				}
-				fmt.Fprintf(e.out, "launched %s; attach with: agentctl attach %s\n", session, session)
+				fmt.Fprintf(e.out, "launched %s; attach with: lazyai attach %s\n", session, session)
 				return nil
 			}
 		},
@@ -249,7 +249,7 @@ func watchAgents(e env, all, asJSON bool, interval time.Duration) error {
 	for {
 		agents, err := agent.Discover()
 		if err != nil {
-			fmt.Fprintln(e.err, "agentctl:", err)
+			fmt.Fprintln(e.err, "lazyai:", err)
 		}
 		for _, ev := range w.Update(withoutHelpers(agents, all), time.Now()) {
 			if asJSON {
@@ -315,7 +315,7 @@ func stop(e env, refs []string, force, yes bool) error {
 	for _, ref := range refs {
 		a, err := resolve(agents, ref)
 		if err != nil {
-			fmt.Fprintln(e.err, "agentctl:", err)
+			fmt.Fprintln(e.err, "lazyai:", err)
 			failed++
 			continue
 		}
@@ -325,7 +325,7 @@ func stop(e env, refs []string, force, yes bool) error {
 			continue
 		}
 		if err := agent.Stop(a, force, agent.StopTimeout); err != nil {
-			fmt.Fprintf(e.err, "agentctl: PID %d: %v\n", a.PID, err)
+			fmt.Fprintf(e.err, "lazyai: PID %d: %v\n", a.PID, err)
 			failed++
 			continue
 		}
@@ -346,7 +346,7 @@ func find(ref string) (agent.Agent, error) {
 }
 
 // resolve turns a PID into any agent, or a tmux session name (with or
-// without the agentctl- prefix) or a Claude session name into exactly one
+// without the lazyai- prefix) or a Claude session name into exactly one
 // interactive agent.
 func resolve(agents []agent.Agent, ref string) (agent.Agent, error) {
 	if pid, err := strconv.Atoi(ref); err == nil {

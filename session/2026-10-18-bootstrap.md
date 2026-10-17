@@ -21,7 +21,7 @@
   both interfaces share them. Verified live: watch reported started,
   busy -> idle and exited for a test Claude session launched and killed by
   name.
-- Fixed `agentctl -h` (it went to the tui flag parser and never printed
+- Fixed `lazyai -h` (it went to the tui flag parser and never printed
   the usage). The CLI is now Unix-style: commands live in a table in
   commands.go that drives parsing and generated help; flags.go wraps
   flag.FlagSet with long/short options and argument permutation;
@@ -67,10 +67,10 @@ make run
 
 `make install` was not run; it copies the binary to ~/.local/bin.
 
-The tmux test creates and removes a session named `agentctl-test-*` on the
+The tmux test creates and removes a session named `lazyai-test-*` on the
 default tmux server.
 
 ## Next step
 
-Run `bin/agentctl` in a normal terminal, launch a Claude session with `n`,
+Run `bin/lazyai` in a normal terminal, launch a Claude session with `n`,
 attach with `a`, detach with ctrl+b d, and send a prompt with `p`.

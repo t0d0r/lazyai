@@ -1,4 +1,4 @@
-# agentctl
+# lazyai
 
 Control the AI coding agents running on this Mac from one terminal
 dashboard: see what is running and whether it is busy, start new agents in
@@ -17,7 +17,7 @@ unless `--all`).
 ## Build
 
 ```sh
-make build       # bin/agentctl
+make build       # bin/lazyai
 make check       # gofmt, go vet, tests
 make run         # build and start the dashboard
 make install     # copy to ~/.local/bin (PREFIX=... to change)
@@ -29,30 +29,30 @@ Requires macOS, Go 1.24 or newer, and tmux for launch, attach and send.
 ## Use
 
 ```sh
-bin/agentctl                       # dashboard
-bin/agentctl list                  # table; -all adds helper processes
-bin/agentctl list -json            # machine-readable
-bin/agentctl show claude-x         # details of one agent; -json too
-bin/agentctl watch                 # agents, then changes as they happen
-bin/agentctl watch -json | jq .    # one JSON event per line
-bin/agentctl launch claude         # new Claude Code session in tmux, here
-bin/agentctl launch -dir ~/work/AI/x -name x codex
-bin/agentctl launch ollama run llama3.2
-bin/agentctl attach claude-x
-bin/agentctl send claude-x "run the tests"
-bin/agentctl stop claude-x         # asks first; -yes skips, -force kills
-bin/agentctl kill 12345            # same as stop -force
+bin/lazyai                       # dashboard
+bin/lazyai list                  # table; -all adds helper processes
+bin/lazyai list -json            # machine-readable
+bin/lazyai show claude-x         # details of one agent; -json too
+bin/lazyai watch                 # agents, then changes as they happen
+bin/lazyai watch -json | jq .    # one JSON event per line
+bin/lazyai launch claude         # new Claude Code session in tmux, here
+bin/lazyai launch -dir ~/work/AI/x -name x codex
+bin/lazyai launch ollama run llama3.2
+bin/lazyai attach claude-x
+bin/lazyai send claude-x "run the tests"
+bin/lazyai stop claude-x         # asks first; -yes skips, -force kills
+bin/lazyai kill 12345            # same as stop -force
 ```
 
-AGENT arguments accept a PID, a tmux session name (the `agentctl-` prefix
+AGENT arguments accept a PID, a tmux session name (the `lazyai-` prefix
 is optional) or a Claude Code session name.
 
-Help works like any Unix tool: `agentctl -h`, `agentctl --help`,
-`agentctl help COMMAND` and `agentctl COMMAND --help`. Options have long
+Help works like any Unix tool: `lazyai -h`, `lazyai --help`,
+`lazyai help COMMAND` and `lazyai COMMAND --help`. Options have long
 and short forms (`--all`/`-a`, `--json`/`-j`, `--yes`/`-y`, ...) and may
-follow arguments (`agentctl stop claude-x -y`), except for `launch` and
+follow arguments (`lazyai stop claude-x -y`), except for `launch` and
 `send`, where everything after KIND or AGENT belongs to the agent or the
-prompt. `agentctl --version` prints the git version it was built from.
+prompt. `lazyai --version` prints the git version it was built from.
 Exit status is 0 on success, 1 on failure, 2 on a usage error.
 
 Every dashboard action has a command:
@@ -75,14 +75,14 @@ in a plain terminal tab are listed and can be stopped, but not driven.
 Status comes from Claude Code's own session files when they exist
 (`~/.claude/sessions/<pid>.json`); otherwise an agent is "busy" when it uses
 2% CPU or more. FLAGS warns about high CPU for 30s, memory over 2 GiB, and
-busy for over 30 minutes. `self` marks agentctl's own parent processes,
+busy for over 30 minutes. `self` marks lazyai's own parent processes,
 which cannot be stopped from it.
 
 See `specs/` for the full behavior.
 
 ## Security
 
-- agentctl only signals processes it classified as agents, owned by your
+- lazyai only signals processes it classified as agents, owned by your
   user, and still matching the PID, command and start time it listed.
 - Command lines are shown with values of key, token, secret and password
   flags replaced by `[redacted]`; the redaction is a heuristic, not a

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"agentctl/internal/agent"
+	"lazyai/internal/agent"
 )
 
 func types(events []Event) string {

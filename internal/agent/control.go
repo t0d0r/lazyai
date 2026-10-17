@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrProtected = errors.New("refusing to stop agentctl's own parent process")
+	ErrProtected = errors.New("refusing to stop lazyai's own parent process")
 	ErrNotOwner  = errors.New("process belongs to another user")
 	ErrChanged   = errors.New("process exited or its PID was reused since it was listed")
 )

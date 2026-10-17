@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"agentctl/internal/tmux"
+	"lazyai/internal/tmux"
 )
 
 // LaunchKinds lists the kinds launch can start. Colibri is left out: it is
@@ -24,7 +24,7 @@ func LaunchKinds() []Kind {
 // LaunchCommand returns the argv that starts kind with extra arguments.
 func LaunchCommand(kind Kind, extra []string) ([]string, error) {
 	if kind == KindColibri {
-		return nil, errors.New("colibri is not launched by agentctl; start it with its own tooling, for example make run in its project")
+		return nil, errors.New("colibri is not launched by lazyai; start it with its own tooling, for example make run in its project")
 	}
 	if kindRank(kind) == len(Kinds) {
 		var names []string

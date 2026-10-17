@@ -5,18 +5,18 @@ import (
 	"testing"
 	"time"
 
-	"agentctl/internal/agent"
-	"agentctl/internal/watch"
+	"lazyai/internal/agent"
+	"lazyai/internal/watch"
 )
 
 func TestResolve(t *testing.T) {
 	agents := []agent.Agent{
-		{Proc: agent.Proc{PID: 10}, Role: agent.RoleInteractive, TmuxSession: "agentctl-claude-x", Name: "x-1"},
-		{Proc: agent.Proc{PID: 11}, Role: agent.RoleHelper, TmuxSession: "agentctl-claude-x"},
+		{Proc: agent.Proc{PID: 10}, Role: agent.RoleInteractive, TmuxSession: "lazyai-claude-x", Name: "x-1"},
+		{Proc: agent.Proc{PID: 11}, Role: agent.RoleHelper, TmuxSession: "lazyai-claude-x"},
 		{Proc: agent.Proc{PID: 20}, Role: agent.RoleInteractive, Name: "dup"},
 		{Proc: agent.Proc{PID: 21}, Role: agent.RoleInteractive, Name: "dup"},
 	}
-	for ref, want := range map[string]int{"10": 10, "11": 11, "agentctl-claude-x": 10, "claude-x": 10, "x-1": 10} {
+	for ref, want := range map[string]int{"10": 10, "11": 11, "lazyai-claude-x": 10, "claude-x": 10, "x-1": 10} {
 		a, err := resolve(agents, ref)
 		if err != nil || a.PID != want {
 			t.Errorf("resolve(%q) = %d, %v; want %d", ref, a.PID, err, want)
