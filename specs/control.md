@@ -1,0 +1,45 @@
+# Control
+
+## Stop
+
+- Only agents returned by discovery can be stopped; never arbitrary PIDs.
+- Refused when the agent is protected (agentctl or a parent of it), or owned
+  by another user.
+- Before signalling, the PID is looked up again; its start time and command
+  line must equal the listed ones, otherwise the stop is refused as "exited
+  or PID reused".
+- Default SIGTERM, then wait up to 5 seconds for the process to go away.
+  Force sends SIGKILL.
+- CLI asks `[y/N]` per PID unless `-yes`; the TUI asks `y/N` in the footer.
+
+## Launch
+
+- `launch [-dir D] [-name N] KIND [ARGS...]`. KIND must be a supported
+  kind; ollama requires arguments.
+- The command is resolved with `PATH` lookup and run directly by
+  `tmux new-session -d -s SESSION -c DIR -- PATH ARGS...`; no shell is
+  involved, so nothing in names, paths or arguments is expanded.
+- Session name is `agentctl-` plus the name (default `KIND-DIRBASENAME`)
+  with characters outside `[A-Za-z0-9_-]` replaced by `-`. If taken, `-2`,
+  `-3` ... is appended.
+- The tmux session ends when the agent exits.
+
+## Attach
+
+- Requires the agent to run in a tmux pane.
+- Outside tmux: `tmux attach-session -t =SESSION` and return on detach.
+  Inside tmux: `tmux switch-client -t =SESSION`.
+- The `=` prefix forces an exact session name match.
+
+## Send
+
+- Requires a tmux pane. `tmux send-keys -t PANE -l -- TEXT`, a 150 ms pause,
+  then `send-keys Enter`. `-l` sends the text literally.
+- CLI targets: PID, tmux session name with or without `agentctl-`, or
+  Claude session name; ambiguous names are refused.
+
+## Redaction
+
+Command lines shown on screen or in JSON replace values of arguments whose
+name matches key, token, secret, password, credential or auth:
+`--api-key X`, `--api-key=X`, `NAME_TOKEN=X`.
