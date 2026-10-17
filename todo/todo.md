@@ -49,5 +49,5 @@
 - [ ] add a gitleaks pre-commit hook
 - [ ] module path github.com/t0d0r/lazyai so `go install
       github.com/t0d0r/lazyai@latest` works
-- [ ] choose and add a LICENSE
+- [x] LICENSE: BSD-2-Clause
 - [ ] set the GitHub description and topics

@@ -113,3 +113,7 @@ See `specs/` for the full behavior.
 - `send` types text into an agent exactly as given; the agent then acts on
   it with its own permissions. Treat it like typing into that terminal.
 - Claude Code `*.key` files next to the session metadata are never read.
+
+## License
+
+BSD 2-Clause (the FreeBSD license). See `LICENSE`.

@@ -74,6 +74,10 @@
   origin git@github.com:t0d0r/lazyai.git, pushed. Before pushing, the
   whole history was scanned for client names, home paths, session ids,
   emails other than the commit author, and token patterns; nothing found.
+- Added a README screenshot (lazyai.png) and pushed it.
+- License: operator chose BSD-2-Clause (FreeBSD), copyright Todor
+  Dragnev. Next for Homebrew: tag v0.1.0, create t0d0r/homebrew-tap,
+  add Formula/lazyai.rb with license "BSD-2-Clause".
 
 ## Files
 
