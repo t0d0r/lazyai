@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -21,7 +20,7 @@ const Prefix = "lazyai-"
 type Pane struct {
 	Session string
 	ID      string // "%3"
-	TTY     string // "ttys003"
+	TTY     string // as ps names it: "ttys003" on macOS, "pts/3" on Linux
 	PID     int
 }
 
@@ -32,9 +31,11 @@ func Available() bool {
 }
 
 // Panes lists every pane on the default tmux server. A missing server is
-// not an error: it simply has no panes.
+// not an error: it simply has no panes. -u keeps the tabs: without a UTF-8
+// locale (common on Linux in containers, cron or ssh) tmux prints them, and
+// any non-ASCII session name, as "_".
 func Panes() []Pane {
-	out, err := exec.Command("tmux", "list-panes", "-a", "-F",
+	out, err := exec.Command("tmux", "-u", "list-panes", "-a", "-F",
 		"#{session_name}\t#{pane_id}\t#{pane_tty}\t#{pane_pid}").Output()
 	if err != nil {
 		return nil
@@ -46,7 +47,7 @@ func Panes() []Pane {
 			continue
 		}
 		pid, _ := strconv.Atoi(f[3])
-		panes = append(panes, Pane{Session: f[0], ID: f[1], TTY: filepath.Base(f[2]), PID: pid})
+		panes = append(panes, Pane{Session: f[0], ID: f[1], TTY: strings.TrimPrefix(f[2], "/dev/"), PID: pid})
 	}
 	return panes
 }
@@ -99,7 +100,20 @@ func Launch(session, dir string, argv []string) error {
 	if HasSession(session) {
 		return fmt.Errorf("tmux session %s already exists", session)
 	}
-	args := append([]string{"new-session", "-d", "-s", session, "-c", dir, "--", path}, argv[1:]...)
+	cmd := append([]string{path}, argv[1:]...)
+	if len(cmd) == 1 {
+		// tmux hands a single word to the shell. As two words it runs
+		// them directly, and env then execs the agent in its own place.
+		env, err := exec.LookPath("env")
+		if err != nil {
+			return errors.New("env not found in PATH")
+		}
+		if strings.Contains(path, "=") {
+			return fmt.Errorf("%s: env would take a path with '=' for a variable", path)
+		}
+		cmd = []string{env, path}
+	}
+	args := append([]string{"new-session", "-d", "-s", session, "-c", dir, "--"}, cmd...)
 	if out, err := exec.Command("tmux", args...).CombinedOutput(); err != nil {
 		return fmt.Errorf("tmux new-session: %s", strings.TrimSpace(string(out)))
 	}

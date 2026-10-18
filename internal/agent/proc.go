@@ -19,7 +19,7 @@ type Proc struct {
 	UID   int       `json:"uid"`
 	CPU   float64   `json:"cpu"`
 	RSS   int64     `json:"rss_bytes"`
-	TTY   string    `json:"tty,omitempty"` // "ttys003", empty when the process has no terminal
+	TTY   string    `json:"tty,omitempty"` // "ttys003" or "pts/3", empty when the process has no terminal
 	Stat  string    `json:"stat"`
 	Start time.Time `json:"started"`
 	Args  string    `json:"-"` // raw command line; may hold secrets, see RedactArgs
@@ -35,9 +35,15 @@ const lstartLayout = "Mon Jan 2 15:04:05 2006"
 // fixedFields is the number of words before args: 7 columns plus 5 for lstart.
 const fixedFields = 12
 
-// Snapshot returns every process visible to the current user.
+// Snapshot returns every process visible to the current user. On Linux
+// the CPU column is replaced with recent usage, see recentCPU.
 func Snapshot() ([]Proc, error) {
-	return runPS("-axww")
+	procs, err := runPS("-axww")
+	if err != nil {
+		return nil, err
+	}
+	recentCPU(procs)
+	return procs, nil
 }
 
 // Lookup returns the current row for one PID, or ErrNoProcess.
@@ -100,7 +106,7 @@ func parseLine(line string) (Proc, bool) {
 		return Proc{}, false
 	}
 	p.RSS = kb * 1024
-	if fields[5] != "??" && fields[5] != "-" {
+	if fields[5] != "??" && fields[5] != "?" && fields[5] != "-" { // macOS "??", Linux "?"
 		p.TTY = fields[5]
 	}
 	p.Stat = fields[6]

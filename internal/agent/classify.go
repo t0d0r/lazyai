@@ -60,6 +60,9 @@ func Classify(args string) (Kind, Role, bool) {
 	viaInterpreter := false
 	if isInterpreter(filepath.Base(argv0)) {
 		for i, t := range rest {
+			if runsCommandString(filepath.Base(argv0), t) {
+				return "", "", false
+			}
 			if !strings.HasPrefix(t, "-") {
 				candidates = append(candidates, t)
 				rest = rest[i+1:]
@@ -139,10 +142,24 @@ func classifyContainer(args []string) (Kind, Role, bool) {
 func isInterpreter(base string) bool {
 	base = strings.ToLower(base)
 	switch base {
-	case "node", "bun", "deno", "bash", "sh", "zsh":
+	case "node", "bun", "deno", "bash", "sh", "dash", "zsh":
 		return true
 	}
 	return strings.HasPrefix(base, "python")
+}
+
+// runsCommandString reports whether flag makes the interpreter run a
+// command string, as in "sh -c claude" or "bash -lc 'claude --resume x'".
+// The agent then runs as a child of the shell, or in its place when the
+// shell execs it, so the shell itself is not the agent. Linux /bin/sh
+// (dash) does not exec, which would list every such agent twice.
+func runsCommandString(interpreter, flag string) bool {
+	interpreter = strings.ToLower(interpreter)
+	switch interpreter {
+	case "bash", "sh", "dash", "zsh":
+		return strings.HasPrefix(flag, "-") && !strings.HasPrefix(flag, "--") && strings.Contains(flag, "c")
+	}
+	return strings.HasPrefix(interpreter, "python") && flag == "-c"
 }
 
 // colibriEngine matches Colibri's native model engines (qwen36, qwen38,

@@ -2,6 +2,7 @@ package agent
 
 import (
 	"os"
+	"slices"
 	"sort"
 	"time"
 
@@ -59,6 +60,7 @@ func Discover() ([]Agent, error) {
 		return nil, err
 	}
 	agents := Build(procs, os.Getpid(), ClaudeSessionsDir(), tmux.Panes())
+	agents = slices.DeleteFunc(agents, func(a Agent) bool { return inContainer(a.PID) })
 	missing := []int{}
 	for _, a := range agents {
 		if a.CWD == "" {

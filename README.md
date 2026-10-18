@@ -2,7 +2,7 @@
 
 ![lazyai dashboard: Agents, Services and Models panels on the left, Info tab for a Hermes agent on the right](lazyai.png)
 
-Control the AI coding agents running on this Mac from one terminal
+Control the AI coding agents running on your Mac or Linux machine from one terminal
 dashboard: see what is running and whether it is busy, start new agents in
 tmux, attach to them, type prompts into them, and stop them.
 
@@ -42,7 +42,13 @@ make install     # copy to ~/.local/bin (PREFIX=... to change)
 make help        # all targets
 ```
 
-Requires macOS, Go 1.24 or newer, and tmux for launch, attach and send.
+Requires macOS or Linux, Go 1.24 or newer, and tmux for launch, attach
+and send. On Linux, `ps` comes from procps (`apt install procps tmux` on
+Debian and Ubuntu); `lsof` is not needed.
+
+`make test-linux` runs the tests and an end-to-end check in Ubuntu 24.04
+and Debian containers (needs docker; `LINUX_IMAGES=...` to change the
+list).
 
 ## Use
 

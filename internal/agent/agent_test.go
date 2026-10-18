@@ -106,6 +106,16 @@ func TestClassify(t *testing.T) {
 		{"docker ps", "", "", false},
 		{"docker run --rm -v /x/claude:/y alpine", "", "", false},
 		{"/opt/homebrew/bin/bash -c source /tmp/hermes-snap.sh || true", "", "", false},
+		// a shell running a command string is not the agent; its child is
+		{"sh -c /home/u/.local/bin/claude", "", "", false},
+		{"/bin/bash -lc claude --resume x", "", "", false},
+		{"python3 -c import aider", "", "", false},
+		{"/bin/sh /home/u/bin/claude", KindClaude, RoleInteractive, true},
+		{"dash /home/u/bin/codex", KindCodex, RoleInteractive, true},
+		// Linux install paths
+		{"/home/u/.local/share/claude/versions/2.1.302 --resume abc", KindClaude, RoleInteractive, true},
+		{"/home/u/.grok/downloads/grok-1.0.62-linux-x86_64", KindGrok, RoleInteractive, true},
+		{"/usr/local/bin/ollama serve", KindOllama, RoleServer, true},
 		{"/Applications/Claude.app/Contents/MacOS/Claude", "", "", false},
 		{"/System/Library/PrivateFrameworks/X.framework/XPCServices/CursorUIViewService.xpc/Contents/MacOS/CursorUIViewService", "", "", false},
 		{"grep claude", "", "", false},

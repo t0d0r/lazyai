@@ -28,6 +28,8 @@
       (specs/discovery.md)
 - [x] kinds grok, copilot, mlx-lm; agents in docker/podman run; desktop
       apps with spaces in the bundle name (specs/discovery.md)
+- [x] Linux support, tested in docker on Ubuntu 24.04 and Debian 13 with
+      make test-linux (specs/overview.md, specs/discovery.md)
 
 ## Next
 
@@ -59,3 +61,10 @@
       formula (or let the tap's autobump workflow open the PR); consider
       GoReleaser for prebuilt binaries
 - [ ] set the GitHub description and topics
+- [ ] try lazyai on a real Linux desktop with real agents: Claude session
+      file status (procStart in UTC from procps), npm-installed agents,
+      docker-run opencode under rootful docker (specs/discovery.md, Linux)
+- [ ] check that the Homebrew formula builds and passes brew test on
+      Linuxbrew, then release with Linux support
+- [ ] decide whether to run make test-linux in CI on amd64 too (only
+      arm64 has been tested)

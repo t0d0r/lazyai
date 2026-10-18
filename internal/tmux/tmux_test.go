@@ -2,6 +2,8 @@ package tmux
 
 import (
 	"os/exec"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -62,8 +64,18 @@ func TestLaunchSendPanes(t *testing.T) {
 			pane = p
 		}
 	}
-	if pane.ID == "" || !strings.HasPrefix(pane.TTY, "ttys") {
+	if pane.ID == "" {
 		t.Fatalf("pane not found: %+v", pane)
+	}
+	// Discovery matches agents to panes by tty, so the name must be ps's.
+	psTTY, _ := exec.Command("ps", "-o", "tty=", "-p", strconv.Itoa(pane.PID)).Output()
+	if got := strings.TrimSpace(string(psTTY)); pane.TTY != got {
+		t.Errorf("pane tty %q, ps says %q", pane.TTY, got)
+	}
+	// No shell in between: the pane runs cat itself.
+	psArgs, _ := exec.Command("ps", "-o", "args=", "-p", strconv.Itoa(pane.PID)).Output()
+	if got := strings.TrimSpace(string(psArgs)); filepath.Base(got) != "cat" {
+		t.Errorf("pane runs %q, want cat", got)
 	}
 	text := `hello $HOME "q" $(id)`
 	if err := Send(pane.ID, text); err != nil {

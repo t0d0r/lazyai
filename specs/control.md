@@ -21,8 +21,12 @@
   configured. mlx-lm is refused with a pointer to `mlx_lm.server` /
   `mlx_lm.chat`, which need a model. Containers are not launched.
 - The command is resolved with `PATH` lookup and run directly by
-  `tmux new-session -d -s SESSION -c DIR -- PATH ARGS...`; no shell is
-  involved, so nothing in names, paths or arguments is expanded.
+  `tmux new-session -d -s SESSION -c DIR -- PATH ARGS...`. With no ARGS
+  tmux would hand the single word to the shell, so it runs `env PATH`
+  instead, two words that tmux runs directly; env then execs the agent in
+  its own place. A PATH containing `=` is refused there, because env would
+  take it for a variable. No shell is involved, so nothing in names,
+  paths or arguments is expanded.
 - Session name is `lazyai-` plus the name (default `KIND-DIRBASENAME`)
   with characters outside `[A-Za-z0-9_-]` replaced by `-`. If taken, `-2`,
   `-3` ... is appended.

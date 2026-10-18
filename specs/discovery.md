@@ -4,7 +4,8 @@
 
 `ps -axww -o pid=,ppid=,uid=,pcpu=,rss=,tty=,stat=,lstart=,args=` with
 `LC_ALL=C`. The first 12 words are fixed columns (lstart is 5 words); the
-rest is the command line with its spacing kept. Malformed lines are skipped.
+rest is the command line with its spacing kept. Malformed lines are skipped. No terminal is `??` on macOS, `?` on Linux;
+terminal names are `ttys003` on macOS, `pts/3` on Linux.
 
 ## Classification
 
@@ -70,6 +71,33 @@ Roles:
 
 Helpers are hidden by default in the TUI and `list`. Engines are shown,
 because that is where model CPU and memory use shows up.
+
+A shell running a command string (`sh -c CMD`, `bash -lc CMD`, any short
+flag group with `c`, and `python -c CODE`) is not an agent: the agent is
+its child, or replaces the shell when the shell execs it. Linux `/bin/sh`
+(dash) does not exec, so without this rule such agents were listed twice.
+`sh SCRIPT` still matches the script.
+
+## Linux
+
+- CPU: Linux `ps` reports CPU averaged over the life of the process, so a
+  long-idle agent that just got busy would look idle. Each snapshot
+  replaces it with usage since the previous snapshot, from utime + stime
+  in `/proc/<pid>/stat` (USER_HZ 100). The start time in that file tells a
+  reused PID apart. The first snapshot of a run has nothing to compare
+  with and samples for 250 ms. A process missing from either sample keeps
+  the `ps` value. macOS `ps` already reports recent usage.
+- Working directory: `/proc/<pid>/cwd`, then `lsof` for what that leaves
+  out, only if `lsof` is installed (many Linux systems lack it).
+- Containers: a process in a PID namespace nested below lazyai's own (the
+  NSpid line of `/proc/<pid>/status` has more entries) runs inside a
+  container. On Linux those processes are visible on the host, unlike
+  macOS where containers run in a VM, so they are dropped; the `docker run`
+  client stands for them (see Containers). If lazyai itself runs in a
+  container, processes in that same container are kept.
+- tmux: `list-panes` is called with `-u`. Without a UTF-8 locale (common in
+  containers, cron and ssh sessions) tmux 3.4 prints the tab separators,
+  and non-ASCII session names, as `_`.
 
 ## Status
 

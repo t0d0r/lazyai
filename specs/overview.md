@@ -3,7 +3,7 @@
 ## Goal
 
 One tool to see and control every AI coding agent running locally for the
-current user on this Mac.
+current user on this machine, on macOS or Linux.
 
 ## Scope
 
@@ -38,5 +38,13 @@ current user on this Mac.
 
 ## Platform
 
-macOS only for now: `ps` lstart format, `lsof` for working directories,
-`ttysNNN` terminal names.
+macOS and Linux. Both use `ps` (procps on Linux) and tmux; the
+differences are listed in discovery.md (Linux). Tested on Ubuntu 24.04 and
+the latest Debian in docker with `make test-linux`: the unit tests plus an
+end-to-end run of launch, list, show, send, the dashboard, stop and kill
+against fake agents.
+
+Decision: on Linux, read `/proc` only where `ps` falls short (recent CPU,
+working directory, PID namespace) instead of replacing `ps`. Reason: one
+parser and one start-time format on both systems, and Claude Code itself
+uses `ps -o lstart` for `procStart` on every Unix.

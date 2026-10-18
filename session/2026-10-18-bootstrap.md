@@ -130,3 +130,60 @@ default tmux server.
 Run `bin/lazyai` in a normal terminal, launch a Claude session with `n`,
 watch it in the Screen tab (`]`), attach with `a`, detach with ctrl+b d,
 send a prompt with `p`, and try the mouse.
+
+## Linux support (later the same day)
+
+Operator asked to make lazyai work on Linux and test it in docker on
+Ubuntu 24.04 and the latest Debian.
+
+Done:
+
+- `ps` works as is with procps (same options, same lstart format). No
+  terminal is `?` on Linux, now handled.
+- tmux pane ttys are `/dev/pts/N`; they were cut to `N` with
+  filepath.Base, so no agent matched its pane. Now only `/dev/` is
+  stripped, which gives `pts/N` (Linux) and `ttys003` (macOS), as ps.
+- tmux 3.4 without a UTF-8 locale prints tabs in `-F` output as `_`, which
+  broke Panes in containers; `tmux -u list-panes` fixes it.
+- Single-word launches went through tmux's `sh -c`. Linux dash does not
+  exec, so every launched agent was listed twice. Launch now runs
+  `env PATH` (two words, exec'd directly); classification also ignores
+  shells running a command string (`sh -c`, `bash -lc`, `python -c`).
+- CPU on Linux: ps gives a lifetime average, so status would stay idle.
+  Snapshot now replaces it with usage since the previous snapshot from
+  /proc/<pid>/stat (first snapshot samples 250 ms).
+- Working directory from /proc/<pid>/cwd; lsof only as a fallback and only
+  if installed.
+- Processes inside containers (deeper PID namespace by NSpid) are dropped
+  from the agent list on Linux; the docker client stands for them.
+  Checked by hand with `unshare -p` in a privileged container.
+- `make test-linux`: cross-compiles the test binaries and bin/linux/lazyai
+  for the docker server's arch, builds test/linux/Dockerfile per image in
+  LINUX_IMAGES (default ubuntu:24.04 debian:latest) and runs
+  test/linux/e2e.sh: unit tests, then fake claude (echo loop) and codex
+  (busy loop) launched in tmux, list/json checks (tmux session, cwd, pts
+  tty, idle/busy, CPU > 50), show, send, the dashboard drawn in a tmux
+  pane and quit with q, stop and kill. Passes on Ubuntu 24.04.5 (tmux 3.4)
+  and Debian 13 trixie (tmux 3.5a), arm64.
+- Specs: overview (goal, Platform, decision to keep ps and add /proc),
+  discovery (shell -c rule, new Linux section), control (env for single
+  word launch). README requirements and test-linux.
+- macOS checked again: make check passes, live `bin/lazyai list` as before.
+
+Decided: keep ps on Linux and read /proc only for CPU, cwd and PID
+namespace. Claude Code writes procStart with `LC_ALL=C TZ=UTC ps -o
+lstart=` on every Unix (seen in its binary), so session files match on
+Linux without changes.
+
+Open: not tried with real agents on a Linux desktop; amd64 not tested;
+Homebrew on Linux not tried.
+
+Files: internal/agent/{proc,procfs,procfs_test,cwd,discover,classify,
+agent_test}.go, internal/tmux/{tmux,tmux_test}.go, Makefile,
+test/linux/{Dockerfile,e2e.sh}, README.md, specs/{overview,discovery,
+control}.md, todo/todo.md.
+
+Run and verify: `make check` (macOS), `make test-linux` (docker).
+
+Next step: run lazyai on a real Linux machine with a logged-in Claude Code
+session and confirm status comes from the session file.
