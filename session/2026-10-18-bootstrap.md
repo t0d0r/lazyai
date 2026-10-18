@@ -257,9 +257,14 @@ Done:
 
 Decision: Makefile target instead of GoReleaser (no extra tool).
 
-Open: GitHub release creation needs `gh auth login` on this Mac (gh was
-not logged in; git over ssh works). Tap formula not yet bumped to
-v0.2.0.
+- Commit c24bd53; annotated tag v0.2.0 on it. make dist on the tag gives
+  lazyai-v0.2.0-{linux,darwin}-{amd64,arm64}.tar.gz; each linux tarball
+  checked in Ubuntu 24.04 and Debian 13 containers of its arch
+  (sha256sum -c OK, --version v0.2.0, list runs). gitleaks clean.
+- Pushed main (e63e4c9..c24bd53) and tag v0.2.0 at operator request.
+
+Open: GitHub release not created yet; gh on this Mac is not logged in
+(git over ssh works). Tap formula not yet bumped to v0.2.0.
 
 Files: Makefile, specs/{release,README,overview}.md, README.md,
 todo/todo.md.
@@ -267,5 +272,6 @@ todo/todo.md.
 Run and verify: `make check`, `make test-linux`, `make test-linux
 LINUX_ARCH=amd64`, `make dist`.
 
-Next step: tag v0.2.0, `make dist`, push main and the tag, `gh release
-create` with the tarballs and SHA256SUMS.
+Next step: after `gh auth login`, `make dist` on the tag and `gh release
+create v0.2.0 bin/dist/*.tar.gz bin/dist/SHA256SUMS --title v0.2.0`
+with release notes; then bump the tap formula.
