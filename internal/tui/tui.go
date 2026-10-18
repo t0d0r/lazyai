@@ -88,18 +88,18 @@ const (
 // screenHistory is how many lines above the visible pane Screen shows.
 const screenHistory = 1000
 
-// list is one left-hand panel. Selection follows the PID across refreshes.
+// list is one left-hand panel. Selection follows the agent across refreshes.
 type list struct {
 	rows   []agent.Agent
 	cursor int
-	selPID int
+	selKey string // agent.Key
 }
 
 func (l *list) set(rows []agent.Agent) {
 	l.rows = rows
 	l.cursor = min(l.cursor, len(rows)-1)
 	for i, a := range rows {
-		if a.PID == l.selPID {
+		if a.Key() == l.selKey {
 			l.cursor = i
 		}
 	}
@@ -114,7 +114,7 @@ func (l *list) move(d int) {
 func (l *list) sync() {
 	l.cursor = max(min(l.cursor, len(l.rows)-1), 0)
 	if len(l.rows) > 0 {
-		l.selPID = l.rows[l.cursor].PID
+		l.selKey = l.rows[l.cursor].Key()
 	}
 }
 
@@ -191,7 +191,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.all = msg.agents
 		m.watcher.Update(m.all, m.updated)
 		m.regroup()
-		if after, _ := m.selected(); after.PID != before.PID {
+		if after, _ := m.selected(); after.Key() != before.Key() {
 			return m, m.selectionChanged()
 		}
 	case screenMsg:

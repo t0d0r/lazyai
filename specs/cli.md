@@ -54,10 +54,12 @@ The CLI behaves like a standard Unix command:
 
 ## AGENT references
 
-- A number is a PID and matches any agent, helpers included.
+- A number is a PID and matches any agent, helpers included. A process of
+  this machine comes before an agent in a container with the same PID; a
+  container agent is also matched by its key `SHORTID/PID`.
 - Otherwise the reference matches interactive agents by tmux session name,
-  by tmux session name without the `lazyai-` prefix, or by Claude Code
-  session name. It must match exactly one agent; otherwise the command
+  by tmux session name without the `lazyai-` prefix, by Claude Code
+  session name, or by docker container name. It must match exactly one agent; otherwise the command
   fails and asks for a PID.
 - `stop` and `kill` resolve all references against one discovery.
 

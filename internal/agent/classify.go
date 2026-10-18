@@ -52,8 +52,8 @@ func Classify(args string) (Kind, Role, bool) {
 	if isDesktopApp(args) {
 		return "", "", false
 	}
-	if base := filepath.Base(argv0); base == "docker" || base == "podman" {
-		return classifyContainer(tokens[1:])
+	if cmd, ok := parseClient(tokens); ok {
+		return cmd.classify()
 	}
 	candidates := []string{argv0}
 	rest := tokens[1:]
@@ -87,56 +87,6 @@ func Classify(args string) (Kind, Role, bool) {
 func isDesktopApp(args string) bool {
 	bundle, _, found := strings.Cut(args, ".app/Contents/")
 	return found && !strings.Contains(bundle, " -") && !strings.HasSuffix(bundle, "/Python")
-}
-
-// containerValueFlags are docker/podman run options that take a separate
-// value, so the value is not mistaken for the image.
-var containerValueFlags = map[string]bool{
-	"-v": true, "--volume": true, "-e": true, "--env": true, "--env-file": true,
-	"-w": true, "--workdir": true, "-p": true, "--publish": true, "--name": true,
-	"-u": true, "--user": true, "-l": true, "--label": true, "--label-file": true,
-	"--mount": true, "--network": true, "--net": true, "-h": true, "--hostname": true,
-	"--add-host": true, "--entrypoint": true, "--platform": true, "--cpus": true,
-	"-m": true, "--memory": true, "--device": true, "--pull": true, "--restart": true,
-	"--log-driver": true, "--log-opt": true, "--cap-add": true, "--cap-drop": true,
-	"--security-opt": true, "--ulimit": true, "--tmpfs": true, "--shm-size": true,
-	"--gpus": true, "--runtime": true, "--dns": true, "--expose": true, "--cidfile": true,
-}
-
-// classifyContainer recognizes "docker run [OPTIONS] IMAGE [ARGS]" when the
-// image's repository name is a supported kind, for example
-// ghcr.io/anomalyco/opencode:latest. Detached containers count as servers.
-func classifyContainer(args []string) (Kind, Role, bool) {
-	if len(args) == 0 || args[0] != "run" {
-		return "", "", false
-	}
-	detached := false
-	for i := 1; i < len(args); i++ {
-		t := args[i]
-		if strings.HasPrefix(t, "-") {
-			// --detach, -d, or d among combined short flags such as -dit
-			if t == "--detach" || !strings.HasPrefix(t, "--") && strings.Contains(t, "d") {
-				detached = true
-			}
-			if containerValueFlags[t] {
-				i++
-			}
-			continue
-		}
-		image, _, _ := strings.Cut(t, "@")
-		if j := strings.LastIndex(image, ":"); j > strings.LastIndex(image, "/") {
-			image = image[:j] // drop the tag, not a registry port
-		}
-		k := Kind(filepath.Base(image))
-		if kindRank(k) == len(Kinds) {
-			return "", "", false
-		}
-		if detached {
-			return k, RoleServer, true
-		}
-		return k, RoleInteractive, true
-	}
-	return "", "", false
 }
 
 func isInterpreter(base string) bool {

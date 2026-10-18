@@ -4,6 +4,7 @@ package display
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -61,6 +62,12 @@ func Where(a agent.Agent) string {
 	if dir == "" {
 		dir = "-"
 	}
+	if a.Container != "" {
+		dir = "docker:" + a.Container + "  " + dir
+		if a.CWD == "" {
+			dir = "docker:" + a.Container
+		}
+	}
 	if a.Name != "" {
 		return a.Name + "  " + dir
 	}
@@ -104,8 +111,17 @@ func Details(a agent.Agent) []Field {
 	if tty == "" {
 		tty = "-"
 	}
+	process := fmt.Sprintf("%d (parent %d, uid %d, tty %s)", a.PID, a.PPID, a.UID, tty)
+	container := a.Container
+	if a.ForeignPID {
+		process = fmt.Sprintf("%d in the container (parent %d, uid %d); ref %s", a.PID, a.PPID, a.UID, a.Key())
+	}
+	if container != "" {
+		container += " (" + a.ContainerID[:min(len(a.ContainerID), 12)] + ")"
+	}
 	fields := []Field{
-		{"process", fmt.Sprintf("%d (parent %d, uid %d, tty %s)", a.PID, a.PPID, a.UID, tty)},
+		{"process", process},
+		{"container", container},
 		{"kind", fmt.Sprintf("%s %s", a.Kind, a.Role)},
 		{"started", a.Start.Format("2006-01-02 15:04:05")},
 		{"cwd", a.CWD},
@@ -114,6 +130,9 @@ func Details(a agent.Agent) []Field {
 		{"tmux", tmuxInfo},
 		{"status", a.Status + " via " + src},
 		{"command", a.Command},
+	}
+	if container == "" {
+		fields = slices.Delete(fields, 1, 2) // only containers have the line
 	}
 	for i := range fields {
 		if fields[i].Value == "" {

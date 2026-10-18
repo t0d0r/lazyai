@@ -21,19 +21,19 @@ func TestTrackerAndFlags(t *testing.T) {
 	a := agent.Agent{Proc: agent.Proc{PID: 1, Start: t0.Add(-time.Hour), CPU: 95, RSS: 3 << 30}, Status: "busy"}
 	w := New()
 	w.Update([]agent.Agent{a}, t0)
-	tr, _ := w.Tracker(1)
+	tr, _ := w.Tracker("1")
 	if got := strings.Join(Flags(a, tr, t0), ","); got != "high-mem" || tr.Known {
 		t.Errorf("first look: %v known=%v", got, tr.Known)
 	}
 	later := t0.Add(31 * time.Minute)
 	w.Update([]agent.Agent{a}, later)
-	tr, _ = w.Tracker(1)
+	tr, _ = w.Tracker("1")
 	if got := strings.Join(Flags(a, tr, later), ","); got != "high-cpu,high-mem,long-busy" {
 		t.Errorf("after 31m: %v", got)
 	}
 	a.Status, a.CPU = "idle", 0
 	w.Update([]agent.Agent{a}, later.Add(time.Minute))
-	tr, _ = w.Tracker(1)
+	tr, _ = w.Tracker("1")
 	if !tr.HighCPUSince.IsZero() || !tr.Since.Equal(later.Add(time.Minute)) || !tr.Known {
 		t.Errorf("status change not tracked: %+v", tr)
 	}
@@ -47,7 +47,7 @@ func TestHistory(t *testing.T) {
 		a.TreeCPU = float64(i)
 		w.Update([]agent.Agent{a}, t0.Add(time.Duration(i)*time.Second))
 	}
-	tr, _ := w.Tracker(1)
+	tr, _ := w.Tracker("1")
 	if len(tr.History) != HistoryLen || tr.History[0].TreeCPU != 10 || tr.History[HistoryLen-1].TreeCPU != HistoryLen+9 {
 		t.Errorf("history: len %d first %v last %v", len(tr.History), tr.History[0].TreeCPU, tr.History[len(tr.History)-1].TreeCPU)
 	}
@@ -58,7 +58,7 @@ func TestClaudeStatusSinceIsKnown(t *testing.T) {
 	a := agent.Agent{Proc: agent.Proc{PID: 1}, Status: "idle", StatusSince: since}
 	w := New()
 	w.Update([]agent.Agent{a}, time.Now())
-	if tr, _ := w.Tracker(1); !tr.Known || !tr.Since.Equal(since) {
+	if tr, _ := w.Tracker("1"); !tr.Known || !tr.Since.Equal(since) {
 		t.Errorf("tracker: %+v", tr)
 	}
 }

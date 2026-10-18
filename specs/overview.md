@@ -20,7 +20,9 @@ current user on this machine, on macOS or Linux.
 ## Non-goals
 
 - Desktop apps (Claude.app, Cursor.app). They are excluded from discovery.
-- Other users' processes, remote machines, and containers.
+- Other users' processes and remote machines. Agents in docker containers
+  are listed and watched (see discovery.md, Containers), but lazyai does
+  not start, stop or enter containers itself.
 - Reading or changing agent conversations, settings or credentials.
 
 ## Decisions
@@ -44,7 +46,7 @@ the latest Debian in docker with `make test-linux`: the unit tests plus an
 end-to-end run of launch, list, show, send, the dashboard, stop and kill
 against fake agents.
 
-Decision: on Linux, read `/proc` only where `ps` falls short (recent CPU,
-working directory, PID namespace) instead of replacing `ps`. Reason: one
+Decision: on Linux, read `/proc` only where `ps` falls short (recent CPU and
+working directory) instead of replacing `ps`. Reason: one
 parser and one start-time format on both systems, and Claude Code itself
 uses `ps -o lstart` for `procStart` on every Unix.

@@ -87,6 +87,8 @@ func label(a agent.Agent) string {
 		return a.Name
 	case a.TmuxSession != "":
 		return a.TmuxSession
+	case a.Container != "" && a.CWD == "":
+		return "docker:" + a.Container
 	}
 	return baseDir(a.CWD)
 }

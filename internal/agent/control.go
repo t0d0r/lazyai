@@ -12,6 +12,7 @@ var (
 	ErrProtected = errors.New("refusing to stop lazyai's own parent process")
 	ErrNotOwner  = errors.New("process belongs to another user")
 	ErrChanged   = errors.New("process exited or its PID was reused since it was listed")
+	ErrForeign   = errors.New("runs inside a docker container, not on this machine")
 )
 
 // StopTimeout is how long Stop waits for an agent to exit after SIGTERM.
@@ -24,6 +25,9 @@ const StopTimeout = 5 * time.Second
 func Stop(a Agent, force bool, timeout time.Duration) error {
 	if a.Protected {
 		return ErrProtected
+	}
+	if a.ForeignPID {
+		return fmt.Errorf("%w; stop it there, for example with docker stop %s", ErrForeign, a.Container)
 	}
 	if a.UID != os.Getuid() {
 		return ErrNotOwner

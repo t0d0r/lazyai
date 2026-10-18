@@ -1,8 +1,6 @@
 package agent
 
 import (
-	"bufio"
-	"bytes"
 	"os"
 	"strconv"
 	"strings"
@@ -110,38 +108,4 @@ func parseStat(data []byte) (cpuTimes, bool) {
 		return cpuTimes{}, false
 	}
 	return cpuTimes{used: utime + stime, start: start}, true
-}
-
-// selfPIDLevels is how deep lazyai's own PID namespace is nested.
-var selfPIDLevels = sync.OnceValue(func() int { return pidLevels("self") })
-
-// inContainer reports whether pid runs in a PID namespace nested below
-// lazyai's own, as the processes inside a docker or podman container do
-// on Linux. The docker client that started the container already stands
-// for it. Without /proc it returns false.
-func inContainer(pid int) bool {
-	self := selfPIDLevels()
-	return self > 0 && pidLevels(strconv.Itoa(pid)) > self
-}
-
-// pidLevels returns the number of PID namespaces pid is visible in, or 0
-// when it is unknown. /proc/<pid>/status is readable for every process.
-func pidLevels(pid string) int {
-	data, err := os.ReadFile(procRoot + "/" + pid + "/status")
-	if err != nil {
-		return 0
-	}
-	return parseNSpid(data)
-}
-
-// parseNSpid counts the PIDs on the NSpid line of /proc/<pid>/status: one
-// per PID namespace, from the outermost in.
-func parseNSpid(status []byte) int {
-	sc := bufio.NewScanner(bytes.NewReader(status))
-	for sc.Scan() {
-		if rest, ok := strings.CutPrefix(sc.Text(), "NSpid:"); ok {
-			return len(strings.Fields(rest))
-		}
-	}
-	return 0
 }

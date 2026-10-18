@@ -211,7 +211,7 @@ func list(e env, all, asJSON bool) error {
 	tw := tabwriter.NewWriter(e.out, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(tw, "PID\tKIND\tROLE\tSTATUS\tCPU%\tMEM\tUP\tTMUX\tFLAGS\tWHERE")
 	for _, a := range agents {
-		t, _ := w.Tracker(a.PID)
+		t, _ := w.Tracker(a.Key())
 		tm := strings.TrimPrefix(a.TmuxSession, tmux.Prefix)
 		if tm == "" {
 			tm = "-"
@@ -234,7 +234,7 @@ func show(e env, ref string, asJSON bool) error {
 	now := time.Now()
 	w := watch.New()
 	w.Update([]agent.Agent{a}, now)
-	t, _ := w.Tracker(a.PID)
+	t, _ := w.Tracker(a.Key())
 	fields := append(display.Details(a),
 		display.Field{Name: "resources", Value: fmt.Sprintf("%.1f%% CPU, %s, up %s",
 			a.CPU, display.Bytes(a.RSS), display.Duration(now.Sub(a.Start)))},
@@ -347,22 +347,35 @@ func find(ref string) (agent.Agent, error) {
 	return resolve(agents, ref)
 }
 
-// resolve turns a PID into any agent, or a tmux session name (with or
-// without the lazyai- prefix) or a Claude session name into exactly one
-// interactive agent.
+// resolve turns a PID or a container agent's key (CONTAINERID/PID) into
+// any agent, or a tmux session name (with or without the lazyai- prefix),
+// a Claude session name or a container name into exactly one interactive
+// agent. A PID means a process of this machine before one in a container.
 func resolve(agents []agent.Agent, ref string) (agent.Agent, error) {
 	if pid, err := strconv.Atoi(ref); err == nil {
+		var foreign []agent.Agent
 		for _, a := range agents {
-			if a.PID == pid {
+			switch {
+			case a.PID == pid && !a.ForeignPID:
 				return a, nil
+			case a.PID == pid:
+				foreign = append(foreign, a)
 			}
 		}
+		if len(foreign) == 1 {
+			return foreign[0], nil
+		}
 		return agent.Agent{}, fmt.Errorf("PID %d is not a running agent", pid)
+	}
+	for _, a := range agents {
+		if a.ForeignPID && a.Key() == ref {
+			return a, nil
+		}
 	}
 	var matches []agent.Agent
 	for _, a := range agents {
 		if a.Role == agent.RoleInteractive &&
-			(a.TmuxSession == ref || a.TmuxSession == tmux.Prefix+ref || a.Name == ref) {
+			(a.TmuxSession == ref || a.TmuxSession == tmux.Prefix+ref || a.Name == ref || a.Container == ref) {
 			matches = append(matches, a)
 		}
 	}

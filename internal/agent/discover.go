@@ -2,8 +2,8 @@ package agent
 
 import (
 	"os"
-	"slices"
 	"sort"
+	"strconv"
 	"time"
 
 	"lazyai/internal/tmux"
@@ -36,11 +36,32 @@ type Agent struct {
 	// Protected is set for lazyai's own ancestors: stopping one of them
 	// would kill the terminal lazyai runs in.
 	Protected bool `json:"protected,omitempty"`
+	// Container names the docker container the agent runs in, or that its
+	// docker client row started (see MergeContainers).
+	Container   string `json:"container,omitempty"`
+	ContainerID string `json:"container_id,omitempty"`
+	// ForeignPID means PID, PPID and UID are those docker reports from
+	// inside its VM (macOS) or another host, not processes of this machine.
+	// Such an agent is never signalled.
+	ForeignPID bool `json:"foreign_pid,omitempty"`
 	// Children are the processes the agent started, directly or not, in
 	// tree order. TreeCPU and TreeRSS add them to the agent's own usage.
 	Children []ChildProc `json:"children,omitempty"`
 	TreeCPU  float64     `json:"tree_cpu"`
 	TreeRSS  int64       `json:"tree_rss_bytes"`
+}
+
+// Key identifies the agent across refreshes: its PID, or for a ForeignPID
+// agent the short container ID and PID, as in "bc5222af9c3d/24498".
+func (a Agent) Key() string {
+	if a.ForeignPID {
+		return shortID(a.ContainerID) + "/" + strconv.Itoa(a.PID)
+	}
+	return strconv.Itoa(a.PID)
+}
+
+func shortID(id string) string {
+	return id[:min(len(id), 12)]
 }
 
 // ChildProc is one process below an agent in the process tree.
@@ -59,17 +80,18 @@ func Discover() ([]Agent, error) {
 	if err != nil {
 		return nil, err
 	}
-	agents := Build(procs, os.Getpid(), ClaudeSessionsDir(), tmux.Panes())
-	agents = slices.DeleteFunc(agents, func(a Agent) bool { return inContainer(a.PID) })
+	panes := tmux.Panes()
+	agents := Build(procs, os.Getpid(), ClaudeSessionsDir(), panes)
+	agents = MergeContainers(agents, procs, Containers(), panes)
 	missing := []int{}
 	for _, a := range agents {
-		if a.CWD == "" {
+		if a.CWD == "" && !a.ForeignPID {
 			missing = append(missing, a.PID)
 		}
 	}
 	dirs := workingDirs(missing)
 	for i := range agents {
-		if agents[i].CWD == "" {
+		if agents[i].CWD == "" && !agents[i].ForeignPID {
 			agents[i].CWD = dirs[agents[i].PID]
 		}
 	}
@@ -123,6 +145,12 @@ func Build(procs []Proc, self int, claudeDir string, panes []tmux.Pane) []Agent 
 		}
 		agents = append(agents, a)
 	}
+	sortAgents(agents)
+	return agents
+}
+
+// sortAgents orders agents by kind, interactive first, then oldest first.
+func sortAgents(agents []Agent) {
 	sort.SliceStable(agents, func(i, j int) bool {
 		if agents[i].Kind != agents[j].Kind {
 			return kindRank(agents[i].Kind) < kindRank(agents[j].Kind)
@@ -132,7 +160,6 @@ func Build(procs []Proc, self int, claudeDir string, panes []tmux.Pane) []Agent 
 		}
 		return agents[i].Start.Before(agents[j].Start)
 	})
-	return agents
 }
 
 // descendants walks the process tree below pid depth first.

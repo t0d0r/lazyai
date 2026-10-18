@@ -187,3 +187,49 @@ Run and verify: `make check` (macOS), `make test-linux` (docker).
 
 Next step: run lazyai on a real Linux machine with a logged-in Claude Code
 session and confirm status comes from the session file.
+
+## Agents in docker containers (macOS)
+
+Operator noticed that claude inside docker was not detected. They run it
+on macOS as `docker run IMAGE claude`, with `docker exec`/compose, and by
+typing claude into a shell in a container or devcontainer. Only
+`docker run` of an image named after an agent was recognized.
+
+Done:
+
+- internal/agent/client.go: docker/podman/docker-compose command lines
+  (run, exec, compose run/exec, sandbox run, `docker container ...`,
+  global options such as --context). Kind from the command in the
+  container (looking through `bash -lc ...`), else the image or service.
+- internal/agent/container.go: `docker ps` plus parallel `docker top`
+  per container; agents found there are folded into their client row
+  (CPU, memory and status from the agent, PID and pane from the client)
+  or get their own row with ForeignPID and key SHORTID/PID. A shell
+  client in tmux hands its pane to the one interactive agent in its
+  container, so attach and send work. Stop refuses ForeignPID agents.
+  CPU over a 30 s window, since docker top gives whole CPU seconds.
+- Agent.Key() replaces the PID as the identity in watch, TUI selection
+  and resolve; AGENT accepts a container name or SHORTID/PID.
+- Linux: removed last turn's NSpid filter. Host rows are matched to
+  docker's report by PID and command line instead, so nothing docker
+  cannot see is hidden.
+- Verified live on this Mac with a throwaway image of fake agents:
+  docker run IMAGE claude, docker exec -it CTR codex, claude typed into
+  `docker exec -it CTR bash`, docker compose run app claude. All listed
+  with `docker:NAME`; send into the typed claude arrived; stop of it was
+  refused; stop of the docker run row ended its container. A Docker
+  query adds about 10-30 ms per refresh. Test containers, sessions and
+  images were removed afterwards.
+- make check and make test-linux pass (no docker inside those images, so
+  container discovery is a no-op there).
+
+Open: Linux host with docker (host PIDs) only unit-tested; podman top not
+supported; no real Claude Code in a container tried yet.
+
+Files: internal/agent/{client,container,container_test,classify,discover,
+control,procfs,procfs_test}.go, internal/watch/{watch,watch_test}.go,
+internal/tui/{tui,view,keys}.go, internal/display/display.go,
+commands.go, specs/{discovery,control,cli,overview}.md, README.md,
+todo/todo.md.
+
+Next step: try lazyai against a real devcontainer with Claude Code.

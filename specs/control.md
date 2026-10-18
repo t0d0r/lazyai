@@ -3,8 +3,10 @@
 ## Stop
 
 - Only agents returned by discovery can be stopped; never arbitrary PIDs.
-- Refused when the agent is protected (lazyai or a parent of it), or owned
-  by another user.
+- Refused when the agent is protected (lazyai or a parent of it), owned
+  by another user, or reported by docker from inside a container
+  (`foreign_pid`; its PID is not one of this machine's). The message
+  points to `docker stop CONTAINER`.
 - Before signalling, the PID is looked up again; its start time and command
   line must equal the listed ones, otherwise the stop is refused as "exited
   or PID reused".

@@ -17,8 +17,13 @@ Supported agents: Claude Code, Codex, opencode, Gemini CLI, Qwen Code,
 Grok CLI, GitHub Copilot CLI, aider, cursor-agent, Hermes Agent, and the
 local model runtimes ollama, mlx-lm and Colibri (its `coli` launcher and
 native engines such as `qwen36`). Agents started with `docker run` or
-`podman run`, such as opencode in a container, are recognized by their
-image name. Desktop apps (Claude.app, Cursor.app, Grok Bot.app, ...) are
+`podman run`, `docker exec` or `docker compose run/exec`, such as opencode
+or claude in a container, are recognized from the client's command line.
+lazyai also asks docker (when it is installed and running) what runs in
+each container, so an agent typed into a shell in a container or a
+devcontainer is listed too, marked `docker:NAME`. Those can be watched,
+attached to and sent prompts when the shell runs in tmux, but not stopped
+by lazyai; use `docker stop`. Desktop apps (Claude.app, Cursor.app, Grok Bot.app, ...) are
 ignored. Colibri and mlx-lm are listed, watched and stoppable, but started
 with their own tools rather than `launch`.
 

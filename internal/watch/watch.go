@@ -61,19 +61,20 @@ type Event struct {
 // Watcher holds the state between refreshes. The zero value is not usable;
 // call New.
 type Watcher struct {
-	track  map[int]Tracker
-	agents map[int]agent.Agent
-	flags  map[int]string
+	track  map[string]Tracker // by agent.Key
+	agents map[string]agent.Agent
+	flags  map[string]string
 }
 
 // New returns an empty Watcher.
 func New() *Watcher {
-	return &Watcher{track: map[int]Tracker{}, agents: map[int]agent.Agent{}, flags: map[int]string{}}
+	return &Watcher{track: map[string]Tracker{}, agents: map[string]agent.Agent{}, flags: map[string]string{}}
 }
 
-// Tracker returns the state for pid after the last Update.
-func (w *Watcher) Tracker(pid int) (Tracker, bool) {
-	t, ok := w.track[pid]
+// Tracker returns the state for the agent with this agent.Key after the
+// last Update.
+func (w *Watcher) Tracker(key string) (Tracker, bool) {
+	t, ok := w.track[key]
 	return t, ok
 }
 
@@ -81,13 +82,14 @@ func (w *Watcher) Tracker(pid int) (Tracker, bool) {
 // exited agents first (by PID), then the rest in the order given.
 func (w *Watcher) Update(agents []agent.Agent, now time.Time) []Event {
 	var exited, events []Event
-	track := make(map[int]Tracker, len(agents))
-	seen := make(map[int]agent.Agent, len(agents))
-	flags := make(map[int]string, len(agents))
+	track := make(map[string]Tracker, len(agents))
+	seen := make(map[string]agent.Agent, len(agents))
+	flags := make(map[string]string, len(agents))
 	for _, a := range agents {
-		t, existed := w.track[a.PID]
+		key := a.Key()
+		t, existed := w.track[key]
 		if existed && !t.Start.Equal(a.Start) {
-			exited = append(exited, Event{Time: now, Type: EventExited, Agent: w.agents[a.PID]})
+			exited = append(exited, Event{Time: now, Type: EventExited, Agent: w.agents[key]})
 			existed = false
 		}
 		switch {
@@ -112,13 +114,13 @@ func (w *Watcher) Update(agents []agent.Agent, now time.Time) []Event {
 			t.History = append([]Sample(nil), t.History[len(t.History)-HistoryLen:]...)
 		}
 		f := strings.Join(Flags(a, t, now), ",")
-		if existed && w.flags[a.PID] != f {
-			events = append(events, Event{Time: now, Type: EventFlags, From: w.flags[a.PID], To: f, Agent: a})
+		if existed && w.flags[key] != f {
+			events = append(events, Event{Time: now, Type: EventFlags, From: w.flags[key], To: f, Agent: a})
 		}
-		track[a.PID], seen[a.PID], flags[a.PID] = t, a, f
+		track[key], seen[key], flags[key] = t, a, f
 	}
-	for pid, a := range w.agents {
-		if _, ok := seen[pid]; !ok {
+	for key, a := range w.agents {
+		if _, ok := seen[key]; !ok {
 			exited = append(exited, Event{Time: now, Type: EventExited, Agent: a})
 		}
 	}

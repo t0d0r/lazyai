@@ -43,11 +43,3 @@ func TestApplyCPU(t *testing.T) {
 		}
 	}
 }
-
-func TestParseNSpid(t *testing.T) {
-	host := []byte("Name:\tbash\nTgid:\t812\nNgid:\t0\nPid:\t812\nNSpid:\t812\n")
-	contained := []byte("Name:\topencode\nPid:\t9123\nNSpid:\t9123\t1\n")
-	if parseNSpid(host) != 1 || parseNSpid(contained) != 2 || parseNSpid([]byte("Name:\tx\n")) != 0 {
-		t.Error("NSpid levels")
-	}
-}

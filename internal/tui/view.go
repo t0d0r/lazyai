@@ -132,7 +132,7 @@ func (m model) listPanel(i int, l layout) string {
 	}
 	for r := top; r < len(lst.rows) && r < top+visible; r++ {
 		a := lst.rows[r]
-		t, _ := m.watcher.Tracker(a.PID)
+		t, _ := m.watcher.Tracker(a.Key())
 		name := string(a.Kind) + " " + label(a)
 		if i != listAgents {
 			name = string(a.Kind) + " " + string(a.Role) + " " + label(a)
@@ -215,7 +215,7 @@ func (m model) mainLines(w int) []string {
 	case tabProcesses:
 		return processLines(a)
 	case tabStats:
-		t, _ := m.watcher.Tracker(a.PID)
+		t, _ := m.watcher.Tracker(a.Key())
 		return statsLines(a, t, w, max(m.layout().bodyH-2, 4))
 	}
 	return m.infoLines(a)
@@ -223,7 +223,7 @@ func (m model) mainLines(w int) []string {
 
 func (m model) infoLines(a agent.Agent) []string {
 	now := time.Now()
-	t, _ := m.watcher.Tracker(a.PID)
+	t, _ := m.watcher.Tracker(a.Key())
 	fields := append([]display.Field{{Name: "state", Value: display.Status(a, t, now)}}, display.Details(a)...)
 	fields = append(fields,
 		display.Field{Name: "resources", Value: fmt.Sprintf("%.1f%% CPU, %s, up %s",

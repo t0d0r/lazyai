@@ -30,6 +30,9 @@
       apps with spaces in the bundle name (specs/discovery.md)
 - [x] Linux support, tested in docker on Ubuntu 24.04 and Debian 13 with
       make test-linux (specs/overview.md, specs/discovery.md)
+- [x] agents in docker containers: docker run IMAGE CMD, exec, compose
+      run/exec, sandbox run, and agents typed into a container shell via
+      docker ps/top (specs/discovery.md, Containers)
 
 ## Next
 
@@ -68,3 +71,11 @@
       Linuxbrew, then release with Linux support
 - [ ] decide whether to run make test-linux in CI on amd64 too (only
       arm64 has been tested)
+- [ ] agents in containers on a Linux host (docker top gives host PIDs;
+      only unit-tested): try it in a docker-in-docker test image
+      (specs/discovery.md, Docker containers)
+- [ ] podman containers: podman top takes AIX-style descriptors, not ps
+      options
+- [ ] stop for container agents through docker (docker exec CTR kill),
+      if it is wanted; refused for now (specs/control.md)
+- [ ] try a real Claude Code in a container and a VS Code devcontainer
