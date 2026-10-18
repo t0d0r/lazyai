@@ -95,6 +95,11 @@
   correctly not agents. Added kinds grok, copilot, mlx-lm, docker/podman
   run of known images, and a desktop-app check that handles bundle names
   with spaces. Verified live: both grok sessions listed.
+- Released v0.1.1 (annotated tag on 13a8d86; tarball sha256
+  108c32db288a2ca7f519b2d3fb17e2a82185cfff4c4804884a4b81fdd629b686).
+  Tap formula updated (4dfda82), style and audit clean, upgraded locally
+  from source, brew test passes, installed lazyai reports 0.1.1 and
+  lists both grok sessions.
 
 ## Files
 
