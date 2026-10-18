@@ -61,16 +61,21 @@
 - [x] LICENSE: BSD-2-Clause
 - [x] release v0.1.0 and Homebrew formula in t0d0r/homebrew-tap
 - [ ] for each release: tag vX.Y.Z, then update url and sha256 in the tap
-      formula (or let the tap's autobump workflow open the PR); consider
-      GoReleaser for prebuilt binaries
+      formula (or let the tap's autobump workflow open the PR)
+      (specs/release.md)
+- [x] prebuilt static binaries for linux and macOS: `make dist`, attached
+      to the GitHub release (specs/release.md)
+- [~] release v0.2.0 with Linux and container support on GitHub
+      (specs/release.md)
 - [ ] set the GitHub description and topics
 - [ ] try lazyai on a real Linux desktop with real agents: Claude session
       file status (procStart in UTC from procps), npm-installed agents,
       docker-run opencode under rootful docker (specs/discovery.md, Linux)
 - [ ] check that the Homebrew formula builds and passes brew test on
       Linuxbrew, then release with Linux support
-- [ ] decide whether to run make test-linux in CI on amd64 too (only
-      arm64 has been tested)
+- [x] make test-linux on amd64 too: `LINUX_ARCH=amd64` (emulated);
+      passes on Ubuntu 24.04 and Debian 13
+- [ ] decide whether to run make test-linux in CI
 - [ ] agents in containers on a Linux host (docker top gives host PIDs;
       only unit-tested): try it in a docker-in-docker test image
       (specs/discovery.md, Docker containers)

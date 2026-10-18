@@ -233,3 +233,39 @@ commands.go, specs/{discovery,control,cli,overview}.md, README.md,
 todo/todo.md.
 
 Next step: try lazyai against a real devcontainer with Claude Code.
+
+## Release v0.2.0 with Linux binaries
+
+Operator copied the macOS bin/lazyai to an Ubuntu machine ("Exec format
+error") and asked for a GitHub release for Ubuntu and Debian.
+
+Done:
+
+- Gitleaks scan of all 20 commits and the working tree: no leaks; no
+  personal paths or emails in tracked files (test fixtures use
+  /Users/u).
+- Makefile `dist`: static (CGO_ENABLED=0) binaries for linux/amd64,
+  linux/arm64, darwin/amd64, darwin/arm64, built with -trimpath and
+  stripped, packed as lazyai-VERSION-OS-ARCH.tar.gz (entries owned by
+  root) plus SHA256SUMS in bin/dist. Checked: the linux binary is a
+  static ELF and holds no local paths.
+- Makefile `test-linux` takes LINUX_ARCH; `make test-linux
+  LINUX_ARCH=amd64` passes on Ubuntu 24.04 and Debian 13 under emulation
+  (about 2 minutes).
+- specs/release.md (new): artifacts, build flags, steps, security.
+  README install section shows the download and checksum check.
+
+Decision: Makefile target instead of GoReleaser (no extra tool).
+
+Open: GitHub release creation needs `gh auth login` on this Mac (gh was
+not logged in; git over ssh works). Tap formula not yet bumped to
+v0.2.0.
+
+Files: Makefile, specs/{release,README,overview}.md, README.md,
+todo/todo.md.
+
+Run and verify: `make check`, `make test-linux`, `make test-linux
+LINUX_ARCH=amd64`, `make dist`.
+
+Next step: tag v0.2.0, `make dist`, push main and the tag, `gh release
+create` with the tarballs and SHA256SUMS.

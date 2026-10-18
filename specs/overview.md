@@ -42,7 +42,8 @@ current user on this machine, on macOS or Linux.
 
 macOS and Linux. Both use `ps` (procps on Linux) and tmux; the
 differences are listed in discovery.md (Linux). Tested on Ubuntu 24.04 and
-the latest Debian in docker with `make test-linux`: the unit tests plus an
+the latest Debian, arm64 and amd64, in docker with `make test-linux`: the
+unit tests plus an
 end-to-end run of launch, list, show, send, the dashboard, stop and kill
 against fake agents.
 

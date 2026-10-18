@@ -37,6 +37,21 @@ unless `--all`).
 brew install t0d0r/tap/lazyai
 ```
 
+Or, on Linux (Ubuntu, Debian, any distribution) and macOS, download a
+static binary from the
+[releases](https://github.com/t0d0r/lazyai/releases). `uname -m` tells
+which one: `x86_64` is amd64, `aarch64` is arm64.
+
+```sh
+V=v0.2.0 A=linux-amd64
+curl -LO https://github.com/t0d0r/lazyai/releases/download/$V/lazyai-$V-$A.tar.gz
+curl -LO https://github.com/t0d0r/lazyai/releases/download/$V/SHA256SUMS
+sha256sum -c SHA256SUMS --ignore-missing
+tar -xzf lazyai-$V-$A.tar.gz
+install -m 0755 lazyai-$V-$A/lazyai ~/.local/bin/
+sudo apt install tmux procps   # Debian and Ubuntu
+```
+
 ## Build
 
 ```sh
@@ -53,7 +68,8 @@ Debian and Ubuntu); `lsof` is not needed.
 
 `make test-linux` runs the tests and an end-to-end check in Ubuntu 24.04
 and Debian containers (needs docker; `LINUX_IMAGES=...` to change the
-list).
+list, `LINUX_ARCH=amd64` to test the other architecture under emulation).
+`make dist` builds the release tarballs (specs/release.md).
 
 ## Use
 
