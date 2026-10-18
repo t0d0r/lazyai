@@ -263,8 +263,12 @@ Decision: Makefile target instead of GoReleaser (no extra tool).
   (sha256sum -c OK, --version v0.2.0, list runs). gitleaks clean.
 - Pushed main (e63e4c9..c24bd53) and tag v0.2.0 at operator request.
 
-Open: GitHub release not created yet; gh on this Mac is not logged in
-(git over ssh works). Tap formula not yet bumped to v0.2.0.
+- Operator logged gh in. GitHub release v0.2.0 published with the four
+  tarballs and SHA256SUMS (checked again before upload). Downloaded back
+  from the public release URL in a Debian amd64 container: checksum OK,
+  --version prints v0.2.0.
+
+Open: tap formula not yet bumped to v0.2.0 (autobump may open a PR).
 
 Files: Makefile, specs/{release,README,overview}.md, README.md,
 todo/todo.md.
@@ -272,6 +276,5 @@ todo/todo.md.
 Run and verify: `make check`, `make test-linux`, `make test-linux
 LINUX_ARCH=amd64`, `make dist`.
 
-Next step: after `gh auth login`, `make dist` on the tag and `gh release
-create v0.2.0 bin/dist/*.tar.gz bin/dist/SHA256SUMS --title v0.2.0`
-with release notes; then bump the tap formula.
+Next step: operator installs v0.2.0 on their Ubuntu machine and runs it
+with real agents; bump the tap formula to v0.2.0.

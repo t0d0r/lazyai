@@ -65,7 +65,7 @@
       (specs/release.md)
 - [x] prebuilt static binaries for linux and macOS: `make dist`, attached
       to the GitHub release (specs/release.md)
-- [~] release v0.2.0 with Linux and container support on GitHub
+- [x] release v0.2.0 with Linux and container support on GitHub
       (specs/release.md)
 - [ ] set the GitHub description and topics
 - [ ] try lazyai on a real Linux desktop with real agents: Claude session
