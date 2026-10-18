@@ -303,5 +303,11 @@ Files: Makefile, specs/release.md, README.md, todo/todo.md.
 
 Run and verify: `make dist` on the tag, then `make deb VERSION=v0.2.0`.
 
-Next step: upload the debs and the new SHA256SUMS to the v0.2.0
-release.
+- Uploaded both debs and the new SHA256SUMS to the v0.2.0 release
+  (--clobber replaced only SHA256SUMS; tarballs untouched) and added a
+  Debian and Ubuntu section to the release notes. Installed from the
+  public URL on a fresh Ubuntu 24.04 amd64: checksum OK, v0.2.0, tmux
+  pulled in.
+
+Next step: operator installs the .deb on their Ubuntu machine and runs
+lazyai with real agents; bump the tap formula to v0.2.0.
