@@ -42,6 +42,18 @@ static binary from the
 [releases](https://github.com/t0d0r/lazyai/releases). `uname -m` tells
 which one: `x86_64` is amd64, `aarch64` is arm64.
 
+On Debian and Ubuntu, the .deb pulls in tmux and procps:
+
+```sh
+V=0.2.0 A=amd64   # or arm64
+curl -LO https://github.com/t0d0r/lazyai/releases/download/v$V/lazyai_${V}_$A.deb
+curl -LO https://github.com/t0d0r/lazyai/releases/download/v$V/SHA256SUMS
+sha256sum -c SHA256SUMS --ignore-missing
+sudo apt install ./lazyai_${V}_$A.deb
+```
+
+Or the plain binary:
+
 ```sh
 V=v0.2.0 A=linux-amd64
 curl -LO https://github.com/t0d0r/lazyai/releases/download/$V/lazyai-$V-$A.tar.gz
@@ -69,7 +81,8 @@ Debian and Ubuntu); `lsof` is not needed.
 `make test-linux` runs the tests and an end-to-end check in Ubuntu 24.04
 and Debian containers (needs docker; `LINUX_IMAGES=...` to change the
 list, `LINUX_ARCH=amd64` to test the other architecture under emulation).
-`make dist` builds the release tarballs (specs/release.md).
+`make dist` builds the release tarballs and `make deb` the Debian
+packages (specs/release.md).
 
 ## Use
 

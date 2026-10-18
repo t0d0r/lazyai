@@ -67,6 +67,12 @@
       to the GitHub release (specs/release.md)
 - [x] release v0.2.0 with Linux and container support on GitHub
       (specs/release.md)
+- [x] .deb packages for amd64 and arm64: `make deb`, added to the v0.2.0
+      release (specs/release.md, Debian packages)
+- [ ] man page (lintian no-manual-page), for example generated from
+      `lazyai help`
+- [ ] APT repository, if wanted: needs a signing key and hosting
+      (specs/release.md)
 - [ ] set the GitHub description and topics
 - [ ] try lazyai on a real Linux desktop with real agents: Claude session
       file status (procStart in UTC from procps), npm-installed agents,

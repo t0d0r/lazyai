@@ -9,8 +9,11 @@ LINUX_IMAGES ?= ubuntu:24.04 debian:latest
 # LINUX_ARCH defaults to docker's own; amd64 on an arm64 Mac runs emulated.
 LINUX_ARCH ?=
 DIST_PLATFORMS ?= linux/amd64 linux/arm64 darwin/amd64 darwin/arm64
+DEB_ARCHES ?= amd64 arm64
+DEB_IMAGE ?= debian:latest
+DEB_MAINTAINER ?= $(shell git config user.name) <$(shell git config user.email)>
 
-.PHONY: help build test test-linux dist lint fmt check run clean install uninstall tidy
+.PHONY: help build test test-linux dist deb lint fmt check run clean install uninstall tidy
 
 help: ## list targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-10s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -54,6 +57,44 @@ dist: ## build release tarballs and SHA256SUMS into bin/dist
 	done; \
 	cd bin/dist; \
 	if command -v sha256sum >/dev/null; then sha256sum *.tar.gz; else shasum -a 256 *.tar.gz; fi > SHA256SUMS; \
+	cat SHA256SUMS
+
+deb: ## package the linux tarballs in bin/dist as .deb files (needs docker; run dist first)
+	@command -v docker >/dev/null || { echo "deb needs docker for dpkg-deb"; exit 1; }
+	@set -e; ver=$$(echo $(VERSION) | sed 's/^v//; s/-/+/; s/-/./g'); \
+	for arch in $(DEB_ARCHES); do \
+		tgz=bin/dist/lazyai-$(VERSION)-linux-$$arch.tar.gz; \
+		[ -f $$tgz ] || { echo "deb: $$tgz missing; run make dist"; exit 1; }; \
+		root=bin/dist/deb-$$arch; rm -rf $$root; \
+		mkdir -p $$root/DEBIAN $$root/usr/bin $$root/usr/share/doc/lazyai $$root/usr/share/lintian/overrides; \
+		echo "lazyai: statically-linked-binary [usr/bin/lazyai]" > $$root/usr/share/lintian/overrides/lazyai; \
+		tar -xzf $$tgz -O lazyai-$(VERSION)-linux-$$arch/lazyai > $$root/usr/bin/lazyai; \
+		chmod 0755 $$root/usr/bin/lazyai; \
+		{ echo "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/"; \
+		  echo "Upstream-Name: lazyai"; echo "Source: https://github.com/t0d0r/lazyai"; echo; \
+		  echo "Files: *"; echo "License: BSD-2-Clause"; echo; \
+		  sed 's/^$$/./; s/^/ /' LICENSE; } > $$root/usr/share/doc/lazyai/copyright; \
+		printf 'lazyai (%s) unstable; urgency=medium\n\n  * Release %s, see https://github.com/t0d0r/lazyai/releases\n\n -- %s  %s\n' \
+			"$$ver" "$(VERSION)" "$(DEB_MAINTAINER)" "$$(LC_ALL=C date -R 2>/dev/null || LC_ALL=C date '+%a, %d %b %Y %H:%M:%S %z')" \
+			| gzip -9n > $$root/usr/share/doc/lazyai/changelog.gz; \
+		chmod 0644 $$root/usr/share/doc/lazyai/* $$root/usr/share/lintian/overrides/lazyai; \
+		{ echo "Package: lazyai"; echo "Version: $$ver"; echo "Architecture: $$arch"; \
+		  echo "Maintainer: $(DEB_MAINTAINER)"; \
+		  echo "Installed-Size: $$(du -sk $$root/usr | cut -f1)"; \
+		  echo "Depends: tmux, procps"; echo "Suggests: lsof"; \
+		  echo "Section: utils"; echo "Priority: optional"; \
+		  echo "Homepage: https://github.com/t0d0r/lazyai"; \
+		  echo "Description: dashboard to see and control local AI coding agents"; \
+		  echo " lazyai lists Claude Code, Codex, opencode, Gemini CLI and other agents"; \
+		  echo " running for the current user, also inside docker containers, and can"; \
+		  echo " launch them in tmux, attach, send a prompt, and stop them."; \
+		  echo " The binary is static and has no library dependencies."; } > $$root/DEBIAN/control; \
+		docker run --rm --user $$(id -u):$$(id -g) -v $(CURDIR)/bin/dist:/dist $(DEB_IMAGE) \
+			dpkg-deb --root-owner-group -Zxz --build /dist/deb-$$arch /dist/lazyai_$${ver}_$$arch.deb; \
+		rm -rf $$root; \
+	done; \
+	cd bin/dist; \
+	if command -v sha256sum >/dev/null; then sha256sum *.tar.gz *.deb; else shasum -a 256 *.tar.gz *.deb; fi > SHA256SUMS; \
 	cat SHA256SUMS
 
 lint: ## check gofmt and run go vet

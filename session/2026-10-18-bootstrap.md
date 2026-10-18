@@ -278,3 +278,30 @@ LINUX_ARCH=amd64`, `make dist`.
 
 Next step: operator installs v0.2.0 on their Ubuntu machine and runs it
 with real agents; bump the tap formula to v0.2.0.
+
+## Debian packages
+
+Operator asked for a deb package, "universal, static?". Answer: the
+binary is static, so one package per architecture installs on any
+Debian or Ubuntu release; a single package for both CPUs is not how
+dpkg works (decision recorded in specs/release.md).
+
+Done:
+
+- Makefile `deb`: takes the binary from each linux tarball unchanged,
+  writes control, copyright, changelog.gz and a lintian override, and
+  runs dpkg-deb --root-owner-group in a debian:latest container as the
+  calling user. Rewrites SHA256SUMS over tarballs and debs; tarball
+  lines unchanged, so the published sums stay valid.
+- lazyai_0.2.0_{amd64,arm64}.deb: install (pulling tmux and procps),
+  run --version and list, and remove on Ubuntu 24.04 and 20.04, Debian
+  13 and 11, both arches. lintian: only no-manual-page.
+- Maintainer field comes from git config (same identity as the
+  commits); nothing new is published about the operator.
+
+Files: Makefile, specs/release.md, README.md, todo/todo.md.
+
+Run and verify: `make dist` on the tag, then `make deb VERSION=v0.2.0`.
+
+Next step: upload the debs and the new SHA256SUMS to the v0.2.0
+release.
