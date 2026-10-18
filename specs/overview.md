@@ -7,9 +7,10 @@ current user on this Mac.
 
 ## Scope
 
-- Agents: Claude Code, Codex, opencode, Gemini CLI, Qwen Code, aider,
-  cursor-agent, Hermes Agent.
-- Local model runtimes: ollama, Colibri. Their engine processes are shown,
+- Agents: Claude Code, Codex, opencode, Gemini CLI, Qwen Code, Grok CLI,
+  GitHub Copilot CLI, aider, cursor-agent, Hermes Agent; also when run with
+  `docker run` / `podman run`.
+- Local model runtimes: ollama, mlx-lm, Colibri. Their engine processes are shown,
   because agents drive them and they hold most of the CPU and memory.
 - Actions: list and inspect, watch status, stop or kill, launch in tmux,
   attach, send a prompt.

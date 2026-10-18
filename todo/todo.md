@@ -26,6 +26,8 @@
       app, hiding Python agents such as Hermes (specs/discovery.md)
 - [x] kinds hermes, qwen (Qwen Code), colibri; roles job and engine
       (specs/discovery.md)
+- [x] kinds grok, copilot, mlx-lm; agents in docker/podman run; desktop
+      apps with spaces in the bundle name (specs/discovery.md)
 
 ## Next
 
@@ -39,6 +41,8 @@
 - [ ] Codex status and session id from ~/.codex metadata (needs a spec)
 - [ ] verify Hermes server roles (gateway, proxy, lsp) and Qwen Code
       against real processes; only interactive Hermes has been seen
+- [ ] verify copilot, mlx-lm and docker-run opencode against real
+      processes; only grok was running when they were added
 - [ ] try the dashboard in a real terminal: mouse, attach and return,
       colors in light and dark themes
 - [ ] Screen tab with colors (`capture-pane -e`), if it stays readable when

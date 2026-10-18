@@ -14,17 +14,23 @@ import (
 func LaunchKinds() []Kind {
 	var kinds []Kind
 	for _, k := range Kinds {
-		if k != KindColibri {
+		if notLaunched[k] == "" {
 			kinds = append(kinds, k)
 		}
 	}
 	return kinds
 }
 
+// notLaunched names the kinds launch refuses and says how to start them.
+var notLaunched = map[Kind]string{
+	KindColibri: "colibri is not launched by lazyai; start it with its own tooling, for example make run in its project",
+	KindMLX:     "mlx-lm is not launched by lazyai; start it with mlx_lm.server or mlx_lm.chat and a --model",
+}
+
 // LaunchCommand returns the argv that starts kind with extra arguments.
 func LaunchCommand(kind Kind, extra []string) ([]string, error) {
-	if kind == KindColibri {
-		return nil, errors.New("colibri is not launched by lazyai; start it with its own tooling, for example make run in its project")
+	if reason := notLaunched[kind]; reason != "" {
+		return nil, errors.New(reason)
 	}
 	if kindRank(kind) == len(Kinds) {
 		var names []string

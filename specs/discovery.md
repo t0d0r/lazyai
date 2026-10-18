@@ -19,16 +19,35 @@ non-flag argument:
 | opencode     | basename `opencode`                                             |
 | gemini       | basename `gemini`/`gemini.js`, `/gemini-cli/`                   |
 | qwen         | basename `qwen`, `/@qwen-code/` (Qwen Code)                     |
+| grok         | basename `grok`, `/.grok/` (xAI Grok CLI; the binary is `~/.grok/downloads/grok-<version>-...`) |
+| copilot      | basename `copilot`, `/copilot-cli/`, `/@github/copilot/` (GitHub Copilot CLI) |
 | aider        | basename `aider`                                                |
 | cursor-agent | basename `cursor-agent`, `/cursor-cli/`                         |
 | hermes       | basename `hermes`, `/hermes-agent/` (Hermes Agent)              |
 | ollama       | basename `ollama`                                               |
+| mlx-lm       | basename `mlx_lm` or `mlx_lm.<command>` (Apple MLX LM)          |
 | colibri      | basename `coli`; or a path containing `colibri` whose basename is an engine: `qwen<N>...`, `qwenimage`, `colibri`, `glm...` |
 
-argv[0] inside a macOS app bundle (`.app/Contents/`) is excluded, so
-Claude.app, Cursor.app and their helpers are skipped. Homebrew's framework
-Python (`.../Python.app/Contents/MacOS/Python`) is not a desktop app and is
-not excluded; excluding it once hid Hermes.
+A program inside a macOS app bundle (`.app/Contents/`) is excluded, so
+Claude.app, Cursor.app, ChatGPT.app, "Grok Bot.app" and their helpers are
+skipped. The check runs on the command line up to the first option, so
+bundle names with spaces are caught. Homebrew's framework Python
+(`.../Python.app/Contents/MacOS/Python`) is not a desktop app and is not
+excluded; excluding it once hid Hermes.
+
+Editor plugins are not agents: the Copilot language server of copilot.vim
+(`node .../copilot.vim/dist/agent.js`) is not matched.
+
+## Containers
+
+`docker run` and `podman run` are matched when the image's repository name
+(last path segment, without tag or digest) is a supported kind, for
+example `ghcr.io/anomalyco/opencode:latest` -> opencode. Options that take
+a separate value (`-v`, `-e`, `-w`, `-p`, `--name`, ...) are skipped so
+their values are not taken for the image. A detached container (`-d`,
+`--detach`, or `d` among combined short flags such as `-dit`) is a server,
+otherwise interactive. The process lazyai sees and stops is the docker
+client on this Mac; with `-it` it forwards signals to the container.
 
 A bare `qwen36` outside a colibri path is not matched, so other tools with
 model-like names are not picked up.
@@ -40,7 +59,10 @@ Roles:
   -> server
 - opencode: `serve`, `web` -> server
 - hermes: `gateway`, `proxy`, `lsp` -> server
+- copilot: `--acp` -> server; `-p`, `--prompt` -> job
 - ollama: `serve` -> server; `runner` -> engine
+- mlx-lm: `server` -> server; `chat` or no command -> interactive; any
+  other command (`generate`, `lora`, `convert`, ...) -> job
 - colibri: a native engine binary -> engine; `coli` with `serve`, `web`,
   `cluster`, `start` -> server; `chat`, `run` or no subcommand ->
   interactive; any other subcommand (`tune`, `bench`, `build`, ...) -> job

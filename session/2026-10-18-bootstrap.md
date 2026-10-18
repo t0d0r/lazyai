@@ -86,6 +86,15 @@
   git@github.com:t0d0r/homebrew-tap.git. lazyai 0.1.0 is now installed at
   /opt/homebrew/bin/lazyai. The tap's CI builds formulae only on pull
   requests; its daily autobump workflow opens a PR for new tags.
+- README: animated GIF of the dashboard kept on local branch
+  docs/readme-gif (not pushed, at operator request); "Why?" section added
+  on main from the operator's text, translated to English.
+- Operator noticed grok was missing. Survey of the machine: grok CLI
+  (2 running, one for 11 days), Copilot CLI and mlx-lm installed, opencode
+  run through a docker alias; Grok Bot.app, ChatGPT.app and copilot.vim
+  correctly not agents. Added kinds grok, copilot, mlx-lm, docker/podman
+  run of known images, and a desktop-app check that handles bundle names
+  with spaces. Verified live: both grok sessions listed.
 
 ## Files
 

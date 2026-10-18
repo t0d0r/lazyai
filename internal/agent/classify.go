@@ -15,17 +15,20 @@ const (
 	KindCodex    Kind = "codex"
 	KindOpencode Kind = "opencode"
 	KindGemini   Kind = "gemini"
-	KindQwen     Kind = "qwen" // Qwen Code CLI
+	KindQwen     Kind = "qwen"    // Qwen Code CLI
+	KindGrok     Kind = "grok"    // xAI Grok CLI
+	KindCopilot  Kind = "copilot" // GitHub Copilot CLI
 	KindAider    Kind = "aider"
 	KindCursor   Kind = "cursor-agent"
 	KindHermes   Kind = "hermes" // Hermes Agent
 	KindOllama   Kind = "ollama"
+	KindMLX      Kind = "mlx-lm"  // Apple MLX LM runtime
 	KindColibri  Kind = "colibri" // Colibri local model runtime
 )
 
 // Kinds lists every supported kind in display order.
-var Kinds = []Kind{KindClaude, KindCodex, KindOpencode, KindGemini, KindQwen, KindAider,
-	KindCursor, KindHermes, KindOllama, KindColibri}
+var Kinds = []Kind{KindClaude, KindCodex, KindOpencode, KindGemini, KindQwen, KindGrok, KindCopilot,
+	KindAider, KindCursor, KindHermes, KindOllama, KindMLX, KindColibri}
 
 // Role says what the process does for its agent.
 type Role string
@@ -46,8 +49,11 @@ func Classify(args string) (Kind, Role, bool) {
 		return "", "", false
 	}
 	argv0 := tokens[0]
-	if isDesktopApp(argv0) {
+	if isDesktopApp(args) {
 		return "", "", false
+	}
+	if base := filepath.Base(argv0); base == "docker" || base == "podman" {
+		return classifyContainer(tokens[1:])
 	}
 	candidates := []string{argv0}
 	rest := tokens[1:]
@@ -70,12 +76,64 @@ func Classify(args string) (Kind, Role, bool) {
 	return "", "", false
 }
 
-// isDesktopApp reports whether argv0 lives inside a macOS app bundle, such
-// as Claude.app or Cursor.app and their helpers. Those are out of scope.
-// Homebrew's framework Python runs from Python.app, so it is not one.
-func isDesktopApp(argv0 string) bool {
-	bundle, _, found := strings.Cut(argv0, ".app/Contents/")
-	return found && !strings.HasSuffix(bundle, "/Python")
+// isDesktopApp reports whether the program lives inside a macOS app bundle,
+// such as Claude.app, Cursor.app or "Grok Bot.app" and their helpers. Those
+// are out of scope. The bundle path may contain spaces, so the whole command
+// line is checked up to the first option. Homebrew's framework Python runs
+// from Python.app, so it is not one.
+func isDesktopApp(args string) bool {
+	bundle, _, found := strings.Cut(args, ".app/Contents/")
+	return found && !strings.Contains(bundle, " -") && !strings.HasSuffix(bundle, "/Python")
+}
+
+// containerValueFlags are docker/podman run options that take a separate
+// value, so the value is not mistaken for the image.
+var containerValueFlags = map[string]bool{
+	"-v": true, "--volume": true, "-e": true, "--env": true, "--env-file": true,
+	"-w": true, "--workdir": true, "-p": true, "--publish": true, "--name": true,
+	"-u": true, "--user": true, "-l": true, "--label": true, "--label-file": true,
+	"--mount": true, "--network": true, "--net": true, "-h": true, "--hostname": true,
+	"--add-host": true, "--entrypoint": true, "--platform": true, "--cpus": true,
+	"-m": true, "--memory": true, "--device": true, "--pull": true, "--restart": true,
+	"--log-driver": true, "--log-opt": true, "--cap-add": true, "--cap-drop": true,
+	"--security-opt": true, "--ulimit": true, "--tmpfs": true, "--shm-size": true,
+	"--gpus": true, "--runtime": true, "--dns": true, "--expose": true, "--cidfile": true,
+}
+
+// classifyContainer recognizes "docker run [OPTIONS] IMAGE [ARGS]" when the
+// image's repository name is a supported kind, for example
+// ghcr.io/anomalyco/opencode:latest. Detached containers count as servers.
+func classifyContainer(args []string) (Kind, Role, bool) {
+	if len(args) == 0 || args[0] != "run" {
+		return "", "", false
+	}
+	detached := false
+	for i := 1; i < len(args); i++ {
+		t := args[i]
+		if strings.HasPrefix(t, "-") {
+			// --detach, -d, or d among combined short flags such as -dit
+			if t == "--detach" || !strings.HasPrefix(t, "--") && strings.Contains(t, "d") {
+				detached = true
+			}
+			if containerValueFlags[t] {
+				i++
+			}
+			continue
+		}
+		image, _, _ := strings.Cut(t, "@")
+		if j := strings.LastIndex(image, ":"); j > strings.LastIndex(image, "/") {
+			image = image[:j] // drop the tag, not a registry port
+		}
+		k := Kind(filepath.Base(image))
+		if kindRank(k) == len(Kinds) {
+			return "", "", false
+		}
+		if detached {
+			return k, RoleServer, true
+		}
+		return k, RoleInteractive, true
+	}
+	return "", "", false
 }
 
 func isInterpreter(base string) bool {
@@ -99,6 +157,9 @@ func kindOf(path string) Kind {
 	if base == "coli" || strings.Contains(path, "colibri") && colibriEngine.MatchString(base) {
 		return KindColibri
 	}
+	if base == "mlx_lm" || strings.HasPrefix(base, "mlx_lm.") {
+		return KindMLX
+	}
 	for _, k := range Kinds {
 		if base == string(k) {
 			return k
@@ -118,6 +179,10 @@ func kindOf(path string) Kind {
 		return KindCursor
 	case strings.Contains(path, "/hermes-agent/"):
 		return KindHermes
+	case strings.Contains(path, "/.grok/"):
+		return KindGrok // ~/.grok/downloads/grok-<version>-macos-aarch64
+	case strings.Contains(path, "/copilot-cli/"), strings.Contains(path, "/@github/copilot/"):
+		return KindCopilot
 	}
 	return ""
 }
@@ -172,6 +237,35 @@ func roleOf(k Kind, program string, script bool, rest []string) Role {
 			return RoleInteractive
 		}
 		return RoleJob
+	case KindCopilot:
+		switch {
+		case has("--acp"):
+			return RoleServer
+		case has("-p"), has("--prompt"), hasPrefix(rest, "--prompt="):
+			return RoleJob
+		}
+	case KindMLX:
+		// mlx_lm.server, or python -m mlx_lm server
+		sub := first
+		if _, after, ok := strings.Cut(filepath.Base(program), "mlx_lm."); ok {
+			sub = after
+		}
+		switch sub {
+		case "server":
+			return RoleServer
+		case "chat", "":
+			return RoleInteractive
+		}
+		return RoleJob
 	}
 	return RoleInteractive
+}
+
+func hasPrefix(tokens []string, prefix string) bool {
+	for _, t := range tokens {
+		if strings.HasPrefix(t, prefix) {
+			return true
+		}
+	}
+	return false
 }
