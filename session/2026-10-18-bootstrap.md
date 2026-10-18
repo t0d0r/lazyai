@@ -100,6 +100,11 @@
   Tap formula updated (4dfda82), style and audit clean, upgraded locally
   from source, brew test passes, installed lazyai reports 0.1.1 and
   lists both grok sessions.
+- Pushed branch docs/readme-gif (d688199) to origin at operator request,
+  after checking its two frames show nothing beyond the public
+  screenshot. It branches from d4914fc, two commits behind main, and
+  changes only the README image line plus lazyai.gif, so it merges
+  cleanly. Not merged into main.
 
 ## Files
 
