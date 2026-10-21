@@ -36,6 +36,8 @@
 
 - [x] TUI launch/prompt input accepts both DEL and ctrl+h backspace encodings
       (specs/tui.md)
+- [x] `list` makes tmux membership explicit with `IN_TMUX=yes/no` and keeps
+      the matched session in `TMUX_SESSION` (specs/cli.md)
 
 ## Next
 

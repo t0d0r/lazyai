@@ -65,7 +65,9 @@ The CLI behaves like a standard Unix command:
 
 ## list
 
-Columns: PID, KIND, ROLE, STATUS, CPU%, MEM, UP, TMUX, FLAGS, WHERE.
+Columns: PID, KIND, ROLE, STATUS, CPU%, MEM, UP, IN_TMUX, TMUX_SESSION,
+FLAGS, WHERE. `IN_TMUX` is `yes` only when discovery matched the process to a
+tmux pane; `TMUX_SESSION` is that session name, or `-` when unavailable.
 A single snapshot only knows durations from Claude session files, and
 flags that need no history (`self`, `high-mem`, `long-busy` from a Claude
 status time). `high-cpu` needs `watch` or the TUI.

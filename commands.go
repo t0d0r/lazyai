@@ -209,18 +209,28 @@ func list(e env, all, asJSON bool) error {
 	w := watch.New()
 	w.Update(agents, now)
 	tw := tabwriter.NewWriter(e.out, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, "PID\tKIND\tROLE\tSTATUS\tCPU%\tMEM\tUP\tTMUX\tFLAGS\tWHERE")
+	fmt.Fprintln(tw, "PID	KIND	ROLE	STATUS	CPU%	MEM	UP	IN_TMUX	TMUX_SESSION	FLAGS	WHERE")
 	for _, a := range agents {
 		t, _ := w.Tracker(a.Key())
-		tm := strings.TrimPrefix(a.TmuxSession, tmux.Prefix)
-		if tm == "" {
-			tm = "-"
-		}
-		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%.1f\t%s\t%s\t%s\t%s\t%s\n", a.PID, a.Kind, a.Role,
+		inTmux, tmuxSession := tmuxColumns(a)
+		fmt.Fprintf(tw, "%d	%s	%s	%s	%.1f	%s	%s	%s	%s	%s	%s\n", a.PID, a.Kind, a.Role,
 			display.Status(a, t, now), a.CPU, display.Bytes(a.RSS), display.Duration(now.Sub(a.Start)),
-			tm, display.Flags(a, t, now), display.Where(a))
+			inTmux, tmuxSession, display.Flags(a, t, now), display.Where(a))
 	}
 	return tw.Flush()
+}
+
+// tmuxColumns makes tmux membership explicit while retaining the session name
+// for processes matched to a pane during discovery.
+func tmuxColumns(a agent.Agent) (inTmux, session string) {
+	if a.TmuxPane == "" {
+		return "no", "-"
+	}
+	session = strings.TrimPrefix(a.TmuxSession, tmux.Prefix)
+	if session == "" {
+		session = "-"
+	}
+	return "yes", session
 }
 
 func show(e env, ref string, asJSON bool) error {

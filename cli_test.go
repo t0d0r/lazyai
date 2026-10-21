@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+
+	"lazyai/internal/agent"
 )
 
 func runCLI(args ...string) (int, string, string) {
@@ -80,6 +82,25 @@ func TestUsageErrors(t *testing.T) {
 		if code != 2 || out != "" || !strings.Contains(errOut, c.want) {
 			t.Errorf("%v: code %d, stdout %q, stderr %q; want %q", c.args, code, out, errOut, c.want)
 		}
+	}
+}
+
+func TestTmuxColumns(t *testing.T) {
+	cases := []struct {
+		name            string
+		agent           agent.Agent
+		wantIn, wantSID string
+	}{
+		{"outside", agent.Agent{}, "no", "-"},
+		{"in tmux", agent.Agent{TmuxSession: "lazyai-work", TmuxPane: "%3"}, "yes", "work"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			in, session := tmuxColumns(tc.agent)
+			if in != tc.wantIn || session != tc.wantSID {
+				t.Errorf("tmuxColumns() = %q, %q; want %q, %q", in, session, tc.wantIn, tc.wantSID)
+			}
+		})
 	}
 }
 
