@@ -21,6 +21,10 @@ func key(s string) tea.KeyMsg {
 		return tea.KeyMsg{Type: tea.KeyEnter}
 	case "esc":
 		return tea.KeyMsg{Type: tea.KeyEsc}
+	case "backspace":
+		return tea.KeyMsg{Type: tea.KeyBackspace}
+	case "ctrl+h":
+		return tea.KeyMsg{Type: tea.KeyCtrlH}
 	}
 	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)}
 }
@@ -192,6 +196,17 @@ func TestActions(t *testing.T) {
 	}
 	if mm := press(m, "s", "n"); mm.popup != popupNone || mm.msg != "cancelled" {
 		t.Errorf("confirm no: %v %q", mm.popup, mm.msg)
+	}
+}
+
+func TestInputBackspaceVariants(t *testing.T) {
+	for _, k := range []string{"backspace", "ctrl+h"} {
+		t.Run(k, func(t *testing.T) {
+			m := press(loaded(120, 30), "n", "c", "l", "a", k)
+			if got := string(m.buf); got != "cl" {
+				t.Errorf("%s left input %q, want %q", k, got, "cl")
+			}
+		})
 	}
 }
 

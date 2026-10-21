@@ -311,3 +311,18 @@ Run and verify: `make dist` on the tag, then `make deb VERSION=v0.2.0`.
 
 Next step: operator installs the .deb on their Ubuntu machine and runs
 lazyai with real agents; bump the tap formula to v0.2.0.
+
+## 2026-10-21 - TUI backspace compatibility
+
+Done:
+
+- Operator reported that Backspace did not delete characters in the `n` launch modal.
+- Bubble Tea distinguishes DEL (`tea.KeyBackspace`) from the ctrl+h byte emitted by some terminal configurations (`tea.KeyCtrlH`). The modal handled only DEL.
+- Added coverage for both encodings and made `updateInput` delete one rune for either key.
+- Verified the regression test fails before the implementation change and passes after it.
+
+Files: internal/tui/{tui.go,tui_test.go}, specs/tui.md, todo/todo.md.
+
+Run and verify: `make check`.
+
+Next step: run `bin/lazyai` in the affected terminal and press `n`, type text, then Backspace to confirm the terminal emits either supported encoding.

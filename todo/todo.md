@@ -34,6 +34,9 @@
       run/exec, sandbox run, and agents typed into a container shell via
       docker ps/top (specs/discovery.md, Containers)
 
+- [x] TUI launch/prompt input accepts both DEL and ctrl+h backspace encodings
+      (specs/tui.md)
+
 ## Next
 
 - [ ] verify attach by hand from a real terminal, outside and inside tmux

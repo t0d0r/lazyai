@@ -492,7 +492,7 @@ func (m model) updateInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case tea.KeyEnter:
 		m.popup = popupNone
 		return m, m.submit(strings.TrimSpace(string(m.buf)))
-	case tea.KeyBackspace:
+	case tea.KeyBackspace, tea.KeyCtrlH:
 		if len(m.buf) > 0 {
 			m.buf = m.buf[:len(m.buf)-1]
 		}

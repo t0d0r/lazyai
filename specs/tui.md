@@ -94,7 +94,8 @@ apply are dimmed with a short reason (not in tmux, lazyai's parent) and
 refused with the full reason. Enter or the item's key runs it.
 
 Launch input: DIR may use `~` and is relative to the directory lazyai was
-started in.
+started in. Input popups treat both terminal backspace encodings (DEL and
+ctrl+h) as backspace.
 
 ## Refresh
 
