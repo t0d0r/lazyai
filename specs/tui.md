@@ -79,7 +79,7 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
 | x                    | action menu for the selected agent             |
 | a                    | attach (tmux only)                             |
 | p                    | send a prompt (tmux only)                      |
-| n                    | launch: `KIND [DIR] [NAME] [-- ARGS...]`       |
+| n                    | launch: `KIND [DIR] [NAME] [-- ARGS...]`; up / down history, tab completes |
 | s / K                | stop (SIGTERM) / kill (SIGKILL), confirm with y |
 | H                    | show / hide helper processes                   |
 | r                    | refresh now                                    |
@@ -96,6 +96,31 @@ refused with the full reason. Enter or the item's key runs it.
 Launch input: DIR may use `~` and is relative to the directory lazyai was
 started in. Input popups treat both terminal backspace encodings (DEL and
 ctrl+h) as backspace.
+
+Launch history: every launch line that parses is added to a history, with
+runs of spaces folded to one. Up shows the previous (older) line, down the
+next; past the newest line down brings back the text that was being
+typed. A line used again moves to the end instead of being kept twice; the
+oldest lines beyond 200 are dropped. The history is kept in
+`$XDG_STATE_HOME/lazyai/launch_history` (default
+`~/.local/state/lazyai/launch_history`), one line per launch, so it
+survives restarts. The directory is created mode 0700 and the file is
+written mode 0600 through a rename, because launch lines can carry agent
+arguments. Before adding a line the file is read again, so several lazyai
+instances do not drop each other's lines. A missing or unreadable file is
+an empty history; a failed write shows in the message line and does not
+stop the launch. The prompt popup (`p`) keeps no history: prompts are
+free text sent to an agent and are not written to disk.
+
+Launch completion: tab completes the word being typed. The first word
+completes to a launch kind and gets a space when only one kind matches.
+The second word completes to a directory, resolved the same way as DIR
+(`~`, relative to the start directory, symlinks followed); a single match
+gets a trailing `/` so the next tab goes one level down, and hidden
+directories are offered only when the word starts with `.`. With several
+matches the word grows to their common prefix and the matches show under
+the input until the next key. NAME and anything after `--` are not
+completed.
 
 ## Refresh
 

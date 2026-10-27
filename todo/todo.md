@@ -39,6 +39,9 @@
 - [x] `list` makes tmux membership explicit with `IN_TMUX=yes/no` and keeps
       the matched session in `TMUX_SESSION` (specs/cli.md)
 
+- [x] launch popup: up/down history kept across restarts, tab completes
+      the kind and the directory (specs/tui.md)
+
 ## Next
 
 - [ ] verify attach by hand from a real terminal, outside and inside tmux

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,6 +26,10 @@ func key(s string) tea.KeyMsg {
 		return tea.KeyMsg{Type: tea.KeyBackspace}
 	case "ctrl+h":
 		return tea.KeyMsg{Type: tea.KeyCtrlH}
+	case "up":
+		return tea.KeyMsg{Type: tea.KeyUp}
+	case "down":
+		return tea.KeyMsg{Type: tea.KeyDown}
 	}
 	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)}
 }
@@ -207,6 +212,96 @@ func TestInputBackspaceVariants(t *testing.T) {
 				t.Errorf("%s left input %q, want %q", k, got, "cl")
 			}
 		})
+	}
+}
+
+func TestLaunchHistory(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state", "launch_history")
+	m := loaded(120, 30)
+	m.opts.HistoryFile = path
+	m = press(m, "n", "c", "o", "d", "e", "x", "enter", "n", "c", "l", "a", "u", "d", "e", "enter")
+	if strings.Join(m.hist, ",") != "codex,claude" {
+		t.Fatalf("history %q", m.hist)
+	}
+	if fi, err := os.Stat(path); err != nil || fi.Mode().Perm() != 0o600 {
+		t.Fatalf("history file: %v %v", fi, err)
+	}
+	m = press(m, "n", "x", "up")
+	if got := string(m.buf); got != "claude" {
+		t.Errorf("up: %q", got)
+	}
+	for _, step := range []struct{ key, want string }{{"up", "codex"}, {"up", "codex"}, {"down", "claude"}, {"down", "x"}, {"down", "x"}} {
+		if m = press(m, step.key); string(m.buf) != step.want {
+			t.Errorf("%s: %q, want %q", step.key, string(m.buf), step.want)
+		}
+	}
+
+	m = press(m, "esc", "n", "up", "up", "enter") // codex again moves to the end
+	if got := loadHistory(path); strings.Join(got, ",") != "claude,codex" {
+		t.Errorf("reloaded history %q", got)
+	}
+	if m := newModel(Options{HistoryFile: path}); len(m.hist) != 2 {
+		t.Errorf("new model history %q", m.hist)
+	}
+}
+
+func TestAddHistoryLimit(t *testing.T) {
+	var h []string
+	for i := range historyMax + 5 {
+		h = addHistory(h, fmt.Sprint("claude d", i))
+	}
+	if len(h) != historyMax || h[0] != "claude d5" {
+		t.Errorf("len %d first %q", len(h), h[0])
+	}
+	if h = addHistory(h, "  claude   d5 "); h[len(h)-1] != "claude d5" || h[0] != "claude d6" {
+		t.Errorf("duplicate not moved: %q ... %q", h[0], h[len(h)-1])
+	}
+}
+
+func TestCompleteLaunch(t *testing.T) {
+	base := t.TempDir()
+	for _, d := range []string{"proj-a", "proj-b", "other", ".hidden", "proj-a/sub"} {
+		if err := os.Mkdir(filepath.Join(base, d), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(base, "proj-file"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		in, want, choices string
+	}{
+		{"cl", "claude ", ""},
+		{"co", "co", "codex copilot"},
+		{"zz", "zz", ""},
+		{"claude ", "claude ", "other/ proj-a/ proj-b/"},
+		{"claude p", "claude proj-", "proj-a/ proj-b/"},
+		{"claude proj-a", "claude proj-a/", ""},
+		{"claude proj-a/", "claude proj-a/sub/", ""},
+		{"claude .h", "claude .hidden/", ""},
+		{"./", "./", ""}, // the first word is a kind, never a directory
+		{"claude " + base + "/o", "claude " + base + "/other/", ""},
+		{"claude ~", "claude ~/", ""},
+		{"claude proj-a n", "claude proj-a n", ""},
+		{"claude -- p", "claude -- p", ""},
+	} {
+		got, choices := completeLaunch(c.in, base)
+		if got != c.want || strings.Join(choices, " ") != c.choices {
+			t.Errorf("completeLaunch(%q) = %q %q, want %q %q", c.in, got, choices, c.want, c.choices)
+		}
+	}
+
+	m := loaded(120, 30)
+	m.opts.LaunchDir = base
+	m = press(m, "n", "c", "l", "tab", "p", "tab")
+	if got := string(m.buf); got != "claude proj-" || len(m.choices) != 2 {
+		t.Errorf("tab in popup: %q %q", got, m.choices)
+	}
+	if !strings.Contains(ansi.Strip(m.View()), "proj-a/  proj-b/") {
+		t.Error("choices not shown")
+	}
+	if m = press(m, "a"); m.choices != nil {
+		t.Error("choices kept after typing")
 	}
 }
 

@@ -40,7 +40,8 @@ n launch, s stop, K kill, H helpers, ? all keys, q quit. Mouse works.`,
 				if err != nil {
 					return err
 				}
-				return tui.Run(tui.Options{Interval: *interval, LaunchDir: cwd, Version: version})
+				return tui.Run(tui.Options{Interval: *interval, LaunchDir: cwd,
+					HistoryFile: tui.HistoryPath(), Version: version})
 			}
 		},
 	},

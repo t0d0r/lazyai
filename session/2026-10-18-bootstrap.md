@@ -326,3 +326,38 @@ Files: internal/tui/{tui.go,tui_test.go}, specs/tui.md, todo/todo.md.
 Run and verify: `make check`.
 
 Next step: run `bin/lazyai` in the affected terminal and press `n`, type text, then Backspace to confirm the terminal emits either supported encoding.
+
+## 2026-10-27 - launch history and completion
+
+Operator asked for the `n` launch popup to keep a history browsed with
+up/down, and for tab completion.
+
+Done:
+
+- internal/tui/input.go (new): history load, add and save; up/down
+  navigation with the typed draft kept; completeLaunch for the kind
+  (first word) and the directory (second word).
+- History file `$XDG_STATE_HOME/lazyai/launch_history` (default
+  ~/.local/state/lazyai), at most 200 lines, duplicates moved to the end,
+  dir 0700, file 0600 written through a rename, re-read before each add.
+  Options.HistoryFile; "" keeps history in memory (tests use a temp dir).
+- Several matches complete to the common prefix and are listed under the
+  input until the next key. Hint line names the new keys.
+- Tests: TestLaunchHistory, TestAddHistoryLimit, TestCompleteLaunch.
+
+Decisions:
+
+- Launch history only. Prompts sent with `p` are free text for an agent
+  and are not written to disk.
+- History is persisted, not per session, so it works like a shell; the
+  file is private to the user because launch arguments could hold
+  something sensitive.
+
+Files: internal/tui/{input.go,tui.go,view.go,tui_test.go}, commands.go,
+specs/tui.md, todo/todo.md.
+
+Run and verify: `make check`; then `make run`, press `n`, type `cl` and
+tab, launch, press `n` again and up.
+
+Next step: try it in a real terminal; check that up/down and tab reach
+the popup in tmux and in the operator's terminal emulator.

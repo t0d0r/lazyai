@@ -19,9 +19,10 @@ import (
 
 // Options configures the dashboard.
 type Options struct {
-	Interval  time.Duration // refresh period
-	LaunchDir string        // default directory for new agents
-	Version   string
+	Interval    time.Duration // refresh period
+	LaunchDir   string        // default directory for new agents
+	HistoryFile string        // launch history; "" keeps it in memory only
+	Version     string
 }
 
 // Run shows the dashboard until the user quits.
@@ -136,6 +137,10 @@ type model struct {
 	force      bool
 	input      inputKind
 	buf        []rune
+	hist       []string // launch lines, oldest first
+	histPos    int      // index into hist; len(hist) is the line being typed
+	draft      []rune   // the line being typed while browsing hist
+	choices    []string // completions shown under the launch input
 
 	msg     string
 	msgErr  bool
@@ -153,7 +158,8 @@ func newModel(opts Options) model {
 	if opts.Interval <= 0 {
 		opts.Interval = 2 * time.Second
 	}
-	return model{opts: opts, watcher: watch.New(), loading: true, follow: true, width: 120, height: 30}
+	return model{opts: opts, watcher: watch.New(), loading: true, follow: true, width: 120, height: 30,
+		hist: loadHistory(opts.HistoryFile)}
 }
 
 func discover() tea.Msg {
@@ -403,7 +409,8 @@ func (m model) action(key string) (tea.Model, tea.Cmd) {
 			m.setMsg("helpers hidden", false)
 		}
 	case "n":
-		m.popup, m.input, m.buf = popupInput, inputLaunch, nil
+		m.popup, m.input, m.buf, m.draft, m.choices = popupInput, inputLaunch, nil, nil, nil
+		m.histPos = len(m.hist)
 	case "a", "p", "s", "K":
 		if !ok {
 			m.setMsg("nothing selected", true)
@@ -484,6 +491,21 @@ func (m model) updateConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) updateInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	m.choices = nil
+	if m.input == inputLaunch {
+		switch msg.Type {
+		case tea.KeyUp:
+			m.historyMove(-1)
+			return m, nil
+		case tea.KeyDown:
+			m.historyMove(1)
+			return m, nil
+		case tea.KeyTab:
+			line, choices := completeLaunch(string(m.buf), m.opts.LaunchDir)
+			m.buf, m.choices = []rune(line), choices
+			return m, nil
+		}
+	}
 	switch msg.Type {
 	case tea.KeyEsc, tea.KeyCtrlC:
 		m.popup = popupNone
@@ -522,6 +544,13 @@ func (m *model) submit(text string) tea.Cmd {
 	if err != nil {
 		m.setMsg(err.Error(), true)
 		return nil
+	}
+	if m.opts.HistoryFile != "" {
+		m.hist = loadHistory(m.opts.HistoryFile) // keep lines other lazyai instances added
+	}
+	m.hist = addHistory(m.hist, text)
+	if err := saveHistory(m.opts.HistoryFile, m.hist); err != nil {
+		m.setMsg("launch history: "+err.Error(), true)
 	}
 	return func() tea.Msg {
 		session, err := agent.Launch(kind, dir, name, extra)

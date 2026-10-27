@@ -374,7 +374,15 @@ func (m model) inputPopup() string {
 	if tw := ansi.StringWidth(text); tw > w-4 {
 		text = ansi.TruncateLeft(text, tw-(w-4), "")
 	}
-	lines := []string{text, "", dimStyle.Render(hint), dimStyle.Render("enter to submit, esc to cancel")}
+	keys := "enter to submit, esc to cancel"
+	if m.input == inputLaunch {
+		keys = "up/down history, tab completes, " + keys
+	}
+	lines := []string{text, ""}
+	if len(m.choices) > 0 {
+		lines = append(lines, ansi.Truncate(strings.Join(m.choices, "  "), w-4, "..."), "")
+	}
+	lines = append(lines, dimStyle.Render(hint), dimStyle.Render(keys))
 	return popupBox(title, lines, w)
 }
 
