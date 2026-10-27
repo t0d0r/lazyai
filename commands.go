@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"text/tabwriter"
@@ -15,6 +16,7 @@ import (
 	"lazyai/internal/display"
 	"lazyai/internal/tmux"
 	"lazyai/internal/tui"
+	"lazyai/internal/update"
 	"lazyai/internal/watch"
 )
 
@@ -188,6 +190,29 @@ confirmation per agent unless --yes is given.`,
 			}
 		},
 	},
+	{
+		name:     "update",
+		synopsis: "[OPTIONS]",
+		summary:  "update lazyai to the latest release",
+		about: `
+Look up the latest release on GitHub and install it the way lazyai was
+installed: brew upgrade for Homebrew, the release's .deb through apt for
+the Debian package, otherwise the binary is replaced with the one from the
+release tarball. Downloads are checked against the release's SHA256SUMS.
+Asks for confirmation unless --yes is given. A build from source is not
+replaced.`,
+		permute: true,
+		setup: func(f *flagDefs) action {
+			check := f.Bool("c", "check", "only report whether an update is available")
+			yes := f.Bool("y", "yes", "do not ask for confirmation")
+			return func(e env, args []string) error {
+				if err := noArgs(args); err != nil {
+					return err
+				}
+				return selfUpdate(e, *check, *yes)
+			}
+		},
+	},
 }
 
 func noArgs(args []string) error {
@@ -346,6 +371,47 @@ func stop(e env, refs []string, force, yes bool) error {
 	}
 	if failed > 0 {
 		return fmt.Errorf("%d of %d not stopped", failed, len(refs))
+	}
+	return nil
+}
+
+func selfUpdate(e env, check, yes bool) error {
+	c := update.New()
+	latest, err := c.Latest()
+	if err != nil {
+		return err
+	}
+	current, release := update.Parse(version)
+	if !release {
+		fmt.Fprintf(e.out, "lazyai %s is a build from source; the latest release is %s\n", version, latest)
+		if check {
+			return nil
+		}
+		return fmt.Errorf("not replacing a build from source; update it with git pull and make install")
+	}
+	if current.Compare(latest) >= 0 {
+		fmt.Fprintf(e.out, "lazyai %s is up to date\n", version)
+		return nil
+	}
+	fmt.Fprintf(e.out, "update available: %s -> %s\n", current, latest)
+	if check {
+		return nil
+	}
+	exe, err := update.Executable()
+	if err != nil {
+		return err
+	}
+	method := update.Detect(exe, runtime.GOOS, update.DpkgOwns)
+	q := fmt.Sprintf("Update lazyai %s -> %s (%s)?", current, latest, method)
+	if !yes && !confirm(e.out, bufio.NewReader(e.in), q) {
+		fmt.Fprintln(e.out, "skipped")
+		return nil
+	}
+	if err := c.Install(method, latest, exe); err != nil {
+		return err
+	}
+	if method == update.Binary {
+		fmt.Fprintf(e.out, "updated lazyai %s -> %s (%s)\n", current, latest, exe)
 	}
 	return nil
 }

@@ -64,6 +64,9 @@ install -m 0755 lazyai-$V-$A/lazyai ~/.local/bin/
 sudo apt install tmux procps   # Debian and Ubuntu
 ```
 
+Update later with `lazyai update`; it uses brew, apt or replaces the
+binary, matching how lazyai was installed.
+
 ## Build
 
 ```sh
@@ -100,6 +103,7 @@ bin/lazyai attach claude-x
 bin/lazyai send claude-x "run the tests"
 bin/lazyai stop claude-x         # asks first; -yes skips, -force kills
 bin/lazyai kill 12345            # same as stop -force
+lazyai update                    # install the latest release; -check only reports
 ```
 
 AGENT arguments accept a PID, a tmux session name (the `lazyai-` prefix
@@ -169,6 +173,10 @@ See `specs/` for the full behavior.
 - `send` types text into an agent exactly as given; the agent then acts on
   it with its own permissions. Treat it like typing into that terminal.
 - Claude Code `*.key` files next to the session metadata are never read.
+- lazyai contacts the network only when `lazyai update` runs. Updates
+  are checked against the release's SHA256SUMS, which catches broken
+  downloads but is not a signature; HTTPS to GitHub is what authenticates
+  them.
 
 ## License
 

@@ -18,6 +18,7 @@ formatting.
 | `send AGENT TEXT...`                     | p        | words are joined with single spaces    |
 | `stop [-force] [-yes] AGENT...`          | s        | asks `[y/N]` per agent unless `-yes`   |
 | `kill [-yes] AGENT...`                   | K        | `stop -force`                          |
+| `update [-check] [-yes]`                 | -        | install the latest release, update.md  |
 
 ## Conventions
 
@@ -49,7 +50,8 @@ The CLI behaves like a standard Unix command:
 | `--dir DIR`       | `-d`  | launch                   |
 | `--name NAME`     | `-n`  | launch                   |
 | `--force`         | `-f`  | stop                     |
-| `--yes`           | `-y`  | stop, kill               |
+| `--yes`           | `-y`  | stop, kill, update       |
+| `--check`         | `-c`  | update                   |
 | `--help`          | `-h`  | all                      |
 
 ## AGENT references

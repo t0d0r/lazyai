@@ -79,6 +79,10 @@
       release (specs/release.md, Debian packages)
 - [x] release v0.3.0 with launch history and tab completion
       (specs/release.md); tap formula updated to 0.3.0
+- [x] `lazyai update`: self-update to the latest release by brew, apt
+      or binary replacement (specs/update.md)
+- [ ] release v0.4.0 with `lazyai update`, then run `lazyai update`
+      through brew from 0.4.0 to a later release (specs/update.md)
 - [ ] man page (lintian no-manual-page), for example generated from
       `lazyai help`
 - [ ] APT repository, if wanted: needs a signing key and hosting
