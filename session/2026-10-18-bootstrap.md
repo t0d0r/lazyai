@@ -4,9 +4,9 @@
 
 - Created the project: Go TUI plus CLI to list, watch, launch, attach to,
   send prompts to, and stop local AI agents.
-- Operator choices: all four capability groups, TUI, Go; agents Claude
-  Code, Codex and the others (opencode, gemini, aider, cursor-agent,
-  ollama); Claude Desktop excluded.
+- Scope: all four capability groups, TUI, Go; agents Claude Code, Codex
+  and the others (opencode, gemini, aider, cursor-agent, ollama); Claude
+  Desktop excluded.
 - Found that Claude Code writes `~/.claude/sessions/<pid>.json` with session
   id, cwd, name and busy/idle status; `procStart` there is UTC.
 - Verified on the live system: discovery of claude, codex and opencode
@@ -28,8 +28,7 @@
   `--version` is stamped by `make build`; exit status 2 for usage errors.
   `stop` now reads confirmations through one buffered reader, so piped
   answers for several agents are no longer lost.
-- Operator reported Colibri running Qwen (driven by Hermes Agent) was not
-  shown. Causes: the `.app/Contents/` desktop-app exclusion also matched
+- Colibri running Qwen (driven by Hermes Agent) was not shown. Causes: the `.app/Contents/` desktop-app exclusion also matched
   Homebrew's framework Python, hiding Hermes; and Hermes, Colibri and
   Qwen Code were not known kinds. Fixed the exclusion, added the three
   kinds and roles `job` and `engine` (ollama runners moved from helper to
@@ -63,20 +62,19 @@
   each agent's descendants and tree totals; the watcher keeps 150 samples
   of history. Verified in a 160x40 tmux window against the live system
   and a throwaway Claude session (Screen showed its trust prompt).
-- Operator screenshot in iTerm: Agents took all spare rows and Services /
-  Models were squeezed. Lists now split the column evenly; only very
+- In a tall terminal, Agents took all spare rows and Services / Models
+  were squeezed. Lists now split the column evenly; only very
   short terminals give the list in use the room.
-- Operator asked how to leave an attached session; lazyai sessions now
+- Attached sessions gave no hint how to leave; lazyai sessions now
   show `ctrl+b d: detach, back to lazyai` (or `ctrl+b L` when lazyai runs
   inside tmux) in their own tmux status-right. Verified by attaching in a
   pseudo terminal. tmux option commands need `=name:` as the target.
-- Published at operator request: branch renamed master -> main, remote
+- Published: branch renamed master -> main, remote
   origin git@github.com:t0d0r/lazyai.git, pushed. Before pushing, the
   whole history was scanned for client names, home paths, session ids,
   emails other than the commit author, and token patterns; nothing found.
 - Added a README screenshot (lazyai.png) and pushed it.
-- License: operator chose BSD-2-Clause (FreeBSD), copyright Todor
-  Dragnev.
+- License: BSD-2-Clause (FreeBSD), copyright Todor Dragnev.
 - Released v0.1.0 (annotated tag on 1adce7f; source tarball sha256
   866462d199845ba14d215beba2abe9585e2e95b64416123f0bb1007096c09c14).
 - Homebrew: tap created with `brew tap-new t0d0r/tap` (local checkout at
@@ -87,9 +85,8 @@
   /opt/homebrew/bin/lazyai. The tap's CI builds formulae only on pull
   requests; its daily autobump workflow opens a PR for new tags.
 - README: animated GIF of the dashboard kept on local branch
-  docs/readme-gif (not pushed, at operator request); "Why?" section added
-  on main from the operator's text, translated to English.
-- Operator noticed grok was missing. Survey of the machine: grok CLI
+  docs/readme-gif (not pushed); "Why?" section added on main.
+- grok was missing. Survey of the machine: grok CLI
   (2 running, one for 11 days), Copilot CLI and mlx-lm installed, opencode
   run through a docker alias; Grok Bot.app, ChatGPT.app and copilot.vim
   correctly not agents. Added kinds grok, copilot, mlx-lm, docker/podman
@@ -100,8 +97,7 @@
   Tap formula updated (4dfda82), style and audit clean, upgraded locally
   from source, brew test passes, installed lazyai reports 0.1.1 and
   lists both grok sessions.
-- Pushed branch docs/readme-gif (d688199) to origin at operator request,
-  after checking its two frames show nothing beyond the public
+- Pushed branch docs/readme-gif (d688199) to origin, after checking its two frames show nothing beyond the public
   screenshot. It branches from d4914fc, two commits behind main, and
   changes only the README image line plus lazyai.gif, so it merges
   cleanly. Not merged into main.
@@ -133,8 +129,8 @@ send a prompt with `p`, and try the mouse.
 
 ## Linux support (later the same day)
 
-Operator asked to make lazyai work on Linux and test it in docker on
-Ubuntu 24.04 and the latest Debian.
+Goal: lazyai works on Linux, tested in docker on Ubuntu 24.04 and the
+latest Debian.
 
 Done:
 
@@ -190,8 +186,7 @@ session and confirm status comes from the session file.
 
 ## Agents in docker containers (macOS)
 
-Operator noticed that claude inside docker was not detected. They run it
-on macOS as `docker run IMAGE claude`, with `docker exec`/compose, and by
+claude inside docker was not detected. It is run on macOS as `docker run IMAGE claude`, with `docker exec`/compose, and by
 typing claude into a shell in a container or devcontainer. Only
 `docker run` of an image named after an agent was recognized.
 
@@ -236,8 +231,8 @@ Next step: try lazyai against a real devcontainer with Claude Code.
 
 ## Release v0.2.0 with Linux binaries
 
-Operator copied the macOS bin/lazyai to an Ubuntu machine ("Exec format
-error") and asked for a GitHub release for Ubuntu and Debian.
+The macOS bin/lazyai fails on Ubuntu ("Exec format error"), so Linux
+users need a GitHub release with Linux binaries for Ubuntu and Debian.
 
 Done:
 
@@ -261,9 +256,9 @@ Decision: Makefile target instead of GoReleaser (no extra tool).
   lazyai-v0.2.0-{linux,darwin}-{amd64,arm64}.tar.gz; each linux tarball
   checked in Ubuntu 24.04 and Debian 13 containers of its arch
   (sha256sum -c OK, --version v0.2.0, list runs). gitleaks clean.
-- Pushed main (e63e4c9..c24bd53) and tag v0.2.0 at operator request.
+- Pushed main (e63e4c9..c24bd53) and tag v0.2.0.
 
-- Operator logged gh in. GitHub release v0.2.0 published with the four
+- GitHub release v0.2.0 published with the four
   tarballs and SHA256SUMS (checked again before upload). Downloaded back
   from the public release URL in a Debian amd64 container: checksum OK,
   --version prints v0.2.0.
@@ -276,13 +271,12 @@ todo/todo.md.
 Run and verify: `make check`, `make test-linux`, `make test-linux
 LINUX_ARCH=amd64`, `make dist`.
 
-Next step: operator installs v0.2.0 on their Ubuntu machine and runs it
-with real agents; bump the tap formula to v0.2.0.
+Next step: install v0.2.0 on an Ubuntu machine and run it with real
+agents; bump the tap formula to v0.2.0.
 
 ## Debian packages
 
-Operator asked for a deb package, "universal, static?". Answer: the
-binary is static, so one package per architecture installs on any
+Goal: a .deb package. The binary is static, so one package per architecture installs on any
 Debian or Ubuntu release; a single package for both CPUs is not how
 dpkg works (decision recorded in specs/release.md).
 
@@ -297,7 +291,7 @@ Done:
   run --version and list, and remove on Ubuntu 24.04 and 20.04, Debian
   13 and 11, both arches. lintian: only no-manual-page.
 - Maintainer field comes from git config (same identity as the
-  commits); nothing new is published about the operator.
+  commits); no new personal data is published.
 
 Files: Makefile, specs/release.md, README.md, todo/todo.md.
 
@@ -309,14 +303,14 @@ Run and verify: `make dist` on the tag, then `make deb VERSION=v0.2.0`.
   public URL on a fresh Ubuntu 24.04 amd64: checksum OK, v0.2.0, tmux
   pulled in.
 
-Next step: operator installs the .deb on their Ubuntu machine and runs
-lazyai with real agents; bump the tap formula to v0.2.0.
+Next step: install the .deb on an Ubuntu machine and run lazyai with
+real agents; bump the tap formula to v0.2.0.
 
 ## 2026-10-21 - TUI backspace compatibility
 
 Done:
 
-- Operator reported that Backspace did not delete characters in the `n` launch modal.
+- Backspace did not delete characters in the `n` launch modal in some terminals.
 - Bubble Tea distinguishes DEL (`tea.KeyBackspace`) from the ctrl+h byte emitted by some terminal configurations (`tea.KeyCtrlH`). The modal handled only DEL.
 - Added coverage for both encodings and made `updateInput` delete one rune for either key.
 - Verified the regression test fails before the implementation change and passes after it.
@@ -329,8 +323,8 @@ Next step: run `bin/lazyai` in the affected terminal and press `n`, type text, t
 
 ## 2026-10-27 - launch history and completion
 
-Operator asked for the `n` launch popup to keep a history browsed with
-up/down, and for tab completion.
+Goal: the `n` launch popup keeps a history browsed with up/down, and
+has tab completion.
 
 Done:
 
@@ -360,4 +354,4 @@ Run and verify: `make check`; then `make run`, press `n`, type `cl` and
 tab, launch, press `n` again and up.
 
 Next step: try it in a real terminal; check that up/down and tab reach
-the popup in tmux and in the operator's terminal emulator.
+the popup in tmux and in common terminal emulators.
