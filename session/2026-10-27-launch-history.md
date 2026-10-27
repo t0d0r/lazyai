@@ -28,5 +28,14 @@ release (specs/release.md) when the operator asks.
 
 Files: README.md, todo/todo.md, this note.
 
-Next step: tag v0.3.0, make dist and make deb on the tag, push main and
-the tag, gh release create; then the Homebrew tap url and sha256.
+- Annotated tag v0.3.0 on 376741b. make dist and make deb
+  VERSION=v0.3.0 on the tag; the darwin-arm64 binary reports v0.3.0.
+- gitleaks over the unpushed commit: no leaks. Pushed main
+  (a4ca9a6..376741b) and the tag v0.3.0.
+- GitHub release v0.3.0 published with four tarballs, two debs and
+  SHA256SUMS. Downloaded all assets back from the release: all six pass
+  the checksum check.
+
+Next step: update url and sha256 in the t0d0r/homebrew-tap formula (or
+let its autobump workflow open the PR), then try the launch popup in a
+real terminal.
