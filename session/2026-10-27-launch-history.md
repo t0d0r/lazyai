@@ -45,6 +45,14 @@ Files: session/2026-10-18-bootstrap.md, this note.
 
 Run and verify: `make check`.
 
-Next step: update url and sha256 in the t0d0r/homebrew-tap formula to
-v0.3.0 (or let its autobump workflow open the PR), then try the launch
-popup in a real terminal.
+## 2026-10-28 - Homebrew tap 0.3.0
+
+- t0d0r/homebrew-tap Formula/lazyai.rb now points at the v0.3.0 source
+  archive (commit 32e8e82, the moved tag), sha256
+  9b619f0c865b558702e6ae2eb288e0e1435411f99a9353f1eda79032cb32fda2.
+- brew style, brew audit --strict --online, brew upgrade
+  --build-from-source and brew test pass; the installed lazyai reports
+  0.3.0. Tap commit 897d3f4 pushed to its main. gitleaks: no leaks.
+
+Next step: try the launch popup in a real terminal (up/down and tab in
+tmux and common terminal emulators).
