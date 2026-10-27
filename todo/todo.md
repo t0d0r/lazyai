@@ -77,6 +77,8 @@
       (specs/release.md)
 - [x] .deb packages for amd64 and arm64: `make deb`, added to the v0.2.0
       release (specs/release.md, Debian packages)
+- [x] release v0.3.0 with launch history and tab completion
+      (specs/release.md)
 - [ ] man page (lintian no-manual-page), for example generated from
       `lazyai help`
 - [ ] APT repository, if wanted: needs a signing key and hosting
