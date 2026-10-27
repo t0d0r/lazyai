@@ -56,7 +56,19 @@ specs/cli.md, specs/README.md, README.md, todo/todo.md.
   (Ubuntu 24.04, Debian 13).
 - README install examples now use v0.4.0.
 
+- Annotated tag v0.4.0; make dist and make deb VERSION=v0.4.0 on the
+  tag. gitleaks: no leaks. Pushed main and the tag.
+- GitHub release v0.4.0 published with four tarballs, two debs and
+  SHA256SUMS; all six pass the checksum check after download. The
+  README's Debian commands, run in fresh debian:latest containers (arm64
+  and amd64), install 0.4.0 and `lazyai update --check` reports it up to
+  date.
+- Homebrew tap formula updated to the v0.4.0 source archive (sha256
+  8ca4cf4a8555b2e1a63895345d02d1b4fcaea4fed453b37f4fcb608d5f313e7c);
+  style, audit, build from source and brew test pass; pushed. The
+  installed lazyai 0.4.0 reports itself up to date.
+
 ## Next step
 
-Tag v0.4.0, make dist and make deb on the tag, push main and the tag,
-gh release create, then update the Homebrew tap.
+After the next release, run `lazyai update` through brew and apt from
+0.4.0 to check the homebrew and deb methods end to end.
