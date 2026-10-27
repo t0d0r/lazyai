@@ -50,7 +50,13 @@ specs/cli.md, specs/README.md, README.md, todo/todo.md.
 /tmp/x/lazyai .` then `/tmp/x/lazyai update --check` and
 `/tmp/x/lazyai update -y`.
 
+## Release v0.4.0
+
+- make check, make test-linux and make test-linux LINUX_ARCH=amd64 pass
+  (Ubuntu 24.04, Debian 13).
+- README install examples now use v0.4.0.
+
 ## Next step
 
-Release v0.4.0 with `lazyai update` (specs/release.md), then update the
-Homebrew tap.
+Tag v0.4.0, make dist and make deb on the tag, push main and the tag,
+gh release create, then update the Homebrew tap.
