@@ -11,8 +11,8 @@ confirmations and input, key hints in the bottom line, mouse support.
 | 9 run, 3 busy 3.3G 01:36 | |                                          |
 +--------------------------+ |  details of the selected agent           |
 + 1 Agents ----------------+ |                                          |
-| claude ai-d1  busy  7.9% | |                                          |
-| hermes hermes-ai idle 1% | |                                          |
+|@ claude ai-d1 busy 2% 1G | |                                          |
+|  hermes h-ai idle 1% 90M | |                                          |
 +------------------ 1 of 2 + |                                          |
 + 2 Services --------------+ |                                          |
 | codex server ...         | |                                          |
@@ -42,9 +42,13 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
   - 1 Agents: interactive
   - 2 Services: server, daemon, and helper when shown
   - 3 Models: engine, job
-- Row: kind, role (not in Agents), label (Claude session name, else tmux
-  session, else working directory basename), `*` for lazyai's own parent;
-  right-aligned status and tree CPU%, plus tree memory in Models. Selected
+- Row: a gutter with `@` when the agent runs in a tmux pane (so `a`
+  attach and `p` prompt work on it) and blank otherwise, kind, role (not
+  in Agents), label (Claude session name, else tmux session, else
+  working directory basename), `*` for lazyai's own parent;
+  right-aligned status, tree CPU% and tree memory in every list. The `?`
+  popup explains `@` and `*` under Marks. When the row is too narrow the
+  label is cut first. Selected
   row reversed in the focused list, bold elsewhere; flagged rows red, busy
   rows green. The bottom border shows "N of M".
 - Heights: the three lists split the column below the status panel evenly,

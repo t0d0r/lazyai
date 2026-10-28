@@ -86,6 +86,8 @@
 - [x] total memory of the shown agents next to the clock in the status
       panel (specs/tui.md)
 - [x] release v0.4.1 with the memory total (specs/release.md)
+- [x] mark attachable agents with @ and show memory in every list
+      (specs/tui.md)
       (specs/update.md)
 - [ ] man page (lintian no-manual-page), for example generated from
       `lazyai help`

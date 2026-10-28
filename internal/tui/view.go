@@ -175,13 +175,16 @@ func (m model) listPanel(i int, l layout) string {
 		if i != listAgents {
 			name = string(a.Kind) + " " + string(a.Role) + " " + label(a)
 		}
+		// The gutter marks agents in tmux: attach and prompt work on them.
+		if disabledReason("a", a) == "" {
+			name = attachMark + " " + name
+		} else {
+			name = "  " + name
+		}
 		if a.Protected {
 			name += " *"
 		}
-		right := fmt.Sprintf("%s %5.1f%%", a.Status, a.TreeCPU)
-		if i == listModels {
-			right += " " + display.Bytes(a.TreeRSS)
-		}
+		right := fmt.Sprintf("%s %5.1f%% %5s", a.Status, a.TreeCPU, display.Bytes(a.TreeRSS))
 		row := spread(name, right, inner)
 		flagged := false
 		for _, f := range watch.Flags(a, t, now) {

@@ -36,7 +36,14 @@ var keyHelp = []bindingGroup{
 		{"?", "this help"},
 		{"q, ctrl+c", "quit"},
 	}},
+	{"Marks", []binding{
+		{attachMark + " before a row", "runs in tmux: a attach and p prompt work"},
+		{"* after a row", "lazyai's own parent: not stopped from here"},
+	}},
 }
+
+// attachMark starts the rows of agents that can be attached to.
+const attachMark = "@"
 
 // footerKeys are the short hints in the bottom line.
 var (

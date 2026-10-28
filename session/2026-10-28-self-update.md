@@ -107,3 +107,20 @@ Run and verify: `make check`; `lazyai update --check`.
 
 Next step: try lazyai on a real Linux desktop with real agents
 (todo/todo.md).
+
+## Attachable mark and memory per row
+
+- Dashboard rows start with `@` when the agent runs in a tmux pane, so
+  attach (`a`) and prompt (`p`) work on it; other rows have a blank
+  gutter. The `?` popup has a Marks group for `@` and `*`. The mark uses
+  the same check as the action menu (disabledReason).
+- Every list now shows tree memory after status and CPU, not only
+  Models.
+- Checked in tmux at 160 and 80 columns; at 80 the label is cut first.
+- Test: TestAttachMark (mark only on the agent in tmux, legend in help).
+
+Files: internal/tui/{view.go,keys.go,tui_test.go}, specs/tui.md,
+todo/todo.md.
+
+Next step: release it (v0.4.2) when wanted; the CLI already shows
+IN_TMUX.

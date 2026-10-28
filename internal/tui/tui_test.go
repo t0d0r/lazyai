@@ -87,6 +87,23 @@ func TestGrouping(t *testing.T) {
 	}
 }
 
+func TestAttachMark(t *testing.T) {
+	m := loaded(120, 30)
+	l := m.layout()
+	var rows []string
+	for _, line := range strings.Split(ansi.Strip(m.listPanel(listAgents, l)), "\n") {
+		if strings.Contains(line, "claude") || strings.Contains(line, "hermes") {
+			rows = append(rows, strings.TrimLeft(line, "│|"))
+		}
+	}
+	if len(rows) != 2 || !strings.HasPrefix(rows[0], "@ claude c-1") || !strings.HasPrefix(rows[1], "  hermes") {
+		t.Errorf("Agents rows: %q; want @ only before the agent in tmux", rows)
+	}
+	if help := ansi.Strip(m.helpPopup()); !strings.Contains(help, "@ before a row") {
+		t.Errorf("help lacks the @ legend:\n%s", help)
+	}
+}
+
 func TestTotalRSS(t *testing.T) {
 	const m = 1 << 20
 	parent := agent.Agent{Proc: agent.Proc{PID: 1, RSS: 100 * m}, TreeRSS: 300 * m,
