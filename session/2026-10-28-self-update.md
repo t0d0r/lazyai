@@ -167,6 +167,30 @@ todo/todo.md.
 
 - make check, make test-linux and make test-linux LINUX_ARCH=amd64 pass
   (Ubuntu 24.04, Debian 13). README install examples now use v0.4.3.
+- Annotated tag v0.4.3; make dist and make deb on the tag; gitleaks: no
+  leaks; no real directory or session names in the pushed commits.
+  Pushed main and the tag. GitHub release v0.4.3 published; all six
+  files pass the checksum check after download.
+- Homebrew tap formula updated to v0.4.3 (sha256
+  413328225747fc0bb2eaee7b77e2746c614b08beb42dd7e31cd6cbc995684077),
+  style and audit pass, pushed. `lazyai update -y` on macOS ran brew
+  upgrade from 0.4.2 to 0.4.3; brew test passes.
+- Stale releases/latest seen again on the Linux host right after
+  publishing (v0.4.2 reported as up to date). A minute later curl with
+  Go-like headers (Go user agent, no Accept, gzip, with and without
+  Cache-Control: no-cache) and lazyai itself all got v0.4.3, so request
+  headers are not the cause. Untested idea: the static binary uses Go's
+  own DNS resolver and may reach another GitHub edge than curl.
+
+Open: stale latest-release answer for about a minute after a release.
+To investigate on the next release: run `lazyai update --check` and
+`curl -sI` on the Linux host within seconds of publishing, and compare
+the IPs Go and curl connect to.
+
+Run and verify: `make check`; `lazyai update --check`.
+
+Next step: try lazyai on a real Linux desktop with real agents
+(todo/todo.md).
 - The `@` mark sits right before the kind (`@claude`), and the gutter is
   one character wide, so labels get one more cell.
 - Examples in specs, tests and notes use invented directory names
