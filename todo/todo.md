@@ -92,6 +92,7 @@
       (specs/release.md)
 - [x] directory labels show the last two directories, cut as alpha/..nd;
       @ right before the kind (specs/tui.md)
+- [x] release v0.4.3 with two-directory labels (specs/release.md)
       (specs/tui.md)
       (specs/update.md)
 - [ ] man page (lintian no-manual-page), for example generated from

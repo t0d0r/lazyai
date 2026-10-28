@@ -163,7 +163,10 @@ Next step: try lazyai on a real Linux desktop with real agents
 Files: internal/tui/{view.go,keys.go,tui_test.go}, specs/tui.md,
 todo/todo.md.
 
-Next step: release it (v0.4.3) when wanted.
+## Release v0.4.3
+
+- make check, make test-linux and make test-linux LINUX_ARCH=amd64 pass
+  (Ubuntu 24.04, Debian 13). README install examples now use v0.4.3.
 - The `@` mark sits right before the kind (`@claude`), and the gutter is
   one character wide, so labels get one more cell.
 - Examples in specs, tests and notes use invented directory names
