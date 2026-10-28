@@ -126,3 +126,24 @@ todo/todo.md.
 
 - make check, make test-linux and make test-linux LINUX_ARCH=amd64 pass
   (Ubuntu 24.04, Debian 13). README install examples now use v0.4.2.
+- Annotated tag v0.4.2; make dist and make deb on the tag; gitleaks: no
+  leaks. Pushed main and the tag. GitHub release v0.4.2 published; all
+  six files pass the checksum check after download.
+- Homebrew tap formula updated to v0.4.2 (sha256
+  fe21511066e704bec767d1d970b6143c3578febedebfca65ce124fd3bab6be8a),
+  style and audit pass, pushed. `lazyai update -y` on macOS ran brew
+  upgrade from 0.4.1 to 0.4.2; brew test passes.
+- Seen right after publishing: on a Linux host with the v0.4.1 binary,
+  `lazyai update --check` said up to date twice while curl from the same
+  host already got the v0.4.2 redirect; the third run found v0.4.2.
+  GitHub serves the old redirect to some clients for a short time.
+  Recorded in specs/update.md.
+
+Open: if the stale redirect becomes a nuisance, try request headers
+(Accept, Cache-Control: no-cache) or the releases API, and confirm on
+the next release.
+
+Run and verify: `make check`; `lazyai update --check`.
+
+Next step: try lazyai on a real Linux desktop with real agents
+(todo/todo.md).

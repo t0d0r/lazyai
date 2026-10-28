@@ -18,6 +18,12 @@ The latest release is the tag that
 (`.../releases/tag/vX.Y.Z`). lazyai reads the `Location` header and does
 not follow it.
 
+Right after a release is published, GitHub can still answer some
+clients with the previous tag for a minute or two (seen for v0.4.2: Go's
+client got v0.4.1 twice while curl already got v0.4.2). `update` then
+says the installed version is up to date; running it again a little
+later finds the new release.
+
 Decision: the redirect, not the GitHub API. Reason: no JSON and no API
 rate limit for unauthenticated users; the release page is what a person
 would open.
