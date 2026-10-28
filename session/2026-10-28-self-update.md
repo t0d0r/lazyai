@@ -89,5 +89,7 @@ Decision: memory of the agents, not of the machine.
 
 Files: internal/tui/{view.go,tui_test.go}, specs/tui.md, todo/todo.md.
 
-Next step: release it with the next version; after that release, run
-`lazyai update` through brew and apt from 0.4.0.
+## Release v0.4.1
+
+- make check, make test-linux and make test-linux LINUX_ARCH=amd64 pass
+  (Ubuntu 24.04, Debian 13). README install examples now use v0.4.1.
