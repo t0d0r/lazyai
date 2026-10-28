@@ -82,7 +82,7 @@
 - [x] `lazyai update`: self-update to the latest release by brew, apt
       or binary replacement (specs/update.md)
 - [x] release v0.4.0 with `lazyai update` (specs/release.md)
-- [ ] run `lazyai update` through brew and apt from 0.4.0 to a later release
+- [x] run `lazyai update` through brew and apt from 0.4.0 to a later release
 - [x] total memory of the shown agents next to the clock in the status
       panel (specs/tui.md)
 - [x] release v0.4.1 with the memory total (specs/release.md)

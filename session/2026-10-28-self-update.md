@@ -93,3 +93,17 @@ Files: internal/tui/{view.go,tui_test.go}, specs/tui.md, todo/todo.md.
 
 - make check, make test-linux and make test-linux LINUX_ARCH=amd64 pass
   (Ubuntu 24.04, Debian 13). README install examples now use v0.4.1.
+- Annotated tag v0.4.1; make dist and make deb on the tag; gitleaks: no
+  leaks. Pushed main and the tag. GitHub release v0.4.1 published; all
+  six files pass the checksum check after download.
+- First real self-update, from the published v0.4.0: deb method as a
+  sudo user and binary method in ~/.local/bin, on Debian 13 arm64 and
+  amd64, both end at v0.4.1. Homebrew tap formula updated to v0.4.1
+  (sha256 5144f42765f9cdbcea917234639da1f5e095868e7e7ea466d9edc97891da2daf,
+  style and audit pass, pushed); `lazyai update -y` on macOS ran brew
+  upgrade from 0.4.0 to 0.4.1 and brew test passes.
+
+Run and verify: `make check`; `lazyai update --check`.
+
+Next step: try lazyai on a real Linux desktop with real agents
+(todo/todo.md).

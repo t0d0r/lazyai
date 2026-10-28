@@ -113,5 +113,8 @@ Checked against the v0.3.0 release: binary method on macOS (also through
 a symlink) and on Debian 13 as a normal user in ~/.local/bin; a read-only
 /usr/local/bin fails with the message above; deb method from the 0.2.1
 package as root and as a sudo user; homebrew detected for a Cellar path
-reached through a symlink. `brew upgrade` itself was not run, since the
-installed formula is already the latest.
+reached through a symlink.
+
+Checked from the published v0.4.0 to v0.4.1: deb as a sudo user and
+binary in ~/.local/bin on Debian 13 (arm64 and amd64), and homebrew on
+macOS (`brew upgrade` built and installed 0.4.1).
