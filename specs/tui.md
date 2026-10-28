@@ -8,7 +8,7 @@ confirmations and input, key hints in the bottom line, mouse support.
 
 ```
 + lazyai ------------------+ + Info - Screen - Processes - Stats ------+
-| 20 running, 3 busy 01:36 | |                                          |
+| 9 run, 3 busy 3.3G 01:36 | |                                          |
 +--------------------------+ |  details of the selected agent           |
 + 1 Agents ----------------+ |                                          |
 | claude ai-d1  busy  7.9% | |                                          |
@@ -25,8 +25,19 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
 
 - Left column: one third of the width, at least 32 columns (or half of a
   narrow screen), at most 56.
-- Status panel (3 rows): number of agents shown, how many are busy, time
-  of the last refresh.
+- Status panel (3 rows): number of agents shown, how many are busy, and
+  on the right the total memory of the shown agents next to the time of
+  the last refresh (`mem 3.3G 01:59:11`).
+  - The total adds each shown agent's tree memory (the agent and all its
+    descendants, as in the rows). An agent that runs below another shown
+    agent is already in that tree and is not added again. Container
+    agents count by container and PID, so their PIDs do not collide with
+    the host's.
+  - Narrow column: when the line does not fit, `mem ` is dropped first,
+    then "running" becomes "run", so the counts stay readable.
+  - Decision: memory of the agents, not of the whole machine. Reason:
+    lazyai is about what the agents cost; the system total is in other
+    tools.
 - Lists by role:
   - 1 Agents: interactive
   - 2 Services: server, daemon, and helper when shown

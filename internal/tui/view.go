@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -100,23 +101,60 @@ func (m model) View() string {
 }
 
 func (m model) statusPanel(l layout) string {
-	busy, total := 0, 0
+	busy := 0
+	var shown []agent.Agent
 	for _, a := range m.all {
 		if a.Role == agent.RoleHelper && !m.showHelpers {
 			continue
 		}
-		total++
+		shown = append(shown, a)
 		if a.Status == "busy" {
 			busy++
 		}
 	}
-	line := fmt.Sprintf("%d running, %d busy", total, busy)
+	inner := l.leftW - 2
+	line := fmt.Sprintf("%d running, %d busy", len(shown), busy)
 	right := "loading ..."
 	if !m.updated.IsZero() {
-		right = m.updated.Format("15:04:05")
+		// Shorter forms for a narrow column, so the counts are not cut.
+		mem, clock := display.Bytes(totalRSS(shown)), m.updated.Format("15:04:05")
+		for _, f := range [][2]string{
+			{line, "mem " + mem + " " + clock},
+			{line, mem + " " + clock},
+			{fmt.Sprintf("%d run, %d busy", len(shown), busy), mem + " " + clock},
+		} {
+			line, right = f[0], f[1]
+			if len(line)+1+len(right) <= inner {
+				break
+			}
+		}
 	}
-	return box(titleStyle.Render("lazyai"), []string{spread(line, dimStyle.Render(right), l.leftW-2)},
+	return box(titleStyle.Render("lazyai"), []string{spread(line, dimStyle.Render(right), inner)},
 		l.leftW, l.statusH, false, "")
+}
+
+// totalRSS adds the tree memory of agents. An agent that runs below another
+// one in the list is already in that one's tree and is not added again.
+func totalRSS(agents []agent.Agent) int64 {
+	scope := func(a agent.Agent) string {
+		if a.ForeignPID {
+			return a.ContainerID + "/"
+		}
+		return ""
+	}
+	below := map[string]bool{}
+	for _, a := range agents {
+		for _, c := range a.Children {
+			below[scope(a)+strconv.Itoa(c.PID)] = true
+		}
+	}
+	var sum int64
+	for _, a := range agents {
+		if !below[scope(a)+strconv.Itoa(a.PID)] {
+			sum += a.TreeRSS
+		}
+	}
+	return sum
 }
 
 func (m model) listPanel(i int, l layout) string {

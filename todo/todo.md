@@ -83,6 +83,8 @@
       or binary replacement (specs/update.md)
 - [x] release v0.4.0 with `lazyai update` (specs/release.md)
 - [ ] run `lazyai update` through brew and apt from 0.4.0 to a later release
+- [x] total memory of the shown agents next to the clock in the status
+      panel (specs/tui.md)
       (specs/update.md)
 - [ ] man page (lintian no-manual-page), for example generated from
       `lazyai help`

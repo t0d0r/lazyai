@@ -72,3 +72,22 @@ specs/cli.md, specs/README.md, README.md, todo/todo.md.
 
 After the next release, run `lazyai update` through brew and apt from
 0.4.0 to check the homebrew and deb methods end to end.
+
+## Memory total in the status panel
+
+- The status panel shows the total memory of the shown agents next to
+  the refresh time: `16 running, 4 busy   mem 3.3G 01:59:11`
+  (specs/tui.md). totalRSS in internal/tui/view.go adds each agent's
+  TreeRSS and skips an agent that is already in another shown agent's
+  tree; container agents are keyed by container ID and PID.
+- Narrow column: drops `mem `, then shortens "running" to "run".
+  Checked in tmux at 160, 100 and 80 columns.
+- Test: TestTotalRSS (nested agent counted once, container PID kept
+  apart from the same host PID, text in the rendered panel).
+
+Decision: memory of the agents, not of the machine.
+
+Files: internal/tui/{view.go,tui_test.go}, specs/tui.md, todo/todo.md.
+
+Next step: release it with the next version; after that release, run
+`lazyai update` through brew and apt from 0.4.0.

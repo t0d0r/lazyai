@@ -87,6 +87,26 @@ func TestGrouping(t *testing.T) {
 	}
 }
 
+func TestTotalRSS(t *testing.T) {
+	const m = 1 << 20
+	parent := agent.Agent{Proc: agent.Proc{PID: 1, RSS: 100 * m}, TreeRSS: 300 * m,
+		Children: []agent.ChildProc{{PID: 2, RSS: 150 * m}, {PID: 3, RSS: 50 * m}}}
+	nested := agent.Agent{Proc: agent.Proc{PID: 2, RSS: 150 * m}, TreeRSS: 150 * m}
+	other := agent.Agent{Proc: agent.Proc{PID: 9, RSS: 10 * m}, TreeRSS: 40 * m}
+	// PID 2 inside a container is another process than PID 2 on the host.
+	foreign := agent.Agent{Proc: agent.Proc{PID: 2, RSS: 5 * m}, TreeRSS: 5 * m,
+		ForeignPID: true, ContainerID: "abc"}
+	if got := totalRSS([]agent.Agent{parent, nested, other, foreign}); got != 345*m {
+		t.Errorf("totalRSS = %dM, want 345M", got/m)
+	}
+
+	mm := loaded(120, 30)
+	mm.all[0].TreeRSS = 2 << 30
+	if view := mm.View(); !strings.Contains(view, "mem 2.0G "+mm.updated.Format("15:04:05")) {
+		t.Errorf("status panel lacks the memory total next to the clock:\n%s", view)
+	}
+}
+
 func TestViewFitsScreen(t *testing.T) {
 	for _, size := range [][2]int{{40, 10}, {80, 24}, {120, 30}, {200, 60}} {
 		m := loaded(size[0], size[1])
