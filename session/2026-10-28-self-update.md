@@ -122,5 +122,7 @@ Next step: try lazyai on a real Linux desktop with real agents
 Files: internal/tui/{view.go,keys.go,tui_test.go}, specs/tui.md,
 todo/todo.md.
 
-Next step: release it (v0.4.2) when wanted; the CLI already shows
-IN_TMUX.
+## Release v0.4.2
+
+- make check, make test-linux and make test-linux LINUX_ARCH=amd64 pass
+  (Ubuntu 24.04, Debian 13). README install examples now use v0.4.2.
