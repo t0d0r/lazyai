@@ -90,6 +90,9 @@
       (specs/tui.md)
 - [x] release v0.4.2 with the attachable mark and memory per row
       (specs/release.md)
+- [x] directory labels show the last two directories, cut as alpha/..nd;
+      @ right before the kind (specs/tui.md)
+      (specs/tui.md)
       (specs/update.md)
 - [ ] man page (lintian no-manual-page), for example generated from
       `lazyai help`

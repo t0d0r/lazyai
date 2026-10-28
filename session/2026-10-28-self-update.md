@@ -147,3 +147,24 @@ Run and verify: `make check`; `lazyai update --check`.
 
 Next step: try lazyai on a real Linux desktop with real agents
 (todo/todo.md).
+
+## Two-directory labels
+
+- Rows labelled by their working directory show the last two
+  directories (`alpha/web-frontend`, home as `~`) instead of the
+  basename, so the same project name under different parents stays
+  apart. Session names and tmux sessions are unchanged.
+- Narrow rows: shortenPath keeps the parent and replaces the start of
+  the last directory with `..` (`alpha/..nd`); with less room, the start
+  of the whole label (`..ontend`). Status, CPU and memory stay.
+- Checked in tmux at 160 and 100 columns against the live agents.
+- Test: TestPathLabel.
+
+Files: internal/tui/{view.go,keys.go,tui_test.go}, specs/tui.md,
+todo/todo.md.
+
+Next step: release it (v0.4.3) when wanted.
+- The `@` mark sits right before the kind (`@claude`), and the gutter is
+  one character wide, so labels get one more cell.
+- Examples in specs, tests and notes use invented directory names
+  (`alpha/web-frontend`), not names from real working directories.

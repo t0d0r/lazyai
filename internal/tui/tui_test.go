@@ -96,11 +96,53 @@ func TestAttachMark(t *testing.T) {
 			rows = append(rows, strings.TrimLeft(line, "│|"))
 		}
 	}
-	if len(rows) != 2 || !strings.HasPrefix(rows[0], "@ claude c-1") || !strings.HasPrefix(rows[1], "  hermes") {
+	if len(rows) != 2 || !strings.HasPrefix(rows[0], "@claude c-1") || !strings.HasPrefix(rows[1], " hermes") {
 		t.Errorf("Agents rows: %q; want @ only before the agent in tmux", rows)
 	}
 	if help := ansi.Strip(m.helpPopup()); !strings.Contains(help, "@ before a row") {
 		t.Errorf("help lacks the @ legend:\n%s", help)
+	}
+}
+
+func TestPathLabel(t *testing.T) {
+	home, _ := os.UserHomeDir()
+	for p, want := range map[string]string{
+		home + "/work/alpha/web-frontend": "alpha/web-frontend",
+		home + "/x":                       "~/x",
+		home:                              "~",
+		"/w/p":                            "w/p",
+		"/srv":                            "/srv",
+		"/":                               "/",
+		"":                                "-",
+	} {
+		if got := lastDirs(p); got != want {
+			t.Errorf("lastDirs(%q) = %q, want %q", p, got, want)
+		}
+	}
+	for _, c := range []struct {
+		s    string
+		w    int
+		want string
+	}{
+		{"alpha/web-frontend", 20, "alpha/web-frontend"},
+		{"alpha/web-frontend", 10, "alpha/..nd"},
+		{"alpha/web-frontend", 8, "..ontend"},
+		{"web-frontend", 8, "..ontend"},
+		{"alpha/web-frontend", 2, "alpha/web-frontend"}, // no room: spread cuts it
+	} {
+		if got := shortenPath(c.s, c.w); got != c.want {
+			t.Errorf("shortenPath(%q, %d) = %q, want %q", c.s, c.w, got, c.want)
+		}
+	}
+
+	// In a row, the label gives way before status, CPU and memory. At 135
+	// columns a Services row has 11 cells left for it.
+	m := loaded(135, 30)
+	m.all[2].CWD = home + "/work/alpha/web-frontend"
+	m.lists[listServices].rows[0].CWD = m.all[2].CWD
+	panel := ansi.Strip(m.listPanel(listServices, m.layout()))
+	if !strings.Contains(panel, "codex server alpha/..end ") || !strings.Contains(panel, "idle") {
+		t.Errorf("narrow Services row:\n%s", panel)
 	}
 }
 

@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -171,21 +170,24 @@ func (m model) listPanel(i int, l layout) string {
 	for r := top; r < len(lst.rows) && r < top+visible; r++ {
 		a := lst.rows[r]
 		t, _ := m.watcher.Tracker(a.Key())
-		name := string(a.Kind) + " " + label(a)
-		if i != listAgents {
-			name = string(a.Kind) + " " + string(a.Role) + " " + label(a)
-		}
 		// The gutter marks agents in tmux: attach and prompt work on them.
+		prefix := " " + string(a.Kind) + " "
 		if disabledReason("a", a) == "" {
-			name = attachMark + " " + name
-		} else {
-			name = "  " + name
+			prefix = attachMark + string(a.Kind) + " "
 		}
+		if i != listAgents {
+			prefix += string(a.Role) + " "
+		}
+		suffix := ""
 		if a.Protected {
-			name += " *"
+			suffix = " *"
 		}
 		right := fmt.Sprintf("%s %5.1f%% %5s", a.Status, a.TreeCPU, display.Bytes(a.TreeRSS))
-		row := spread(name, right, inner)
+		lbl, isPath := rowLabel(a)
+		if isPath {
+			lbl = shortenPath(lbl, inner-len(right)-1-ansi.StringWidth(prefix+suffix))
+		}
+		row := spread(prefix+lbl+suffix, right, inner)
 		flagged := false
 		for _, f := range watch.Flags(a, t, now) {
 			flagged = flagged || f != "self"
@@ -521,12 +523,35 @@ func cropLines(s string, n int) string {
 	return strings.Join(lines, "\n")
 }
 
-func baseDir(p string) string {
+// lastDirs keeps the last two directories of p, so projects with the same
+// directory name under different parents stay apart: "alpha/web-frontend".
+func lastDirs(p string) string {
 	if p == "" {
 		return "-"
 	}
-	if short := display.Path(p); short == "~" {
-		return short
+	parts := strings.Split(display.Path(p), "/")
+	if len(parts) > 2 {
+		parts = parts[len(parts)-2:]
 	}
-	return filepath.Base(p)
+	if s := strings.Join(parts, "/"); s != "" {
+		return s
+	}
+	return "/"
+}
+
+// shortenPath fits a lastDirs label into w cells by replacing the start
+// of its last directory with "..", keeping the parent: "alpha/..nd". When
+// even the parent does not fit, the start of the whole label goes.
+func shortenPath(s string, w int) string {
+	r := []rune(s)
+	if len(r) <= w || w < 3 {
+		return s
+	}
+	if i := strings.LastIndex(s, "/"); i >= 0 {
+		head := []rune(s[:i+1])
+		if keep := w - len(head) - 2; keep >= 2 {
+			return string(head) + ".." + string(r[len(r)-keep:])
+		}
+	}
+	return ".." + string(r[len(r)-(w-2):])
 }

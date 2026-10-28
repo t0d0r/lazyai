@@ -89,13 +89,19 @@ func (m model) menuItems() []menuItem {
 
 // label is the name a list row shows for an agent.
 func label(a agent.Agent) string {
+	l, _ := rowLabel(a)
+	return l
+}
+
+// rowLabel is label, and whether it is a path that shortenPath may cut.
+func rowLabel(a agent.Agent) (string, bool) {
 	switch {
 	case a.Name != "":
-		return a.Name
+		return a.Name, false
 	case a.TmuxSession != "":
-		return a.TmuxSession
+		return a.TmuxSession, false
 	case a.Container != "" && a.CWD == "":
-		return "docker:" + a.Container
+		return "docker:" + a.Container, false
 	}
-	return baseDir(a.CWD)
+	return lastDirs(a.CWD), true
 }
