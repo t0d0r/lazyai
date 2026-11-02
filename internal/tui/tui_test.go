@@ -322,6 +322,58 @@ func TestLaunchHistory(t *testing.T) {
 	if m := newModel(Options{HistoryFile: path}); len(m.hist) != 2 {
 		t.Errorf("new model history %q", m.hist)
 	}
+
+	// A line that does not parse is kept too, so it can be fixed.
+	m = press(m, "n", "c", "l", "u", "d", "e", " ", "a", " ", "b", " ", "c", "enter")
+	if !m.msgErr || m.hist[len(m.hist)-1] != "clude a b c" {
+		t.Errorf("bad line: err %v history %q", m.msgErr, m.hist)
+	}
+	if m = press(m, "n", "up"); string(m.buf) != "clude a b c" {
+		t.Errorf("bad line not recalled: %q", string(m.buf))
+	}
+	if got := loadHistory(path); got[len(got)-1] != "clude a b c" {
+		t.Errorf("bad line not saved: %q", got)
+	}
+}
+
+func TestFilter(t *testing.T) {
+	m := press(loaded(120, 30), "/", "c", "l")
+	if !m.filtering || pids(m.lists[listAgents])[0] != 1 || len(m.lists[listAgents].rows) != 1 {
+		t.Fatalf("filter cl: filtering %v rows %v", m.filtering, pids(m.lists[listAgents]))
+	}
+	if v := ansi.Strip(m.View()); !strings.Contains(v, "1 Agents /cl") || !strings.Contains(v, "filter /cl_") {
+		t.Error("filter not shown")
+	}
+	// Keys are typed into the filter, not run as commands.
+	if m = press(m, "q", "x"); m.filters[listAgents] != "clqx" || m.popup != popupNone {
+		t.Errorf("filter %q popup %v", m.filters[listAgents], m.popup)
+	}
+	if m = press(m, "backspace", "backspace"); len(m.lists[listAgents].rows) != 1 {
+		t.Error("backspace")
+	}
+	m = press(m, "enter")
+	if m.filtering || m.filters[listAgents] != "cl" || len(m.lists[listAgents].rows) != 1 {
+		t.Errorf("enter: filtering %v filter %q", m.filtering, m.filters[listAgents])
+	}
+	// The filter holds across refreshes and leaves other lists alone.
+	next, _ := m.Update(agentsMsg{agents: sample()})
+	if m = next.(model); len(m.lists[listAgents].rows) != 1 || len(m.lists[listServices].rows) != 1 {
+		t.Errorf("after refresh: %v %v", pids(m.lists[listAgents]), pids(m.lists[listServices]))
+	}
+	if m = press(m, "esc"); m.filters[listAgents] != "" || len(m.lists[listAgents].rows) != 2 {
+		t.Errorf("esc did not clear: %q", m.filters[listAgents])
+	}
+	m = press(m, "/", "z", "z")
+	if !strings.Contains(ansi.Strip(m.View()), "no match") {
+		t.Error("no match not shown")
+	}
+	if m = press(m, "esc"); m.filtering || len(m.lists[listAgents].rows) != 2 {
+		t.Error("esc while typing did not clear")
+	}
+	// Words match anywhere, in any order: kind and session.
+	if m = press(m, "/", "l", "a", "z", "y", " ", "c", "l", "a", "u"); len(m.lists[listAgents].rows) != 1 {
+		t.Errorf("two words: %v", pids(m.lists[listAgents]))
+	}
 }
 
 func TestAddHistoryLimit(t *testing.T) {
@@ -338,6 +390,13 @@ func TestAddHistoryLimit(t *testing.T) {
 }
 
 func TestCompleteLaunch(t *testing.T) {
+	bin := t.TempDir()
+	for name, mode := range map[string]os.FileMode{"claude-bst": 0o755, "claude-notes": 0o644} {
+		if err := os.WriteFile(filepath.Join(bin, name), nil, mode); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Setenv("PATH", bin)
 	base := t.TempDir()
 	for _, d := range []string{"proj-a", "proj-b", "other", ".hidden", "proj-a/sub"} {
 		if err := os.Mkdir(filepath.Join(base, d), 0o755); err != nil {
@@ -350,7 +409,8 @@ func TestCompleteLaunch(t *testing.T) {
 	for _, c := range []struct {
 		in, want, choices string
 	}{
-		{"cl", "claude ", ""},
+		{"cl", "claude", "claude claude-bst"},
+		{"claude-", "claude-bst ", ""}, // a command on PATH; not executable files are left out
 		{"co", "co", "codex copilot"},
 		{"zz", "zz", ""},
 		{"claude ", "claude ", "other/ proj-a/ proj-b/"},
@@ -372,7 +432,7 @@ func TestCompleteLaunch(t *testing.T) {
 
 	m := loaded(120, 30)
 	m.opts.LaunchDir = base
-	m = press(m, "n", "c", "l", "tab", "p", "tab")
+	m = press(m, "n", "c", "l", "a", "u", "d", "e", " ", "p", "tab")
 	if got := string(m.buf); got != "claude proj-" || len(m.choices) != 2 {
 		t.Errorf("tab in popup: %q %q", got, m.choices)
 	}
@@ -452,7 +512,7 @@ func TestParseLaunch(t *testing.T) {
 	if _, dir, _, _, _ = parseLaunch("codex sub", "/base"); dir != "/base/sub" {
 		t.Errorf("relative dir: %q", dir)
 	}
-	for _, bad := range []string{"", "rm -rf /", "claude a b c d", "colibri"} {
+	for _, bad := range []string{"", "no-such-command-x -rf /", "claude a b c d", "colibri", "../bin/claude"} {
 		if _, _, _, _, err := parseLaunch(bad, "/base"); err == nil {
 			t.Errorf("parseLaunch(%q) accepted", bad)
 		}

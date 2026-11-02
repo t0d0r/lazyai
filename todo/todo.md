@@ -93,6 +93,12 @@
 - [x] directory labels show the last two directories, cut as alpha/..nd;
       @ right before the kind (specs/tui.md)
 - [x] release v0.4.3 with two-directory labels (specs/release.md)
+- [x] launch: failed lines stay in the history; any command on PATH
+      (wrapper scripts such as claude-bst) launches and completes
+      (specs/control.md, specs/tui.md)
+- [x] `/` filters the list in use (specs/tui.md, Filter)
+- [ ] release v0.5.0 with the list filter and PATH commands
+      (specs/release.md)
 - [ ] find why `lazyai update` sees the previous release for about a
       minute after publishing, while curl sees the new one
       (specs/update.md)

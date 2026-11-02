@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -272,8 +273,18 @@ func TestStopSendsSignal(t *testing.T) {
 }
 
 func TestLaunchCommand(t *testing.T) {
-	if _, err := LaunchCommand("bash", nil); err == nil {
-		t.Error("unknown kind accepted")
+	bin := t.TempDir()
+	if err := os.WriteFile(filepath.Join(bin, "claude-bst"), []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin)
+	for _, bad := range []string{"no-such-agent", "/bin/sh", "./claude-bst", "-x", ""} {
+		if _, err := LaunchCommand(Kind(bad), nil); err == nil {
+			t.Errorf("%q accepted", bad)
+		}
+	}
+	if got, err := LaunchCommand("claude-bst", []string{"-p"}); err != nil || strings.Join(got, " ") != "claude-bst -p" {
+		t.Errorf("command on PATH: %v %v", got, err)
 	}
 	if _, err := LaunchCommand(KindOllama, nil); err == nil {
 		t.Error("ollama without args accepted")

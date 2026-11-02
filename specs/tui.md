@@ -103,6 +103,7 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
 | a                    | attach (tmux only)                             |
 | p                    | send a prompt (tmux only)                      |
 | n                    | launch: `KIND [DIR] [NAME] [-- ARGS...]`; up / down history, tab completes |
+| /                    | filter the list in use; enter keeps, esc clears |
 | s / K                | stop (SIGTERM) / kill (SIGKILL), confirm with y |
 | H                    | show / hide helper processes                   |
 | r                    | refresh now                                    |
@@ -120,8 +121,11 @@ Launch input: DIR may use `~` and is relative to the directory lazyai was
 started in. Input popups treat both terminal backspace encodings (DEL and
 ctrl+h) as backspace.
 
-Launch history: every launch line that parses is added to a history, with
-runs of spaces folded to one. Up shows the previous (older) line, down the
+Launch history: every launch line submitted is added to a history, with
+runs of spaces folded to one. A line that does not parse (unknown kind,
+too many words) or whose launch fails is kept too, so the next popup
+brings it back with up to be fixed; the error in the message line says
+so. Up shows the previous (older) line, down the
 next; past the newest line down brings back the text that was being
 typed. A line used again moves to the end instead of being kept twice; the
 oldest lines beyond 200 are dropped. The history is kept in
@@ -136,7 +140,9 @@ stop the launch. The prompt popup (`p`) keeps no history: prompts are
 free text sent to an agent and are not written to disk.
 
 Launch completion: tab completes the word being typed. The first word
-completes to a launch kind and gets a space when only one kind matches.
+completes to a launch kind, or, once at least one letter is typed, to an
+executable on PATH (`claude-` -> `claude-bst`), and gets a space when only
+one matches.
 The second word completes to a directory, resolved the same way as DIR
 (`~`, relative to the start directory, symlinks followed); a single match
 gets a trailing `/` so the next tab goes one level down, and hidden
@@ -144,6 +150,22 @@ directories are offered only when the word starts with `.`. With several
 matches the word grows to their common prefix and the matches show under
 the input until the next key. NAME and anything after `--` are not
 completed.
+
+## Filter
+
+`/` filters the list in use (lazydocker style). The focus moves to that
+list and the keys go into the filter: the rows narrow as it is typed,
+up / down move the selection, backspace and ctrl+u edit. Enter keeps the
+filter and returns to the normal keys; esc clears it. Esc in a list with
+a kept filter clears it too.
+
+- Match: every word of the filter appears, ignoring case and order, in
+  the row's kind, role, label, working directory, Claude session name,
+  tmux session, container, status or PID.
+- Each list has its own filter; it holds across refreshes. The title
+  shows it (`1 Agents /claude`), an empty result says "no match", and
+  the footer shows the filter being typed.
+- The status panel counts are not filtered: they describe all agents.
 
 ## Refresh
 

@@ -22,6 +22,7 @@ var keyHelp = []bindingGroup{
 		{"g / G", "first / last; in the main panel top / bottom"},
 		{"pgdn / pgup", "scroll the main panel a page"},
 		{"] / [", "next / previous tab"},
+		{"/", "filter the list; enter keeps it, esc clears it"},
 		{"mouse", "click to select, wheel to move or scroll"},
 	}},
 	{"Actions", []binding{
@@ -47,7 +48,7 @@ const attachMark = "@"
 
 // footerKeys are the short hints in the bottom line.
 var (
-	footerList = "x menu  a attach  p prompt  s stop  K kill  n new  [ ] tabs  ? help  q quit"
+	footerList = "x menu  a attach  p prompt  s stop  K kill  n new  / filter  [ ] tabs  ? help  q quit"
 	footerMain = "j/k scroll  g/G top/bottom  [ ] tabs  esc back  x menu  ? help  q quit"
 )
 

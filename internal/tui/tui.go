@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -129,6 +130,8 @@ type model struct {
 	scroll      int  // main panel offset from the top
 	follow      bool // Screen sticks to the bottom
 	showHelpers bool
+	filters     [numLists]string // text a list's rows must match, "" for all
+	filtering   bool             // keys go to the filter of lastList
 
 	popup      popupKind
 	menu       []menuItem
@@ -215,6 +218,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.MouseMsg:
 		return m.updateMouse(msg)
 	case tea.KeyMsg:
+		if m.filtering {
+			return m.updateFilter(msg)
+		}
 		switch m.popup {
 		case popupHelp:
 			m.popup = popupNone
@@ -249,6 +255,9 @@ func (m *model) regroup() {
 			continue
 		}
 		g := group(a)
+		if !matchFilter(a, m.filters[g]) {
+			continue
+		}
 		rows[g] = append(rows[g], a)
 	}
 	for i := range m.lists {
@@ -351,9 +360,13 @@ func (m model) updateKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, m.focusList(int(key[0] - '1'))
 	case "enter":
 		m.focus = focusMain
+	case "/":
+		m.focus, m.filtering = m.lastList, true
 	case "esc":
 		if inMain {
 			m.focus = m.lastList
+		} else if m.filters[m.focus] != "" {
+			return m, m.setFilter(m.focus, "")
 		}
 	case "]":
 		return m, m.setTab(m.tab + 1)
@@ -540,17 +553,20 @@ func (m *model) submit(text string) tea.Cmd {
 			return actionMsg{fmt.Sprintf("sent %d chars to %s", len([]rune(text)), a.TmuxSession), err}
 		}
 	}
-	kind, dir, name, extra, err := parseLaunch(text, m.opts.LaunchDir)
-	if err != nil {
-		m.setMsg(err.Error(), true)
-		return nil
-	}
+	// Every line goes into the history, also one that does not parse, so
+	// a mistyped line can be fetched with up in the next popup and fixed.
 	if m.opts.HistoryFile != "" {
 		m.hist = loadHistory(m.opts.HistoryFile) // keep lines other lazyai instances added
 	}
 	m.hist = addHistory(m.hist, text)
-	if err := saveHistory(m.opts.HistoryFile, m.hist); err != nil {
-		m.setMsg("launch history: "+err.Error(), true)
+	histErr := saveHistory(m.opts.HistoryFile, m.hist)
+	kind, dir, name, extra, err := parseLaunch(text, m.opts.LaunchDir)
+	if err != nil {
+		m.setMsg(err.Error()+" (up in n brings the line back)", true)
+		return nil
+	}
+	if histErr != nil {
+		m.setMsg("launch history: "+histErr.Error(), true)
 	}
 	return func() tea.Msg {
 		session, err := agent.Launch(kind, dir, name, extra)
@@ -603,6 +619,69 @@ func (m model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 	return m, nil
+}
+
+// matchFilter reports whether a contains every word of filter, ignoring
+// case, in its kind, role, label, directory, sessions, status or PID.
+func matchFilter(a agent.Agent, filter string) bool {
+	words := strings.Fields(strings.ToLower(filter))
+	if len(words) == 0 {
+		return true
+	}
+	hay := strings.ToLower(strings.Join([]string{string(a.Kind), string(a.Role), label(a), a.CWD,
+		a.Name, a.TmuxSession, a.Container, a.Status, strconv.Itoa(a.PID)}, " "))
+	for _, w := range words {
+		if !strings.Contains(hay, w) {
+			return false
+		}
+	}
+	return true
+}
+
+// setFilter changes the filter of list i and regroups the rows.
+func (m *model) setFilter(i int, f string) tea.Cmd {
+	before, _ := m.selected()
+	m.filters[i] = f
+	m.regroup()
+	if after, _ := m.selected(); after.Key() != before.Key() {
+		return m.selectionChanged()
+	}
+	return nil
+}
+
+// updateFilter edits the filter of the list in use while "/" is active.
+// Enter keeps the filter, esc clears it; up and down move the selection.
+func (m model) updateFilter(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	i := m.lastList
+	f := []rune(m.filters[i])
+	switch msg.Type {
+	case tea.KeyEnter:
+		m.filtering = false
+		return m, nil
+	case tea.KeyEsc, tea.KeyCtrlC:
+		m.filtering = false
+		return m, m.setFilter(i, "")
+	case tea.KeyUp, tea.KeyDown:
+		d := 1
+		if msg.Type == tea.KeyUp {
+			d = -1
+		}
+		m.lists[i].move(d)
+		return m, m.selectionChanged()
+	case tea.KeyBackspace, tea.KeyCtrlH:
+		if len(f) > 0 {
+			f = f[:len(f)-1]
+		}
+	case tea.KeyCtrlU:
+		f = nil
+	case tea.KeySpace:
+		f = append(f, ' ')
+	case tea.KeyRunes:
+		f = append(f, msg.Runes...)
+	default:
+		return m, nil
+	}
+	return m, m.setFilter(i, string(f))
 }
 
 // parseLaunch reads "KIND [DIR] [NAME] [-- ARGS...]".

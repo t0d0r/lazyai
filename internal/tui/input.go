@@ -109,6 +109,11 @@ func completeLaunch(line, baseDir string) (string, []string) {
 				cands = append(cands, string(k))
 			}
 		}
+		if cur != "" {
+			cands = append(cands, pathCommands(cur)...)
+			slices.Sort(cands)
+			cands = slices.Compact(cands)
+		}
 		names, sep = cands, " "
 	case 1:
 		cands, names = completeDir(cur, baseDir)
@@ -151,6 +156,31 @@ func completeDir(word, baseDir string) (words, names []string) {
 		names = append(names, name+"/")
 	}
 	return words, names
+}
+
+// pathCommands lists the executables on PATH whose names start with prefix,
+// so wrapper scripts such as claude-bst complete like the kinds.
+func pathCommands(prefix string) []string {
+	var out []string
+	for _, dir := range filepath.SplitList(os.Getenv("PATH")) {
+		if dir == "" {
+			continue
+		}
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			name := e.Name()
+			if !strings.HasPrefix(name, prefix) || strings.HasPrefix(name, ".") || slices.Contains(out, name) {
+				continue
+			}
+			if fi, err := os.Stat(filepath.Join(dir, name)); err == nil && fi.Mode().IsRegular() && fi.Mode()&0o111 != 0 {
+				out = append(out, name)
+			}
+		}
+	}
+	return out
 }
 
 func commonPrefix(ss []string) string {

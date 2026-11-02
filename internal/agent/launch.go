@@ -3,6 +3,7 @@ package agent
 import (
 	"errors"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -28,16 +29,20 @@ var notLaunched = map[Kind]string{
 }
 
 // LaunchCommand returns the argv that starts kind with extra arguments.
+// Besides the known kinds, any command name found on PATH is accepted, so
+// wrapper scripts such as claude-bst (claude with another profile) launch
+// like the agent they wrap.
 func LaunchCommand(kind Kind, extra []string) ([]string, error) {
 	if reason := notLaunched[kind]; reason != "" {
 		return nil, errors.New(reason)
 	}
-	if kindRank(kind) == len(Kinds) {
+	if kindRank(kind) == len(Kinds) && !IsCommand(string(kind)) {
 		var names []string
 		for _, k := range LaunchKinds() {
 			names = append(names, string(k))
 		}
-		return nil, fmt.Errorf("unknown agent kind %q (known: %s)", kind, strings.Join(names, ", "))
+		return nil, fmt.Errorf("%q is not a known agent kind (%s) or a command on PATH",
+			kind, strings.Join(names, ", "))
 	}
 	if kind == KindOllama && len(extra) == 0 {
 		return nil, errors.New("ollama needs arguments, for example: ollama -- run llama3.2")
@@ -60,4 +65,14 @@ func Launch(kind Kind, dir, name string, extra []string) (string, error) {
 	}
 	session := tmux.FreeSessionName(name)
 	return session, tmux.Launch(session, dir, argv)
+}
+
+// IsCommand reports whether name is a bare command name (no path, no
+// leading "-") that resolves to an executable on PATH.
+func IsCommand(name string) bool {
+	if name == "" || strings.ContainsRune(name, '/') || strings.HasPrefix(name, "-") {
+		return false
+	}
+	_, err := exec.LookPath(name)
+	return err == nil
 }

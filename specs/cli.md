@@ -13,7 +13,7 @@ formatting.
 | `list [-json] [-all]`                    | table, h | one snapshot; `-all` adds helpers      |
 | `show [-json] AGENT`                     | enter, d | detail fields, resources, flags        |
 | `watch [-json] [-all] [-interval D]`     | refresh  | stream of change events until ctrl+c   |
-| `launch [-dir D] [-name N] KIND [ARGS]`  | n        | see control.md                         |
+| `launch [-dir D] [-name N] KIND [ARGS]`  | n        | KIND or a command on PATH; control.md  |
 | `attach AGENT`                           | a        | see control.md                         |
 | `send AGENT TEXT...`                     | p        | words are joined with single spaces    |
 | `stop [-force] [-yes] AGENT...`          | s        | asks `[y/N]` per agent unless `-yes`   |

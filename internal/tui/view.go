@@ -165,7 +165,11 @@ func (m model) listPanel(i int, l layout) string {
 	top := m.listTop(i, l)
 	var lines []string
 	if len(lst.rows) == 0 {
-		lines = append(lines, dimStyle.Render("none"))
+		if m.filters[i] != "" {
+			lines = append(lines, dimStyle.Render("no match"))
+		} else {
+			lines = append(lines, dimStyle.Render("none"))
+		}
 	}
 	for r := top; r < len(lst.rows) && r < top+visible; r++ {
 		a := lst.rows[r]
@@ -212,6 +216,9 @@ func (m model) listPanel(i int, l layout) string {
 	if focused {
 		title = activeStyle.Render(fmt.Sprintf("%d %s", i+1, listTitles[i]))
 	}
+	if f := m.filters[i]; f != "" || (m.filtering && i == m.lastList) {
+		title += " " + keyStyle.Render("/"+f)
+	}
 	return box(title, lines, l.leftW, l.listH[i], focused, pos)
 }
 
@@ -250,6 +257,9 @@ func (m model) mainPanel(l layout) string {
 func (m model) mainLines(w int) []string {
 	a, ok := m.selected()
 	if !ok {
+		if f := m.filters[m.lastList]; f != "" {
+			return []string{dimStyle.Render("no " + strings.ToLower(listTitles[m.lastList]) + " match /" + f)}
+		}
 		return []string{dimStyle.Render("no " + strings.ToLower(listTitles[m.lastList]) + " running")}
 	}
 	switch m.tab {
@@ -339,7 +349,10 @@ func statsLines(a agent.Agent, t watch.Tracker, w, h int) []string {
 
 func (m model) footer() string {
 	keys := footerList
-	if m.focus == focusMain {
+	switch {
+	case m.filtering:
+		keys = "filter /" + m.filters[m.lastList] + "_   enter keep  esc clear  up/down move"
+	case m.focus == focusMain:
 		keys = footerMain
 	}
 	right := dimStyle.Render("lazyai " + m.opts.Version)
@@ -408,7 +421,7 @@ func (m model) inputPopup() string {
 	for _, k := range agent.LaunchKinds() {
 		kinds = append(kinds, string(k))
 	}
-	hint += strings.Join(kinds, " ")
+	hint += strings.Join(kinds, " ") + ", or a command on PATH"
 	if m.input == inputSend {
 		title, hint = "Prompt for "+m.target.TmuxSession, "typed into the agent, then Enter"
 	}

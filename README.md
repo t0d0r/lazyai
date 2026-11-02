@@ -99,6 +99,7 @@ bin/lazyai watch -json | jq .    # one JSON event per line
 bin/lazyai launch claude         # new Claude Code session in tmux, here
 bin/lazyai launch -dir ~/work/AI/x -name x codex
 bin/lazyai launch ollama run llama3.2
+bin/lazyai launch claude-bst     # any command on PATH, e.g. a wrapper script
 bin/lazyai attach claude-x
 bin/lazyai send claude-x "run the tests"
 bin/lazyai stop claude-x         # asks first; -yes skips, -force kills
@@ -141,6 +142,7 @@ Every dashboard action also has a command:
 | a            | attach to the agent's tmux session              | `attach AGENT`      |
 | p            | type a prompt into the agent and press Enter    | `send AGENT TEXT`   |
 | n            | launch: `KIND [DIR] [NAME] [-- ARGS]`           | `launch`            |
+| /            | filter the list; enter keeps, esc clears        | `list \| grep`      |
 | s / K        | stop (SIGTERM) / kill (SIGKILL), with y/N       | `stop` / `kill`     |
 | H            | show or hide helper processes                   | `list --all`        |
 | live view    | status durations and flags                      | `watch`             |

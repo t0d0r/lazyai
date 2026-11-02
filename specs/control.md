@@ -22,6 +22,15 @@
   because `coli` is not on PATH and needs its model and settings
   configured. mlx-lm is refused with a pointer to `mlx_lm.server` /
   `mlx_lm.chat`, which need a model. Containers are not launched.
+- KIND may also be any other command name found on PATH, for example a
+  wrapper script such as `claude-bst` that runs claude with another
+  profile. Only a bare name is accepted: no `/` and no leading `-`, so
+  the command always comes from PATH. What it starts is classified by
+  discovery as usual (a wrapper that execs claude shows as claude).
+  - Decision: accept commands on PATH instead of a fixed list. Reason:
+    agents are often started through wrapper scripts with other
+    profiles or settings; the operator types the line, with the same
+    rights as in a shell, so the list of kinds gave no protection.
 - The command is resolved with `PATH` lookup and run directly by
   `tmux new-session -d -s SESSION -c DIR -- PATH ARGS...`. With no ARGS
   tmux would hand the single word to the shell, so it runs `env PATH`
