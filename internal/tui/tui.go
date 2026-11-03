@@ -352,9 +352,9 @@ func (m model) updateKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.popup = popupHelp
 	case "x":
 		m.menu, m.menuCursor, m.popup = m.menuItems(), 0, popupMenu
-	case "tab", "right", "l":
+	case "tab":
 		return m, m.cycleFocus(1)
-	case "shift+tab", "left", "h":
+	case "shift+tab":
 		return m, m.cycleFocus(-1)
 	case "1", "2", "3":
 		return m, m.focusList(int(key[0] - '1'))

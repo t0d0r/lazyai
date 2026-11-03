@@ -138,7 +138,7 @@ Every dashboard action also has a command:
 
 | key          | action                                          | command             |
 |--------------|-------------------------------------------------|---------------------|
-| tab, h / l   | next / previous panel                           | -                   |
+| tab, 1 2 3   | next panel; Agents, Services, Models            | -                   |
 | j / k        | move, or scroll the main panel                  | -                   |
 | ] / [        | next / previous tab                             | `show AGENT`        |
 | a            | attach to the agent's tmux session              | `attach AGENT`      |

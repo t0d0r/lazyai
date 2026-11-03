@@ -111,9 +111,12 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
 | key                  | action                                         |
 |----------------------|------------------------------------------------|
 | tab / shift+tab      | next / previous panel (lists, then main)       |
-| l / h, right / left  | same                                           |
 | 1 2 3                | Agents, Services, Models                       |
 | enter / esc          | focus the main panel / back to the list        |
+
+Left / right and h / l do not move the focus. Decision: only tab,
+shift+tab, 1 2 3 and enter / esc do, so a stray arrow key does not take
+the focus away from the list in use.
 | j / k, down / up     | move the selection, or scroll the main panel   |
 | g / G, home / end    | first / last; main panel top / bottom (follow) |
 | pgdn / pgup, ctrl+d / ctrl+u | scroll the main panel a page           |

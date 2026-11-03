@@ -30,6 +30,10 @@ func key(s string) tea.KeyMsg {
 		return tea.KeyMsg{Type: tea.KeyUp}
 	case "down":
 		return tea.KeyMsg{Type: tea.KeyDown}
+	case "left":
+		return tea.KeyMsg{Type: tea.KeyLeft}
+	case "right":
+		return tea.KeyMsg{Type: tea.KeyRight}
 	}
 	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)}
 }
@@ -234,6 +238,11 @@ func TestFocusAndTabs(t *testing.T) {
 	m := loaded(120, 30)
 	if m.focus != listAgents {
 		t.Fatalf("initial focus %d", m.focus)
+	}
+	for _, k := range []string{"right", "left", "l", "h"} {
+		if mm := press(m, k); mm.focus != listAgents {
+			t.Errorf("%s moved the focus to %d", k, mm.focus)
+		}
 	}
 	m = press(m, "tab")
 	if m.focus != listServices || m.lastList != listServices {

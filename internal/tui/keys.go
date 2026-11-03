@@ -15,7 +15,6 @@ type bindingGroup struct {
 var keyHelp = []bindingGroup{
 	{"Navigation", []binding{
 		{"tab / shift+tab", "next / previous panel"},
-		{"l / h, right / left", "next / previous panel"},
 		{"1 2 3", "Agents, Services, Models panel"},
 		{"enter / esc", "focus the main panel / back to the list"},
 		{"j / k, down / up", "move the selection, or scroll the main panel"},
