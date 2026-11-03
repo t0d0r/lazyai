@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -105,19 +106,36 @@ started, exited, status (busy/idle) and flags. Runs until interrupted.`,
 	},
 	{
 		name:     "launch",
-		synopsis: "[OPTIONS] KIND [AGENT-ARGS...]",
+		synopsis: "[OPTIONS] KIND [DIR] [NAME] [-- AGENT-ARGS...]",
 		summary:  "start an agent in a new tmux session",
 		about: `
-Start KIND in a new detached tmux session named lazyai-NAME. Options must
-come before KIND; everything after KIND is passed to the agent unchanged.`,
+Start KIND in a new detached tmux session named lazyai-NAME, the same
+line as n in the dashboard. KIND is a known kind or any command on PATH.
+DIR may use ~ and is relative to --dir (default: here). Options must
+come before KIND; agent arguments go after --, unchanged.`,
 		setup: func(f *flagDefs) action {
-			dir := f.String("d", "dir", "DIR", ".", "working directory")
+			dir := f.String("d", "dir", "DIR", "", "base directory for DIR (default: the current one)")
 			name := f.String("n", "name", "NAME", "", "session name (default KIND-DIRNAME)")
 			return func(e env, args []string) error {
 				if len(args) == 0 {
 					return usagef("missing KIND")
 				}
-				session, err := agent.Launch(agent.Kind(args[0]), *dir, *name, args[1:])
+				cwd, err := os.Getwd()
+				if err != nil {
+					return err
+				}
+				spec, err := agent.ParseLaunch(args, agent.ExpandDir(*dir, cwd))
+				switch {
+				case errors.Is(err, agent.ErrLaunchSyntax):
+					return usagef("expected %s", strings.TrimPrefix(err.Error(), "usage: "))
+				case err != nil:
+					return err
+				case *name != "" && spec.Name != "":
+					return usagef("NAME given twice: --name %s and %s", *name, spec.Name)
+				case *name != "":
+					spec.Name = *name
+				}
+				session, err := agent.Launch(spec.Kind, spec.Dir, spec.Name, spec.Args)
 				if err != nil {
 					return err
 				}

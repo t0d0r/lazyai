@@ -138,7 +138,7 @@ func completeDir(word, baseDir string) (words, names []string) {
 	parent, prefix := word[:i], word[i:]
 	dir := baseDir
 	if parent != "" {
-		dir = expandDir(parent, baseDir)
+		dir = agent.ExpandDir(parent, baseDir)
 	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {

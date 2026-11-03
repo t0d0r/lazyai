@@ -558,20 +558,21 @@ func TestBarChart(t *testing.T) {
 
 func TestParseLaunch(t *testing.T) {
 	home, _ := os.UserHomeDir()
-	kind, dir, name, extra, err := parseLaunch("claude ~/work/p p1 -- --model x", "/base")
-	if err != nil || kind != agent.KindClaude || dir != filepath.Join(home, "work/p") || name != "p1" ||
-		strings.Join(extra, " ") != "--model x" {
-		t.Errorf("got %q %q %q %q %v", kind, dir, name, extra, err)
+	s, err := parseLaunch("claude ~/work/p p1 -- --model x", "/base")
+	if err != nil || s.Kind != agent.KindClaude || s.Dir != filepath.Join(home, "work/p") || s.Name != "p1" ||
+		strings.Join(s.Args, " ") != "--model x" {
+		t.Errorf("got %+v %v", s, err)
 	}
-	_, dir, name, extra, err = parseLaunch("codex", "/base")
-	if err != nil || dir != "/base" || name != "" || len(extra) != 0 {
-		t.Errorf("defaults: %q %q %q %v", dir, name, extra, err)
+	s, err = parseLaunch("codex", "/base")
+	if err != nil || s.Dir != "/base" || s.Name != "" || len(s.Args) != 0 {
+		t.Errorf("defaults: %+v %v", s, err)
 	}
-	if _, dir, _, _, _ = parseLaunch("codex sub", "/base"); dir != "/base/sub" {
-		t.Errorf("relative dir: %q", dir)
+	if s, _ = parseLaunch("codex sub", "/base"); s.Dir != "/base/sub" {
+		t.Errorf("relative dir: %q", s.Dir)
 	}
-	for _, bad := range []string{"", "no-such-command-x -rf /", "claude a b c d", "colibri", "../bin/claude"} {
-		if _, _, _, _, err := parseLaunch(bad, "/base"); err == nil {
+	for _, bad := range []string{"", "no-such-command-x -rf /", "claude a b c d", "colibri", "../bin/claude",
+		"claude --model x", "claude dir --model"} {
+		if _, err := parseLaunch(bad, "/base"); err == nil {
 			t.Errorf("parseLaunch(%q) accepted", bad)
 		}
 	}

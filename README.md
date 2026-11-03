@@ -98,7 +98,8 @@ bin/lazyai watch                 # agents, then changes as they happen
 bin/lazyai watch -json | jq .    # one JSON event per line
 bin/lazyai launch claude         # new Claude Code session in tmux, here
 bin/lazyai launch -dir ~/work/AI/x -name x codex
-bin/lazyai launch ollama run llama3.2
+bin/lazyai launch claude ~/work/x x -- --model sonnet   # the same line as n
+bin/lazyai launch ollama -- run llama3.2
 bin/lazyai launch claude-bst     # any command on PATH, e.g. a wrapper script
 bin/lazyai attach claude-x
 bin/lazyai send claude-x "run the tests"
@@ -114,8 +115,9 @@ Help works like any Unix tool: `lazyai -h`, `lazyai --help`,
 `lazyai help COMMAND` and `lazyai COMMAND --help`. Options have long
 and short forms (`--all`/`-a`, `--json`/`-j`, `--yes`/`-y`, ...) and may
 follow arguments (`lazyai stop claude-x -y`), except for `launch` and
-`send`, where everything after KIND or AGENT belongs to the agent or the
-prompt. `lazyai --version` prints the git version it was built from.
+`send`, where everything after KIND is the launch line (agent arguments
+after `--`) and everything after AGENT the prompt. `lazyai examples`
+prints example lines for every command. `lazyai --version` prints the git version it was built from.
 Exit status is 0 on success, 1 on failure, 2 on a usage error.
 
 ## Dashboard

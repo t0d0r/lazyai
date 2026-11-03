@@ -3,8 +3,10 @@ package agent
 import (
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"lazyai/internal/tmux"
@@ -75,4 +77,62 @@ func IsCommand(name string) bool {
 	}
 	_, err := exec.LookPath(name)
 	return err == nil
+}
+
+// LaunchUsage is the launch line that both the TUI (n) and the CLI read.
+const LaunchUsage = "KIND [DIR] [NAME] [-- ARGS...]"
+
+// ErrLaunchSyntax marks a launch line that does not have the form of
+// LaunchUsage, as opposed to one naming an unknown kind.
+var ErrLaunchSyntax = errors.New("usage: " + LaunchUsage)
+
+// LaunchSpec is a parsed launch line.
+type LaunchSpec struct {
+	Kind Kind
+	Dir  string   // absolute working directory
+	Name string   // session name, "" for the default
+	Args []string // agent arguments, everything after "--"
+}
+
+// ParseLaunch reads "KIND [DIR] [NAME] [-- ARGS...]" from words. DIR may
+// use "~" and is relative to baseDir, which is also the default. Words
+// before "--" that start with "-" are refused, since agent arguments go
+// after "--".
+func ParseLaunch(words []string, baseDir string) (LaunchSpec, error) {
+	head, tail := words, []string(nil)
+	if i := slices.Index(words, "--"); i >= 0 {
+		head, tail = words[:i], words[i+1:]
+	}
+	if len(head) == 0 || len(head) > 3 {
+		return LaunchSpec{}, ErrLaunchSyntax
+	}
+	for _, w := range head[1:] {
+		if strings.HasPrefix(w, "-") {
+			return LaunchSpec{}, fmt.Errorf("%w (agent arguments such as %s go after --)", ErrLaunchSyntax, w)
+		}
+	}
+	spec := LaunchSpec{Kind: Kind(head[0]), Dir: ExpandDir(".", baseDir), Args: tail}
+	if _, err := LaunchCommand(spec.Kind, []string{"check"}); err != nil {
+		return LaunchSpec{}, err
+	}
+	if len(head) > 1 {
+		spec.Dir = ExpandDir(head[1], baseDir)
+	}
+	if len(head) > 2 {
+		spec.Name = head[2]
+	}
+	return spec, nil
+}
+
+// ExpandDir resolves p with "~" for the home directory and relative to base.
+func ExpandDir(p, base string) string {
+	if p == "~" || strings.HasPrefix(p, "~/") {
+		if home, err := os.UserHomeDir(); err == nil {
+			p = filepath.Join(home, strings.TrimPrefix(p, "~"))
+		}
+	}
+	if !filepath.IsAbs(p) {
+		p = filepath.Join(base, p)
+	}
+	return filepath.Clean(p)
 }

@@ -97,6 +97,13 @@
       (wrapper scripts such as claude-bst) launches and completes
       (specs/control.md, specs/tui.md)
 - [x] `/` filters the list in use (specs/tui.md, Filter)
+- [x] `lazyai launch` reads the same line as `n`: KIND [DIR] [NAME]
+      [-- ARGS] (specs/control.md, specs/cli.md)
+- [x] examples in every command's help and `lazyai examples [COMMAND]`;
+      top-level help shows the launch line (specs/cli.md)
+- [ ] release with the shared launch line and examples; the CLI change
+      needs `--` before agent arguments, so note it in the release
+      (specs/release.md)
 - [x] show which tmux sessions are attached: `>` mark, attached count,
       Info line, `/attached` `/detached`, confirm before `p`
       (specs/tui.md, specs/discovery.md, specs/control.md)

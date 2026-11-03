@@ -3,10 +3,7 @@
 package tui
 
 import (
-	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -574,7 +571,7 @@ func (m *model) submit(text string) tea.Cmd {
 	}
 	m.hist = addHistory(m.hist, text)
 	histErr := saveHistory(m.opts.HistoryFile, m.hist)
-	kind, dir, name, extra, err := parseLaunch(text, m.opts.LaunchDir)
+	spec, err := parseLaunch(text, m.opts.LaunchDir)
 	if err != nil {
 		m.setMsg(err.Error()+" (up in n brings the line back)", true)
 		return nil
@@ -583,7 +580,7 @@ func (m *model) submit(text string) tea.Cmd {
 		m.setMsg("launch history: "+histErr.Error(), true)
 	}
 	return func() tea.Msg {
-		session, err := agent.Launch(kind, dir, name, extra)
+		session, err := agent.Launch(spec.Kind, spec.Dir, spec.Name, spec.Args)
 		return actionMsg{"launched " + session + " (select it and press a to attach)", err}
 	}
 }
@@ -711,36 +708,7 @@ func (m model) updateFilter(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, m.setFilter(i, string(f))
 }
 
-// parseLaunch reads "KIND [DIR] [NAME] [-- ARGS...]".
-func parseLaunch(line, defaultDir string) (agent.Kind, string, string, []string, error) {
-	head, tail, _ := strings.Cut(" "+line+" ", " -- ")
-	words := strings.Fields(head)
-	if len(words) == 0 || len(words) > 3 {
-		return "", "", "", nil, errors.New("usage: KIND [DIR] [NAME] [-- ARGS...]")
-	}
-	kind := agent.Kind(words[0])
-	if _, err := agent.LaunchCommand(kind, []string{"check"}); err != nil {
-		return "", "", "", nil, err
-	}
-	dir := defaultDir
-	if len(words) > 1 {
-		dir = expandDir(words[1], defaultDir)
-	}
-	name := ""
-	if len(words) > 2 {
-		name = words[2]
-	}
-	return kind, dir, name, strings.Fields(tail), nil
-}
-
-func expandDir(p, base string) string {
-	if p == "~" || strings.HasPrefix(p, "~/") {
-		if home, err := os.UserHomeDir(); err == nil {
-			p = filepath.Join(home, strings.TrimPrefix(p, "~"))
-		}
-	}
-	if !filepath.IsAbs(p) {
-		p = filepath.Join(base, p)
-	}
-	return filepath.Clean(p)
+// parseLaunch reads a launch line typed into the n popup.
+func parseLaunch(line, defaultDir string) (agent.LaunchSpec, error) {
+	return agent.ParseLaunch(strings.Fields(line), defaultDir)
 }

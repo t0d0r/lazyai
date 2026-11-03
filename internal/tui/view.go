@@ -444,7 +444,7 @@ func (m model) confirmPopup() string {
 }
 
 func (m model) inputPopup() string {
-	title, hint := "Launch", "KIND [DIR] [NAME] [-- ARGS]   kinds: "
+	title, hint := "Launch", agent.LaunchUsage+"   kinds: "
 	var kinds []string
 	for _, k := range agent.LaunchKinds() {
 		kinds = append(kinds, string(k))

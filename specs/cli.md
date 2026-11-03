@@ -13,12 +13,13 @@ formatting.
 | `list [-json] [-all]`                    | table, h | one snapshot; `-all` adds helpers      |
 | `show [-json] AGENT`                     | enter, d | detail fields, resources, flags        |
 | `watch [-json] [-all] [-interval D]`     | refresh  | stream of change events until ctrl+c   |
-| `launch [-dir D] [-name N] KIND [ARGS]`  | n        | KIND or a command on PATH; control.md  |
+| `launch [-dir D] [-name N] KIND [DIR] [NAME] [-- ARGS]` | n | the `n` line; control.md |
 | `attach AGENT`                           | a        | see control.md                         |
 | `send AGENT TEXT...`                     | p        | words are joined with single spaces    |
 | `stop [-force] [-yes] AGENT...`          | s        | asks `[y/N]` per agent unless `-yes`   |
 | `kill [-yes] AGENT...`                   | K        | `stop -force`                          |
 | `update [-check] [-yes]`                 | -        | install the latest release, update.md  |
+| `examples [COMMAND]`                     | -        | example command lines                  |
 
 ## Conventions
 
@@ -26,7 +27,18 @@ The CLI behaves like a standard Unix command:
 
 - Help: `-h`, `-help`, `--help` and `help` print the top-level usage;
   `help COMMAND`, `COMMAND -h` and `COMMAND --help` print that command's
-  usage line, description and options. Help goes to stdout and exits 0.
+  usage line, description, options and examples. Help goes to stdout
+  and exits 0.
+- The top-level usage lists the commands, the AGENT forms, the launch
+  line `KIND [DIR] [NAME] [-- AGENT-ARGS...]` with the known kinds
+  (wrapped at 80 columns), exit statuses, and points to `help COMMAND`
+  and `examples`.
+- `examples` prints example lines for every command under a
+  `COMMAND - summary` heading; `examples COMMAND` (aliases work) prints
+  that command's only; `help examples` and `examples -h` print its
+  usage. Each command's help ends with the same examples. Examples use
+  invented directories and names. Every command has at least one; a
+  test checks it, and that the launch examples parse.
 - `-V`, `--version` and `version` print `lazyai VERSION`. `make build`
   sets VERSION from `git describe --tags --always --dirty`; otherwise it
   is `dev`.
@@ -35,7 +47,7 @@ The CLI behaves like a standard Unix command:
   `--opt=value` and `--opt value` both work.
 - Options may come after positional arguments, up to a `--`. `launch` and
   `send` stop parsing at the first positional argument, because the rest
-  belongs to the agent or is prompt text.
+  is the launch line or prompt text.
 - Options before any command (`lazyai --interval 1s`) go to the default
   `tui` command.
 - Errors go to stderr. A usage error prints

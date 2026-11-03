@@ -48,9 +48,15 @@ func run(args []string, e env) int {
 		case "-V", "-version", "--version", "version":
 			fmt.Fprintln(e.out, "lazyai", version)
 			return 0
+		case "examples":
+			return runExamples(args[1:], e)
 		case "help":
 			if len(args) == 1 {
 				writeUsage(e.out)
+				return 0
+			}
+			if args[1] == "examples" {
+				writeExamplesHelp(e.out)
 				return 0
 			}
 			c, ok := lookup(args[1])
@@ -131,6 +137,7 @@ Commands:
 		kinds = append(kinds, string(k))
 	}
 	fmt.Fprintf(w, `  %-9s show help for a command
+  %-9s example command lines, for all commands or one
   %-9s print the version
 
 Options:
@@ -140,13 +147,20 @@ Options:
 AGENT is a PID, a tmux session name (the lazyai- prefix is optional) or
 a Claude Code session name.
 
-KIND (for launch) is one of: %s.
-Colibri is also listed and watched, but started with its own tooling.
+Launch line, the same in 'lazyai launch' and n in the dashboard:
+  KIND [DIR] [NAME] [-- AGENT-ARGS...]
+KIND is one of:
+%s;
+or any other command on PATH, such as a wrapper script. DIR may use ~;
+NAME names the tmux session lazyai-NAME; agent arguments go after --.
+Colibri and mlx-lm are listed and watched, but started with their own
+tooling.
 
 Exit status: 0 on success, 1 on failure, 2 on a usage error.
 
-Run 'lazyai help COMMAND' or 'lazyai COMMAND --help' for details.
-`, "help", "version", strings.Join(kinds, ", "))
+Run 'lazyai help COMMAND' or 'lazyai COMMAND --help' for details, and
+'lazyai examples' for examples.
+`, "help", "examples", "version", wrap(strings.Join(kinds, ", "), "  ", 74))
 }
 
 func (c command) writeHelp(w io.Writer) {
@@ -158,4 +172,24 @@ func (c command) writeHelp(w io.Writer) {
 	f := newFlagDefs(c.name)
 	c.setup(f)
 	f.writeOptions(w)
+	if len(examples[c.name]) > 0 {
+		fmt.Fprintln(w, "\nExamples:")
+		writeExamples(w, c.name)
+	}
+}
+
+// wrap breaks text into lines of at most width cells after indent.
+func wrap(text, indent string, width int) string {
+	var lines []string
+	line := ""
+	for _, w := range strings.Fields(text) {
+		if line != "" && len(line)+1+len(w) > width {
+			lines, line = append(lines, indent+line), ""
+		}
+		if line != "" {
+			line += " "
+		}
+		line += w
+	}
+	return strings.Join(append(lines, indent+line), "\n")
 }

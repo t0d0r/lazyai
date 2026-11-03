@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"strings"
 	"testing"
 
@@ -50,6 +51,68 @@ func TestCommandHelp(t *testing.T) {
 	}
 	if _, out, _ = runCLI("ls", "-h"); !strings.HasPrefix(out, "Usage: lazyai list") {
 		t.Errorf("alias help:\n%s", out)
+	}
+}
+
+func TestExamples(t *testing.T) {
+	for _, c := range commands {
+		if len(examples[c.name]) == 0 {
+			t.Errorf("no examples for %s", c.name)
+		}
+		for _, ex := range examples[c.name] {
+			if !strings.HasPrefix(ex.cmd, "lazyai") || ex.note == "" {
+				t.Errorf("%s: bad example %+v", c.name, ex)
+			}
+		}
+		if _, out, _ := runCLI("help", c.name); !strings.Contains(out, "Examples:\n  "+examples[c.name][0].cmd) {
+			t.Errorf("help %s lacks examples:\n%s", c.name, out)
+		}
+	}
+	code, out, _ := runCLI("examples")
+	if code != 0 || !strings.Contains(out, "launch - start an agent") ||
+		!strings.Contains(out, "lazyai launch claude-bst ~/work/alpha/web-frontend web") {
+		t.Errorf("examples: %d\n%s", code, out)
+	}
+	if code, out, _ = runCLI("examples", "ls"); code != 0 || !strings.HasPrefix(out, "  lazyai list ") {
+		t.Errorf("examples ls: %d %q", code, out)
+	}
+	for _, args := range [][]string{{"help", "examples"}, {"examples", "-h"}} {
+		if code, out, _ = runCLI(args...); code != 0 || !strings.HasPrefix(out, "Usage: lazyai examples") {
+			t.Errorf("%v: %d %q", args, code, out)
+		}
+	}
+	for _, args := range [][]string{{"examples", "nope"}, {"examples", "a", "b"}} {
+		if code, _, _ = runCLI(args...); code != 2 {
+			t.Errorf("%v: exit %d, want 2", args, code)
+		}
+	}
+	// Every launch example parses as a launch line.
+	for _, ex := range examples["launch"] {
+		words := strings.Fields(ex.cmd)[2:]
+		for len(words) > 0 && strings.HasPrefix(words[0], "--dir") {
+			words = words[2:]
+		}
+		if _, err := agent.ParseLaunch(words, "/base"); errors.Is(err, agent.ErrLaunchSyntax) {
+			t.Errorf("%q: %v", ex.cmd, err)
+		}
+	}
+}
+
+func TestLaunchLine(t *testing.T) {
+	for _, c := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"launch", "claude", "--model", "x"}, "agent arguments such as --model go after --"},
+		{[]string{"launch", "claude", "a", "b", "c"}, "expected KIND [DIR] [NAME] [-- ARGS...]"},
+		{[]string{"launch", "--name", "x", "claude", ".", "y"}, "NAME given twice"},
+	} {
+		if code, _, errOut := runCLI(c.args...); code != 2 || !strings.Contains(errOut, c.want) {
+			t.Errorf("%v: %d %q", c.args, code, errOut)
+		}
+	}
+	if code, _, errOut := runCLI("launch", "no-such-command-x"); code != 1 || !strings.Contains(errOut, "command on PATH") {
+		t.Errorf("unknown kind: %d %q", code, errOut)
 	}
 }
 

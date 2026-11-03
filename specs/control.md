@@ -16,7 +16,18 @@
 
 ## Launch
 
-- `launch [-dir D] [-name N] KIND [ARGS...]`. KIND must be a supported
+- `launch [-dir D] [-name N] KIND [DIR] [NAME] [-- ARGS...]`, the same
+  line as `n` in the dashboard, read by one parser (agent.ParseLaunch).
+  DIR may use `~` and is relative to `-dir` (default: the current
+  directory); NAME names the session; agent arguments go after `--`. A
+  word before `--` that starts with `-` is a usage error that says
+  arguments go after `--`; so is a fourth word. NAME given both as
+  `-name` and positionally is a usage error.
+  - Decision: one launch line for CLI and TUI. Reason: a line typed in
+    `n` must work unchanged on the command line. This changes the CLI:
+    agent arguments now need `--` (`lazyai launch ollama -- run
+    llama3.2`); up to v0.5.0 everything after KIND went to the agent.
+- KIND must be a supported
   kind other than colibri and mlx-lm; ollama requires arguments. Colibri
   is refused with a pointer to its own tooling (`make run` in its project),
   because `coli` is not on PATH and needs its model and settings
