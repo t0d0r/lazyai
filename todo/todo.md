@@ -111,6 +111,7 @@
 - [x] label rows in tmux by the full tmux session, Claude name after it;
       `list` TMUX_SESSION keeps the `lazyai-` prefix (specs/tui.md,
       specs/cli.md)
+- [x] release v0.7.0 with the tmux session labels (specs/release.md)
 - [ ] status panel: count agents outside tmux (`13 outside tmux`), if
       wanted (specs/tui.md)
 - [ ] optional `~` short form for `lazyai-` sessions in narrow rows, if
