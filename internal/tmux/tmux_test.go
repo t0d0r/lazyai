@@ -98,9 +98,10 @@ func TestLaunchSendPanes(t *testing.T) {
 func TestParsePanes(t *testing.T) {
 	out := "work\t%1\t/dev/ttys001\t100\t2\t1762151400\n" +
 		"lazyai-x\t%2\t/dev/pts/3\t200\t0\t\n" +
-		"short\t%3\n"
+		"short\t%3\n" +
+		"last\t%4\t/dev/pts/4\t300\t0\t\n" // tmux 3.4: empty last field on the last line
 	got := parsePanes(out)
-	if len(got) != 2 {
+	if len(got) != 3 || got[2].Session != "last" {
 		t.Fatalf("panes: %+v", got)
 	}
 	if p := got[0]; p.Session != "work" || p.TTY != "ttys001" || p.PID != 100 || p.Clients != 2 ||

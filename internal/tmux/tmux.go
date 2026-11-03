@@ -48,10 +48,11 @@ func Panes() []Pane {
 }
 
 // parsePanes reads the list-panes lines of Panes. Lines with another
-// number of fields are skipped.
+// number of fields are skipped. Only line ends are trimmed: a session
+// never attached has an empty last field, so its line ends in a tab.
 func parsePanes(out string) []Pane {
 	var panes []Pane
-	for line := range strings.SplitSeq(strings.TrimSpace(out), "\n") {
+	for line := range strings.SplitSeq(strings.TrimRight(out, "\r\n"), "\n") {
 		f := strings.Split(line, "\t")
 		if len(f) != 6 {
 			continue
