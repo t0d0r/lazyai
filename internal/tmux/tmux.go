@@ -22,6 +22,10 @@ type Pane struct {
 	ID      string // "%3"
 	TTY     string // as ps names it: "ttys003" on macOS, "pts/3" on Linux
 	PID     int
+	// Clients is how many tmux clients show the pane's session now; 0 is
+	// detached. LastAttached is when a client last attached, zero if never.
+	Clients      int
+	LastAttached time.Time
 }
 
 // Available reports whether tmux is installed.
@@ -36,18 +40,29 @@ func Available() bool {
 // any non-ASCII session name, as "_".
 func Panes() []Pane {
 	out, err := exec.Command("tmux", "-u", "list-panes", "-a", "-F",
-		"#{session_name}\t#{pane_id}\t#{pane_tty}\t#{pane_pid}").Output()
+		"#{session_name}\t#{pane_id}\t#{pane_tty}\t#{pane_pid}\t#{session_attached}\t#{session_last_attached}").Output()
 	if err != nil {
 		return nil
 	}
+	return parsePanes(string(out))
+}
+
+// parsePanes reads the list-panes lines of Panes. Lines with another
+// number of fields are skipped.
+func parsePanes(out string) []Pane {
 	var panes []Pane
-	for line := range strings.SplitSeq(strings.TrimSpace(string(out)), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(out), "\n") {
 		f := strings.Split(line, "\t")
-		if len(f) != 4 {
+		if len(f) != 6 {
 			continue
 		}
 		pid, _ := strconv.Atoi(f[3])
-		panes = append(panes, Pane{Session: f[0], ID: f[1], TTY: strings.TrimPrefix(f[2], "/dev/"), PID: pid})
+		clients, _ := strconv.Atoi(f[4])
+		p := Pane{Session: f[0], ID: f[1], TTY: strings.TrimPrefix(f[2], "/dev/"), PID: pid, Clients: clients}
+		if sec, err := strconv.ParseInt(f[5], 10, 64); err == nil && sec > 0 {
+			p.LastAttached = time.Unix(sec, 0)
+		}
+		panes = append(panes, p)
 	}
 	return panes
 }

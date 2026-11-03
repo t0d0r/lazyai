@@ -100,7 +100,7 @@ func (m model) View() string {
 }
 
 func (m model) statusPanel(l layout) string {
-	busy := 0
+	busy, inTmux, attached := 0, 0, 0
 	var shown []agent.Agent
 	for _, a := range m.all {
 		if a.Role == agent.RoleHelper && !m.showHelpers {
@@ -110,17 +110,33 @@ func (m model) statusPanel(l layout) string {
 		if a.Status == "busy" {
 			busy++
 		}
+		if a.TmuxPane != "" {
+			inTmux++
+			if a.TmuxClients > 0 {
+				attached++
+			}
+		}
 	}
 	inner := l.leftW - 2
-	line := fmt.Sprintf("%d running, %d busy", len(shown), busy)
+	long := fmt.Sprintf("%d running, %d busy", len(shown), busy)
+	short := fmt.Sprintf("%d run, %d busy", len(shown), busy)
+	line, longAtt, shortAtt := long, long, short
+	if inTmux > 0 {
+		// Only with agents in tmux, where attached can be anything but 0.
+		longAtt += fmt.Sprintf(", %d attached", attached)
+		shortAtt += fmt.Sprintf(", %d att", attached)
+		line = longAtt
+	}
 	right := "loading ..."
 	if !m.updated.IsZero() {
 		// Shorter forms for a narrow column, so the counts are not cut.
 		mem, clock := display.Bytes(totalRSS(shown)), m.updated.Format("15:04:05")
 		for _, f := range [][2]string{
-			{line, "mem " + mem + " " + clock},
-			{line, mem + " " + clock},
-			{fmt.Sprintf("%d run, %d busy", len(shown), busy), mem + " " + clock},
+			{longAtt, "mem " + mem + " " + clock},
+			{shortAtt, "mem " + mem + " " + clock},
+			{longAtt, mem + " " + clock},
+			{shortAtt, mem + " " + clock},
+			{short, mem + " " + clock},
 		} {
 			line, right = f[0], f[1]
 			if len(line)+1+len(right) <= inner {
@@ -177,7 +193,11 @@ func (m model) listPanel(i int, l layout) string {
 		// The gutter marks agents in tmux: attach and prompt work on them.
 		prefix := " " + string(a.Kind) + " "
 		if disabledReason("a", a) == "" {
-			prefix = attachMark + string(a.Kind) + " "
+			mark := attachMark
+			if a.TmuxClients > 0 {
+				mark = attachedMark
+			}
+			prefix = mark + string(a.Kind) + " "
 		}
 		if i != listAgents {
 			prefix += string(a.Role) + " "
@@ -402,6 +422,14 @@ func (m model) menuPopup() string {
 
 func (m model) confirmPopup() string {
 	a := m.target
+	if m.confirmSend {
+		return popupBox("Confirm", []string{
+			fmt.Sprintf("%s is %s;", a.TmuxSession, display.Attached(a)),
+			"someone may be typing there. Send a prompt anyway?",
+			"",
+			keyStyle.Render("y") + " yes    " + keyStyle.Render("any other key") + " no",
+		}, min(70, m.width-4))
+	}
 	verb := "Stop (SIGTERM)"
 	if m.force {
 		verb = "Kill (SIGKILL)"

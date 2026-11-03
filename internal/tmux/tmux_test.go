@@ -94,3 +94,20 @@ func TestLaunchSendPanes(t *testing.T) {
 		t.Errorf("Capture: %v\n%q", err, screen)
 	}
 }
+
+func TestParsePanes(t *testing.T) {
+	out := "work\t%1\t/dev/ttys001\t100\t2\t1762151400\n" +
+		"lazyai-x\t%2\t/dev/pts/3\t200\t0\t\n" +
+		"short\t%3\n"
+	got := parsePanes(out)
+	if len(got) != 2 {
+		t.Fatalf("panes: %+v", got)
+	}
+	if p := got[0]; p.Session != "work" || p.TTY != "ttys001" || p.PID != 100 || p.Clients != 2 ||
+		!p.LastAttached.Equal(time.Unix(1762151400, 0)) {
+		t.Errorf("attached pane: %+v", p)
+	}
+	if p := got[1]; p.TTY != "pts/3" || p.Clients != 0 || !p.LastAttached.IsZero() {
+		t.Errorf("never attached pane: %+v", p)
+	}
+}

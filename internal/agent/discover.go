@@ -33,6 +33,10 @@ type Agent struct {
 	StatusSource string    `json:"status_source"`
 	TmuxSession  string    `json:"tmux_session,omitempty"`
 	TmuxPane     string    `json:"tmux_pane,omitempty"`
+	// TmuxClients is how many tmux clients show the session now, 0 when
+	// it is detached; TmuxLastAttached is when one last attached.
+	TmuxClients      int       `json:"tmux_clients,omitempty"`
+	TmuxLastAttached time.Time `json:"tmux_last_attached,omitzero"`
 	// Protected is set for lazyai's own ancestors: stopping one of them
 	// would kill the terminal lazyai runs in.
 	Protected bool `json:"protected,omitempty"`
@@ -135,7 +139,7 @@ func Build(procs []Proc, self int, claudeDir string, panes []tmux.Pane) []Agent 
 			}
 		}
 		if pane, ok := byTTY[p.TTY]; ok && p.TTY != "" {
-			a.TmuxSession, a.TmuxPane = pane.Session, pane.ID
+			a.setPane(pane)
 		}
 		a.Children = descendants(kids, p.PID)
 		a.TreeCPU, a.TreeRSS = p.CPU, p.RSS
@@ -147,6 +151,12 @@ func Build(procs []Proc, self int, claudeDir string, panes []tmux.Pane) []Agent 
 	}
 	sortAgents(agents)
 	return agents
+}
+
+// setPane records the tmux pane the agent runs in.
+func (a *Agent) setPane(p tmux.Pane) {
+	a.TmuxSession, a.TmuxPane = p.Session, p.ID
+	a.TmuxClients, a.TmuxLastAttached = p.Clients, p.LastAttached
 }
 
 // sortAgents orders agents by kind, interactive first, then oldest first.

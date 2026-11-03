@@ -184,6 +184,14 @@ for all agents that still lack one.
 whose tty equals a pane tty belongs to that pane. No tmux server means no
 panes, not an error.
 
+The same call reads `#{session_attached}` (clients showing the session now)
+and `#{session_last_attached}` (unix time, empty when never attached). The
+agent carries them as `tmux_clients` (left out when 0, that is detached)
+and `tmux_last_attached` (left out when never). Who the clients are
+(`list-clients`: user, tty, host) is not read: the count is enough to tell
+whether someone is looking, and the rest would reveal more than lazyai
+needs.
+
 ## Process tree
 
 Each agent carries its descendants (depth first, with depth, CPU, memory

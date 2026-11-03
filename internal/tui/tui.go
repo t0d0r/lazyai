@@ -138,12 +138,15 @@ type model struct {
 	menuCursor int
 	target     agent.Agent // agent a confirm or send applies to
 	force      bool
-	input      inputKind
-	buf        []rune
-	hist       []string // launch lines, oldest first
-	histPos    int      // index into hist; len(hist) is the line being typed
-	draft      []rune   // the line being typed while browsing hist
-	choices    []string // completions shown under the launch input
+	// confirmSend makes the confirm popup ask before the prompt popup of
+	// an attached agent, instead of before a stop.
+	confirmSend bool
+	input       inputKind
+	buf         []rune
+	hist        []string // launch lines, oldest first
+	histPos     int      // index into hist; len(hist) is the line being typed
+	draft       []rune   // the line being typed while browsing hist
+	choices     []string // completions shown under the launch input
 
 	msg     string
 	msgErr  bool
@@ -440,9 +443,14 @@ func (m model) action(key string) (tea.Model, tea.Cmd) {
 				return actionMsg{"back from " + session, err}
 			})
 		case "p":
+			if a.TmuxClients > 0 {
+				// Someone may be typing in the pane: the texts would mix.
+				m.popup, m.target, m.confirmSend = popupConfirm, a, true
+				break
+			}
 			m.popup, m.input, m.target, m.buf = popupInput, inputSend, a, nil
 		default:
-			m.popup, m.target, m.force = popupConfirm, a, key == "K"
+			m.popup, m.target, m.force, m.confirmSend = popupConfirm, a, key == "K", false
 		}
 	}
 	return m, nil
@@ -487,8 +495,14 @@ func (m model) updateMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m model) updateConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	m.popup = popupNone
+	send := m.confirmSend
+	m.confirmSend = false
 	if msg.String() != "y" {
 		m.setMsg("cancelled", false)
+		return m, nil
+	}
+	if send {
+		m.popup, m.input, m.buf = popupInput, inputSend, nil
 		return m, nil
 	}
 	a, force := m.target, m.force
@@ -621,15 +635,28 @@ func (m model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// tmuxState is the word a filter finds an agent in tmux by: "attached" or
+// "detached"; "" outside tmux.
+func tmuxState(a agent.Agent) string {
+	switch {
+	case a.TmuxPane == "":
+		return ""
+	case a.TmuxClients > 0:
+		return "attached"
+	}
+	return "detached"
+}
+
 // matchFilter reports whether a contains every word of filter, ignoring
-// case, in its kind, role, label, directory, sessions, status or PID.
+// case, in its kind, role, label, directory, sessions, status, PID or
+// tmux state (attached, detached).
 func matchFilter(a agent.Agent, filter string) bool {
 	words := strings.Fields(strings.ToLower(filter))
 	if len(words) == 0 {
 		return true
 	}
 	hay := strings.ToLower(strings.Join([]string{string(a.Kind), string(a.Role), label(a), a.CWD,
-		a.Name, a.TmuxSession, a.Container, a.Status, strconv.Itoa(a.PID)}, " "))
+		a.Name, a.TmuxSession, a.Container, a.Status, strconv.Itoa(a.PID), tmuxState(a)}, " "))
 	for _, w := range words {
 		if !strings.Contains(hay, w) {
 			return false

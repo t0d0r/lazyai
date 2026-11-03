@@ -261,6 +261,64 @@ func TestSelectionFollowsPID(t *testing.T) {
 	}
 }
 
+// attachedModel is loaded with the tmux agent attached by two clients.
+func attachedModel(w, h int) model {
+	m := newModel(Options{Version: "test"})
+	next, _ := m.Update(tea.WindowSizeMsg{Width: w, Height: h})
+	agents := sample()
+	agents[0].TmuxClients = 2
+	next, _ = next.(model).Update(agentsMsg{agents: agents})
+	return next.(model)
+}
+
+func TestAttachedMark(t *testing.T) {
+	m := attachedModel(120, 30)
+	l := m.layout()
+	if !strings.Contains(ansi.Strip(m.listPanel(listAgents, l)), ">claude c-1") {
+		t.Errorf("attached agent lacks >:\n%s", ansi.Strip(m.listPanel(listAgents, l)))
+	}
+	if help := ansi.Strip(m.helpPopup()); !strings.Contains(help, "> before a row") {
+		t.Errorf("help lacks the > legend:\n%s", help)
+	}
+	if s := ansi.Strip(m.statusPanel(l)); !strings.Contains(s, "5 run, 0 busy, 1 att") {
+		t.Errorf("status panel at 120: %s", s)
+	}
+	wide := attachedModel(170, 30)
+	if s := ansi.Strip(wide.statusPanel(wide.layout())); !strings.Contains(s, "5 running, 0 busy, 1 attached") {
+		t.Errorf("status panel at 170: %s", s)
+	}
+	narrow := attachedModel(64, 30)
+	if s := ansi.Strip(narrow.statusPanel(narrow.layout())); !strings.Contains(s, "5 run, 0 busy ") {
+		t.Errorf("status panel at 64: %s", s)
+	}
+	if s := ansi.Strip(loaded(170, 30).statusPanel(wide.layout())); !strings.Contains(s, "0 attached") {
+		t.Errorf("detached tmux agent not counted as 0 attached: %s", s)
+	}
+	if got := pids(press(m, "/", "a", "t", "t", "a", "c", "h", "e", "d").lists[listAgents]); len(got) != 1 || got[0] != 1 {
+		t.Errorf("/attached: %v", got)
+	}
+	if got := pids(press(loaded(120, 30), "/", "d", "e", "t", "a", "c", "h").lists[listAgents]); len(got) != 1 || got[0] != 1 {
+		t.Errorf("/detach: %v", got)
+	}
+}
+
+func TestPromptAttachedConfirm(t *testing.T) {
+	m := attachedModel(120, 30)
+	mm := press(m, "p")
+	if mm.popup != popupConfirm || !mm.confirmSend || !strings.Contains(ansi.Strip(mm.View()), "someone may be typing") {
+		t.Fatalf("p on attached: popup %v confirmSend %v", mm.popup, mm.confirmSend)
+	}
+	if y := press(mm, "y"); y.popup != popupInput || y.input != inputSend || y.confirmSend {
+		t.Errorf("y: popup %v input %v", y.popup, y.input)
+	}
+	if n := press(mm, "n"); n.popup != popupNone || n.msg != "cancelled" || n.confirmSend {
+		t.Errorf("n: popup %v %q", n.popup, n.msg)
+	}
+	if s := press(mm, "n", "s"); s.popup != popupConfirm || s.confirmSend {
+		t.Error("s after a cancelled prompt confirm does not ask to stop")
+	}
+}
+
 func TestActions(t *testing.T) {
 	m := loaded(120, 30)
 	if mm := press(m, "s"); mm.popup != popupConfirm || mm.target.PID != 1 || mm.force {

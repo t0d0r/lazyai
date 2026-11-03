@@ -91,6 +91,21 @@ func Flags(a agent.Agent, t watch.Tracker, now time.Time) string {
 	return "-"
 }
 
+// Attached says whether a tmux client shows the agent's session:
+// "attached (2 clients)", "detached, last attached 2026-11-03 14:02" or
+// "detached, never attached".
+func Attached(a agent.Agent) string {
+	switch {
+	case a.TmuxClients == 1:
+		return "attached (1 client)"
+	case a.TmuxClients > 1:
+		return fmt.Sprintf("attached (%d clients)", a.TmuxClients)
+	case a.TmuxLastAttached.IsZero():
+		return "detached, never attached"
+	}
+	return "detached, last attached " + a.TmuxLastAttached.Format("2006-01-02 15:04")
+}
+
 // Field is one labelled line of an agent's details.
 type Field struct {
 	Name, Value string
@@ -101,7 +116,7 @@ type Field struct {
 func Details(a agent.Agent) []Field {
 	tmuxInfo := a.TmuxSession
 	if a.TmuxPane != "" {
-		tmuxInfo += " pane " + a.TmuxPane
+		tmuxInfo += " pane " + a.TmuxPane + ", " + Attached(a)
 	}
 	src := fmt.Sprintf("CPU >= %g%%", agent.BusyCPU)
 	if a.StatusSource == agent.SourceClaude {

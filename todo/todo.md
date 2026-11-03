@@ -97,8 +97,11 @@
       (wrapper scripts such as claude-bst) launches and completes
       (specs/control.md, specs/tui.md)
 - [x] `/` filters the list in use (specs/tui.md, Filter)
-- [ ] release v0.5.0 with the list filter and PATH commands
-      (specs/release.md)
+- [x] show which tmux sessions are attached: `>` mark, attached count,
+      Info line, `/attached` `/detached`, confirm before `p`
+      (specs/tui.md, specs/discovery.md, specs/control.md)
+- [ ] release v0.5.0 with the list filter, PATH commands and attached
+      sessions (specs/release.md)
 - [ ] find why `lazyai update` sees the previous release for about a
       minute after publishing, while curl sees the new one
       (specs/update.md)

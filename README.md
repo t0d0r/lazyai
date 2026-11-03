@@ -157,6 +157,13 @@ Attach, prompt and the Screen tab only work for agents running inside
 tmux. Agents started in a plain terminal tab are listed and can be stopped,
 but not driven.
 
+In the lists, `@` before a row marks an agent in tmux that nobody is
+attached to, and `>` one whose session a tmux client shows now. The
+status panel counts the attached ones, the Info tab says when a session
+was last attached, and `/detached` filters the sessions nobody looks at.
+`p` asks first when a client is attached, since someone may be typing
+there.
+
 Status comes from Claude Code's own session files when they exist
 (`~/.claude/sessions/<pid>.json`); otherwise an agent is "busy" when it uses
 2% CPU or more. FLAGS warns about high CPU for 30s, memory over 2 GiB, and

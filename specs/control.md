@@ -63,6 +63,12 @@
   then `send-keys Enter`. `-l` sends the text literally.
 - CLI targets: PID, tmux session name with or without `lazyai-`, or
   Claude session name; ambiguous names are refused.
+- TUI: when a client is attached to the session, `p` first asks
+  "SESSION is attached (N clients); someone may be typing there. Send a
+  prompt anyway?" and opens the prompt popup only on `y`. Reason: text
+  typed by a person in the pane and the sent prompt would mix, and Enter
+  would submit both. The CLI `send` does not ask: it runs from scripts
+  that decided already.
 
 ## Redaction
 

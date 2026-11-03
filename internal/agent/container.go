@@ -398,6 +398,6 @@ func givePane(inside []insideAgent, cl *client, byTTY map[string]tmux.Pane) {
 		}
 	}
 	if only >= 0 && inside[only].TmuxPane == "" {
-		inside[only].TmuxSession, inside[only].TmuxPane = pane.Session, pane.ID
+		inside[only].setPane(pane)
 	}
 }

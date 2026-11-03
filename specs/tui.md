@@ -8,10 +8,10 @@ confirmations and input, key hints in the bottom line, mouse support.
 
 ```
 + lazyai ------------------+ + Info - Screen - Processes - Stats ------+
-| 9 run, 3 busy 3.3G 01:36 | |                                          |
+| 9 run, 3 busy, 1 att 3.3G| |                                          |
 +--------------------------+ |  details of the selected agent           |
 + 1 Agents ----------------+ |                                          |
-|@claude ai-d1 busy 2% 1G  | |                                          |
+|>claude ai-d1 busy 2% 1G  | |                                          |
 | hermes h-ai idle 1% 90M  | |                                          |
 +------------------ 1 of 2 + |                                          |
 + 2 Services --------------+ |                                          |
@@ -25,16 +25,22 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
 
 - Left column: one third of the width, at least 32 columns (or half of a
   narrow screen), at most 56.
-- Status panel (3 rows): number of agents shown, how many are busy, and
-  on the right the total memory of the shown agents next to the time of
+- Status panel (3 rows): number of agents shown, how many are busy, how
+  many have a tmux client attached (only when some shown agent runs in
+  tmux: `9 running, 3 busy, 2 attached`), and on the right the total
+  memory of the shown agents next to the time of
   the last refresh (`mem 3.3G 01:59:11`).
   - The total adds each shown agent's tree memory (the agent and all its
     descendants, as in the rows). An agent that runs below another shown
     agent is already in that tree and is not added again. Container
     agents count by container and PID, so their PIDs do not collide with
     the host's.
-  - Narrow column: when the line does not fit, `mem ` is dropped first,
-    then "running" becomes "run", so the counts stay readable.
+  - Narrow column: the forms are tried in this order until one fits:
+    `9 running, 3 busy, 2 attached` with `mem 3.3G 01:59:11`,
+    `9 run, 3 busy, 2 att` with `mem ...`, the long counts without `mem `,
+    `9 run, 3 busy, 2 att` without `mem `, and last `9 run, 3 busy`.
+    Decision: the short words go before `mem `, so the attached count
+    does not push the memory total out at common widths.
   - Decision: memory of the agents, not of the whole machine. Reason:
     lazyai is about what the agents cost; the system total is in other
     tools.
@@ -42,14 +48,17 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
   - 1 Agents: interactive
   - 2 Services: server, daemon, and helper when shown
   - 3 Models: engine, job
-- Row: a one-character gutter, `@` right before the kind (`@claude`)
-  when the agent runs in a tmux pane (so `a` attach and `p` prompt work
-  on it) and blank otherwise, kind, role (not
+- Row: a one-character gutter right before the kind: `>` (`>claude`) when
+  the agent runs in a tmux pane and a client is attached to its session
+  now, `@` (`@claude`) when it runs in tmux but is detached, blank
+  otherwise. `a` attach and `p` prompt work on both. Decision: a
+  different character, not only a color, so the state reads without
+  colors and in the reversed selected row. Then the kind, role (not
   in Agents), label (Claude session name, else tmux session, else the
   last two directories of the working directory, home shown as `~`:
   `alpha/web-frontend`), `*` for lazyai's own parent;
   right-aligned status, tree CPU% and tree memory in every list. The `?`
-  popup explains `@` and `*` under Marks. When the row is too narrow the
+  popup explains `>`, `@` and `*` under Marks. When the row is too narrow the
   label is cut first: a directory label keeps its parent and replaces
   the start of the last directory with `..` (`alpha/..nd`), or, with
   less room, the start of the whole label (`..ontend`); other labels
@@ -74,7 +83,9 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
 
 ## Tabs
 
-- Info: state with duration, the detail fields (display.Details),
+- Info: state with duration, the detail fields (display.Details; the
+  tmux line ends with `attached (2 clients)`, `detached, last attached
+  2026-11-03 14:02` or `detached, never attached`),
   resources, process tree totals, flags.
 - Screen: the selected agent's tmux pane, captured with
   `tmux capture-pane -p -S -1000` on every refresh while the tab is shown;
@@ -101,7 +112,7 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
 | ] / [                | next / previous tab                            |
 | x                    | action menu for the selected agent             |
 | a                    | attach (tmux only)                             |
-| p                    | send a prompt (tmux only)                      |
+| p                    | send a prompt (tmux only); asks first when a client is attached (control.md, Send) |
 | n                    | launch: `KIND [DIR] [NAME] [-- ARGS...]`; up / down history, tab completes |
 | /                    | filter the list in use; enter keeps, esc clears |
 | s / K                | stop (SIGTERM) / kill (SIGKILL), confirm with y |
@@ -161,7 +172,9 @@ a kept filter clears it too.
 
 - Match: every word of the filter appears, ignoring case and order, in
   the row's kind, role, label, working directory, Claude session name,
-  tmux session, container, status or PID.
+  tmux session, container, status, PID, or tmux state: `attached` or
+  `detached` for agents in tmux (`/detached` lists the sessions nobody
+  is looking at).
 - Each list has its own filter; it holds across refreshes. The title
   shows it (`1 Agents /claude`), an empty result says "no match", and
   the footer shows the filter being typed.
