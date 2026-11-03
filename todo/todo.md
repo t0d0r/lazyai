@@ -100,7 +100,7 @@
 - [x] show which tmux sessions are attached: `>` mark, attached count,
       Info line, `/attached` `/detached`, confirm before `p`
       (specs/tui.md, specs/discovery.md, specs/control.md)
-- [ ] release v0.5.0 with the list filter, PATH commands and attached
+- [x] release v0.5.0 with the list filter, PATH commands and attached
       sessions (specs/release.md)
 - [ ] find why `lazyai update` sees the previous release for about a
       minute after publishing, while curl sees the new one
