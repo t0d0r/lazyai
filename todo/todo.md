@@ -101,9 +101,8 @@
       [-- ARGS] (specs/control.md, specs/cli.md)
 - [x] examples in every command's help and `lazyai examples [COMMAND]`;
       top-level help shows the launch line (specs/cli.md)
-- [ ] release with the shared launch line and examples; the CLI change
-      needs `--` before agent arguments, so note it in the release
-      (specs/release.md)
+- [x] release v0.6.0 with the shared launch line and examples; the
+      notes call out `--` before agent arguments (specs/release.md)
 - [x] show which tmux sessions are attached: `>` mark, attached count,
       Info line, `/attached` `/detached`, confirm before `p`
       (specs/tui.md, specs/discovery.md, specs/control.md)
