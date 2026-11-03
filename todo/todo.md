@@ -114,7 +114,10 @@
 - [x] release v0.7.0 with the tmux session labels (specs/release.md)
 - [x] left / right and h / l no longer move the focus; tab, shift+tab,
       1 2 3 and enter / esc do (specs/tui.md, Keys)
-- [ ] release the focus key change (specs/release.md)
+- [x] Processes tab shows the chain of parents above the agent
+      (specs/tui.md, specs/discovery.md)
+- [ ] release the focus key change and the parent chain
+      (specs/release.md)
 - [ ] status panel: count agents outside tmux (`13 outside tmux`), if
       wanted (specs/tui.md)
 - [ ] optional `~` short form for `lazyai-` sessions in narrow rows, if

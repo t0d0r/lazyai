@@ -196,7 +196,15 @@ needs.
 
 Each agent carries its descendants (depth first, with depth, CPU, memory
 and redacted command) and TreeCPU / TreeRSS, the sums over the agent and
-all descendants. An agent below another agent (for example a colibri
+all descendants.
+
+It also carries its parents (`parents` in JSON): the processes from the
+topmost one found in the snapshot down to the direct parent, with PID,
+PPID, CPU, memory and redacted command. The walk stops at PID 0, at a
+PPID missing from the snapshot (for example a process of another user
+that ps does not list) and at a loop. Parents are not part of TreeCPU /
+TreeRSS. Agents in a container whose PIDs come from docker (ForeignPID)
+have no parents, since the host snapshot does not hold them. An agent below another agent (for example a colibri
 engine started by Hermes through make) is both its own row and part of
 the parent's tree.
 

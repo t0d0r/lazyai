@@ -201,6 +201,9 @@ func TestBuildClaudeSessionAndTmux(t *testing.T) {
 	if a.TreeCPU != 50 || len(a.Children) != 1 || a.Children[0].PID != 300 || a.Children[0].Depth != 1 {
 		t.Errorf("claude tree: cpu %v children %+v", a.TreeCPU, a.Children)
 	}
+	if len(a.Parents) != 1 || a.Parents[0].PID != 100 || a.TreeCPU != 50 {
+		t.Errorf("claude parents: %+v (not in the tree totals)", a.Parents)
+	}
 }
 
 func TestDescendants(t *testing.T) {
@@ -226,6 +229,39 @@ func TestDescendants(t *testing.T) {
 	}
 	if got[1].Command != "coli tune --api-key [redacted]" {
 		t.Errorf("child command not redacted: %q", got[1].Command)
+	}
+}
+
+func TestParents(t *testing.T) {
+	procs := []Proc{
+		{PID: 1, PPID: 0, Args: "launchd"},
+		{PID: 50, PPID: 1, Args: "tmux new-session -d"},
+		{PID: 60, PPID: 50, Args: "fish --token=abc"},
+		{PID: 70, PPID: 60, Args: "claude"},
+		{PID: 80, PPID: 81, Args: "claude"}, // parent not in the snapshot
+		{PID: 90, PPID: 91, Args: "a"},      // a loop must end
+		{PID: 91, PPID: 90, Args: "b"},
+	}
+	byPID := map[int]Proc{}
+	for _, p := range procs {
+		byPID[p.PID] = p
+	}
+	var order []int
+	got := parents(byPID, procs[3])
+	for _, p := range got {
+		order = append(order, p.PID)
+	}
+	if fmt.Sprint(order) != "[1 50 60]" {
+		t.Errorf("parents of 70: %v, want topmost first", order)
+	}
+	if got[2].Command != "fish --token=[redacted]" {
+		t.Errorf("parent command not redacted: %q", got[2].Command)
+	}
+	if p := parents(byPID, procs[4]); len(p) != 0 {
+		t.Errorf("missing parent: %+v", p)
+	}
+	if p := parents(byPID, procs[5]); len(p) != 1 || p[0].PID != 91 {
+		t.Errorf("loop: %+v", p)
 	}
 }
 

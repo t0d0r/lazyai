@@ -333,6 +333,21 @@ func TestPromptAttachedConfirm(t *testing.T) {
 	}
 }
 
+func TestProcessesParents(t *testing.T) {
+	a := agent.Agent{Proc: agent.Proc{PID: 70, PPID: 60}, Command: "claude",
+		Parents:  []agent.ChildProc{{PID: 1, Command: "launchd"}, {PID: 60, PPID: 1, Command: "fish"}},
+		Children: []agent.ChildProc{{PID: 80, PPID: 70, Depth: 1, Command: "node"}}}
+	got := ansi.Strip(strings.Join(processLines(a), "\n"))
+	for _, want := range []string{"  launchd", "    fish", "      claude", "        node", "in 2 processes; the 2 above it are not counted"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("processes lack %q:\n%s", want, got)
+		}
+	}
+	if strings.Index(got, "launchd") > strings.Index(got, "claude") {
+		t.Errorf("parents not above the agent:\n%s", got)
+	}
+}
+
 func TestActions(t *testing.T) {
 	m := loaded(120, 30)
 	if mm := press(m, "s"); mm.popup != popupConfirm || mm.target.PID != 1 || mm.force {

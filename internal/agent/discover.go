@@ -2,6 +2,7 @@ package agent
 
 import (
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"time"
@@ -51,8 +52,12 @@ type Agent struct {
 	// Children are the processes the agent started, directly or not, in
 	// tree order. TreeCPU and TreeRSS add them to the agent's own usage.
 	Children []ChildProc `json:"children,omitempty"`
-	TreeCPU  float64     `json:"tree_cpu"`
-	TreeRSS  int64       `json:"tree_rss_bytes"`
+	// Parents are the processes the agent was started from, the topmost
+	// one found (usually PID 1) first and the direct parent last. They
+	// are not part of TreeCPU and TreeRSS. Depth is unused (0).
+	Parents []ChildProc `json:"parents,omitempty"`
+	TreeCPU float64     `json:"tree_cpu"`
+	TreeRSS int64       `json:"tree_rss_bytes"`
 }
 
 // Key identifies the agent across refreshes: its PID, or for a ForeignPID
@@ -107,8 +112,10 @@ func Discover() ([]Agent, error) {
 func Build(procs []Proc, self int, claudeDir string, panes []tmux.Pane) []Agent {
 	protected := Ancestors(procs, self)
 	kids := map[int][]Proc{}
+	byPID := map[int]Proc{}
 	for _, p := range procs {
 		kids[p.PPID] = append(kids[p.PPID], p)
+		byPID[p.PID] = p
 	}
 	byTTY := map[string]tmux.Pane{}
 	for _, p := range panes {
@@ -142,6 +149,7 @@ func Build(procs []Proc, self int, claudeDir string, panes []tmux.Pane) []Agent 
 			a.setPane(pane)
 		}
 		a.Children = descendants(kids, p.PID)
+		a.Parents = parents(byPID, p)
 		a.TreeCPU, a.TreeRSS = p.CPU, p.RSS
 		for _, c := range a.Children {
 			a.TreeCPU += c.CPU
@@ -190,6 +198,25 @@ func descendants(kids map[int][]Proc, pid int) []ChildProc {
 	}
 	walk(pid, 1)
 	return out
+}
+
+// parents walks up from p through the snapshot: the topmost process found
+// first, p's direct parent last. It stops at a PPID missing from the
+// snapshot, at PID 0 and at a loop.
+func parents(byPID map[int]Proc, p Proc) []ChildProc {
+	var up []ChildProc
+	seen := map[int]bool{p.PID: true}
+	for pid := p.PPID; pid > 0 && !seen[pid]; {
+		q, ok := byPID[pid]
+		if !ok {
+			break
+		}
+		seen[pid] = true
+		up = append(up, ChildProc{PID: q.PID, PPID: q.PPID, CPU: q.CPU, RSS: q.RSS, Command: RedactArgs(q.Args)})
+		pid = q.PPID
+	}
+	slices.Reverse(up)
+	return up
 }
 
 // Ancestors returns pid and every parent of it found in procs.

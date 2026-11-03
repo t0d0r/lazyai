@@ -342,12 +342,21 @@ func processLines(a agent.Agent) []string {
 	row := func(pid, ppid int, cpu float64, rss int64, depth int, cmd string) string {
 		return fmt.Sprintf("%-7d %-7d %6.1f %7s  %s%s", pid, ppid, cpu, display.Bytes(rss), strings.Repeat("  ", depth), cmd)
 	}
-	lines = append(lines, row(a.PID, a.PPID, a.CPU, a.RSS, 0, a.Command))
-	for _, c := range a.Children {
-		lines = append(lines, row(c.PID, c.PPID, c.CPU, c.RSS, c.Depth, c.Command))
+	// Parents first, dimmed: they show who started the agent and are not
+	// in the totals. The agent is bold; its tree is indented below it.
+	for i, p := range a.Parents {
+		lines = append(lines, dimStyle.Render(row(p.PID, p.PPID, p.CPU, p.RSS, i, p.Command)))
 	}
-	return append(lines, "", dimStyle.Render(fmt.Sprintf("total %.1f%% CPU, %s in %d processes",
-		a.TreeCPU, display.Bytes(a.TreeRSS), len(a.Children)+1)))
+	top := len(a.Parents)
+	lines = append(lines, titleStyle.Render(row(a.PID, a.PPID, a.CPU, a.RSS, top, a.Command)))
+	for _, c := range a.Children {
+		lines = append(lines, row(c.PID, c.PPID, c.CPU, c.RSS, top+c.Depth, c.Command))
+	}
+	total := fmt.Sprintf("total %.1f%% CPU, %s in %d processes", a.TreeCPU, display.Bytes(a.TreeRSS), len(a.Children)+1)
+	if top > 0 {
+		total += fmt.Sprintf("; the %d above it are not counted", top)
+	}
+	return append(lines, "", dimStyle.Render(total))
 }
 
 func statsLines(a agent.Agent, t watch.Tracker, w, h int) []string {

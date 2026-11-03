@@ -99,8 +99,15 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
   `tmux capture-pane -p -S -1000` on every refresh while the tab is shown;
   it follows the bottom like a log until scrolled. Agents outside tmux get
   a hint instead.
-- Processes: the agent and every descendant process in tree order with
-  PID, PPID, CPU%, memory and redacted command, then the totals.
+- Processes: the chain of parents the agent was started from, topmost
+  (usually PID 1, launchd or init) first, dimmed and indented one step
+  per level; then the agent in bold and every descendant process in tree
+  order below it, with PID, PPID, CPU%, memory and redacted command; then
+  the totals. The totals cover the agent and its descendants only; when
+  there are parents the line ends with "the N above it are not counted".
+  Decision: parents in the same tab, not a separate one. Reason: the
+  question "who started this and what does it run" is answered by one
+  tree, read top to bottom.
 - Stats: ASCII column charts of CPU and memory for the agent and its
   children over the kept history (watch.HistoryLen samples, 5 minutes at
   2 seconds), with now, average and maximum. The CPU scale rounds the peak
