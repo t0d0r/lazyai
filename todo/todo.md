@@ -108,6 +108,13 @@
       (specs/tui.md, specs/discovery.md, specs/control.md)
 - [x] release v0.5.0 with the list filter, PATH commands and attached
       sessions (specs/release.md)
+- [x] label rows in tmux by the full tmux session, Claude name after it;
+      `list` TMUX_SESSION keeps the `lazyai-` prefix (specs/tui.md,
+      specs/cli.md)
+- [ ] status panel: count agents outside tmux (`13 outside tmux`), if
+      wanted (specs/tui.md)
+- [ ] optional `~` short form for `lazyai-` sessions in narrow rows, if
+      wanted (specs/tui.md)
 - [ ] find why `lazyai update` sees the previous release for about a
       minute after publishing, while curl sees the new one
       (specs/update.md)

@@ -92,6 +92,15 @@ func (m model) menuItems() []menuItem {
 	)
 }
 
+// nameHint is the Claude session name a row shows after the tmux session
+// label, or "" when the label already is that name.
+func nameHint(a agent.Agent) string {
+	if a.TmuxSession == "" || a.Name == a.TmuxSession {
+		return ""
+	}
+	return a.Name
+}
+
 // label is the name a list row shows for an agent.
 func label(a agent.Agent) string {
 	l, _ := rowLabel(a)
@@ -101,10 +110,10 @@ func label(a agent.Agent) string {
 // rowLabel is label, and whether it is a path that shortenPath may cut.
 func rowLabel(a agent.Agent) (string, bool) {
 	switch {
-	case a.Name != "":
-		return a.Name, false
 	case a.TmuxSession != "":
 		return a.TmuxSession, false
+	case a.Name != "":
+		return a.Name, false
 	case a.Container != "" && a.CWD == "":
 		return "docker:" + a.Container, false
 	}

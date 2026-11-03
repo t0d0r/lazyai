@@ -155,7 +155,7 @@ func TestTmuxColumns(t *testing.T) {
 		wantIn, wantSID string
 	}{
 		{"outside", agent.Agent{}, "no", "-"},
-		{"in tmux", agent.Agent{TmuxSession: "lazyai-work", TmuxPane: "%3"}, "yes", "work"},
+		{"in tmux", agent.Agent{TmuxSession: "lazyai-work", TmuxPane: "%3"}, "yes", "lazyai-work"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

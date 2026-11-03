@@ -270,7 +270,7 @@ func tmuxColumns(a agent.Agent) (inTmux, session string) {
 	if a.TmuxPane == "" {
 		return "no", "-"
 	}
-	session = strings.TrimPrefix(a.TmuxSession, tmux.Prefix)
+	session = a.TmuxSession
 	if session == "" {
 		session = "-"
 	}

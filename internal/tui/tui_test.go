@@ -96,8 +96,13 @@ func TestAttachMark(t *testing.T) {
 			rows = append(rows, strings.TrimLeft(line, "│|"))
 		}
 	}
-	if len(rows) != 2 || !strings.HasPrefix(rows[0], "@claude c-1") || !strings.HasPrefix(rows[1], " hermes") {
+	if len(rows) != 2 || !strings.HasPrefix(rows[0], "@claude lazyai-c c-1") || !strings.HasPrefix(rows[1], " hermes") {
 		t.Errorf("Agents rows: %q; want @ only before the agent in tmux", rows)
+	}
+	// The tmux session is the label; the Claude name follows only whole.
+	narrow := loaded(105, 30)
+	if p := ansi.Strip(narrow.listPanel(listAgents, narrow.layout())); !strings.Contains(p, "@claude lazyai-") || strings.Contains(p, "c-1") {
+		t.Errorf("narrow row keeps the session and drops the Claude name:\n%s", p)
 	}
 	if help := ansi.Strip(m.helpPopup()); !strings.Contains(help, "@ before a row") {
 		t.Errorf("help lacks the @ legend:\n%s", help)
@@ -274,7 +279,7 @@ func attachedModel(w, h int) model {
 func TestAttachedMark(t *testing.T) {
 	m := attachedModel(120, 30)
 	l := m.layout()
-	if !strings.Contains(ansi.Strip(m.listPanel(listAgents, l)), ">claude c-1") {
+	if !strings.Contains(ansi.Strip(m.listPanel(listAgents, l)), ">claude lazyai-c c-1") {
 		t.Errorf("attached agent lacks >:\n%s", ansi.Strip(m.listPanel(listAgents, l)))
 	}
 	if help := ansi.Strip(m.helpPopup()); !strings.Contains(help, "> before a row") {

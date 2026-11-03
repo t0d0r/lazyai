@@ -159,6 +159,8 @@ Attach, prompt and the Screen tab only work for agents running inside
 tmux. Agents started in a plain terminal tab are listed and can be stopped,
 but not driven.
 
+Rows in tmux are labelled with the tmux session name, as `tmux ls` shows
+it, followed by the Claude session name in grey when there is room.
 In the lists, `@` before a row marks an agent in tmux that nobody is
 attached to, and `>` one whose session a tmux client shows now. The
 status panel counts the attached ones, the Info tab says when a session

@@ -54,11 +54,19 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
   otherwise. `a` attach and `p` prompt work on both. Decision: a
   different character, not only a color, so the state reads without
   colors and in the reversed selected row. Then the kind, role (not
-  in Agents), label (Claude session name, else tmux session, else the
-  last two directories of the working directory, home shown as `~`:
-  `alpha/web-frontend`), `*` for lazyai's own parent;
+  in Agents), label (the full tmux session name, else the Claude session
+  name, else the last two directories of the working directory, home
+  shown as `~`: `alpha/web-frontend`), `*` for lazyai's own parent;
   right-aligned status, tree CPU% and tree memory in every list. The `?`
-  popup explains `>`, `@` and `*` under Marks. When the row is too narrow the
+  popup explains `>`, `@` and `*` under Marks.
+  - An agent in tmux that also has a Claude session name shows it after
+    the session, dimmed (`lazyai-sos-tasks hosts-various-a1`), only when
+    it fits whole; otherwise it is left out. It is not dimmed in a row
+    that has a style of its own (selected, flagged, busy).
+  - Decision: tmux session first. Reason: it is the name `tmux ls` shows
+    and `a` attaches to, and people name sessions after the work
+    (`claude-ticket-123`); Claude's generated names (`hosts-various-a1`)
+    say little and could be taken for another session. When the row is too narrow the
   label is cut first: a directory label keeps its parent and replaces
   the start of the last directory with `..` (`alpha/..nd`), or, with
   less room, the start of the whole label (`..ontend`); other labels

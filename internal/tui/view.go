@@ -207,15 +207,25 @@ func (m model) listPanel(i int, l layout) string {
 			suffix = " *"
 		}
 		right := fmt.Sprintf("%s %5.1f%% %5s", a.Status, a.TreeCPU, display.Bytes(a.TreeRSS))
+		room := inner - len(right) - 1 - ansi.StringWidth(prefix+suffix)
 		lbl, isPath := rowLabel(a)
 		if isPath {
-			lbl = shortenPath(lbl, inner-len(right)-1-ansi.StringWidth(prefix+suffix))
+			lbl = shortenPath(lbl, room)
 		}
-		row := spread(prefix+lbl+suffix, right, inner)
 		flagged := false
 		for _, f := range watch.Flags(a, t, now) {
 			flagged = flagged || f != "self"
 		}
+		// The Claude name follows the tmux session only when it fits
+		// whole; dim unless the whole row gets a style.
+		if hint := nameHint(a); hint != "" && ansi.StringWidth(lbl)+1+ansi.StringWidth(hint) <= room {
+			if r == lst.cursor || flagged || a.Status == "busy" {
+				lbl += " " + hint
+			} else {
+				lbl += " " + dimStyle.Render(hint)
+			}
+		}
+		row := spread(prefix+lbl+suffix, right, inner)
 		switch {
 		case r == lst.cursor && focused:
 			row = selStyle.Render(row)
