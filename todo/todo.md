@@ -118,6 +118,14 @@
       (specs/tui.md, specs/discovery.md)
 - [x] release v0.8.0 with the focus key change and the parent chain
       (specs/release.md)
+- [x] dashboard layouts: `v` cycles split, detail (compact lists, wide
+      main panel) and lists (no main panel) (specs/tui.md, Layouts)
+- [ ] try the layouts in a real terminal: switch while resizing, mouse
+      in detail and lists, Screen tab after leaving lists
+      (specs/tui.md, Layouts)
+- [ ] release the layouts with the next batch (specs/release.md)
+- [ ] `--layout` option or a saved layout, if wanted (specs/tui.md,
+      Layouts)
 - [ ] status panel: count agents outside tmux (`13 outside tmux`), if
       wanted (specs/tui.md)
 - [ ] optional `~` short form for `lazyai-` sessions in narrow rows, if

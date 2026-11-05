@@ -21,6 +21,7 @@ var keyHelp = []bindingGroup{
 		{"g / G", "first / last; in the main panel top / bottom"},
 		{"pgdn / pgup", "scroll the main panel a page"},
 		{"] / [", "next / previous tab"},
+		{layoutKey, "layout: split -> detail -> lists"},
 		{"/", "filter the list; enter keeps it, esc clears it"},
 		{"mouse", "click to select, wheel to move or scroll"},
 	}},
@@ -49,10 +50,15 @@ const attachMark = "@"
 // attachedMark replaces attachMark while a tmux client shows the session.
 const attachedMark = ">"
 
-// footerKeys are the short hints in the bottom line.
+// layoutKey cycles the layouts; the ? popup adds the current one to it.
+const layoutKey = "v"
+
+// footerKeys are the short hints in the bottom line. footerLists leaves out
+// the tabs, which the lists layout hides.
 var (
-	footerList = "x menu  a attach  p prompt  s stop  K kill  n new  / filter  [ ] tabs  ? help  q quit"
-	footerMain = "j/k scroll  g/G top/bottom  [ ] tabs  esc back  x menu  ? help  q quit"
+	footerList  = "x menu  a attach  p prompt  s stop  K kill  n new  / filter  [ ] tabs  v layout  ? help  q quit"
+	footerMain  = "j/k scroll  g/G top/bottom  [ ] tabs  esc back  v layout  x menu  ? help  q quit"
+	footerLists = "x menu  a attach  p prompt  s stop  K kill  n new  / filter  v layout  ? help  q quit"
 )
 
 type menuItem struct {
@@ -87,6 +93,7 @@ func (m model) menuItems() []menuItem {
 	return append(items,
 		menuItem{"n", "launch a new agent", ""},
 		menuItem{"H", helpers, ""},
+		menuItem{layoutKey, "switch to the " + ((m.mode + 1) % numLayouts).String() + " layout", ""},
 		menuItem{"r", "refresh", ""},
 	)
 }

@@ -34,17 +34,34 @@ var (
 // the column is split evenly.
 const minEvenListH = 5
 
+// Width of the compact list column in the detail layout: a fifth of the
+// screen within these bounds, and never more than half of it.
+const (
+	navMinW = 24
+	navMaxW = 32
+)
+
 // layout is where each panel sits. Mouse handling uses it too.
 type layout struct {
-	leftW, rightW, bodyH int
+	leftW, rightW, bodyH int // rightW is 0 when the main panel is hidden
 	statusH              int
 	listY, listH         [numLists]int
+	compact              bool // rows leave out CPU and memory, and status unless busy
 }
 
 func (m model) layout() layout {
 	l := layout{bodyH: max(m.height-1, 6), statusH: 3}
-	l.leftW = max(min(m.width/3, 56), min(32, m.width/2))
-	l.rightW = max(m.width-l.leftW, 10)
+	switch m.mode {
+	case layoutDetail:
+		l.leftW = min(max(min(m.width/5, navMaxW), navMinW), m.width/2)
+		l.rightW = m.width - l.leftW
+		l.compact = true
+	case layoutLists:
+		l.leftW = m.width
+	default:
+		l.leftW = max(min(m.width/3, 56), min(32, m.width/2))
+		l.rightW = max(m.width-l.leftW, 10)
+	}
 	avail := l.bodyH - l.statusH
 	if share := avail / numLists; share >= minEvenListH {
 		// Split evenly, as lazydocker does; leftover rows go to the top.
@@ -82,9 +99,10 @@ func (m model) View() string {
 	for i := range numLists {
 		left = append(left, m.listPanel(i, l))
 	}
-	leftCol := cropLines(strings.Join(left, "\n"), l.bodyH)
-	body := lipgloss.JoinHorizontal(lipgloss.Top, leftCol, m.mainPanel(l))
-	body = cropLines(body, l.bodyH)
+	body := cropLines(strings.Join(left, "\n"), l.bodyH)
+	if l.rightW > 0 {
+		body = cropLines(lipgloss.JoinHorizontal(lipgloss.Top, body, m.mainPanel(l)), l.bodyH)
+	}
 
 	switch m.popup {
 	case popupHelp:
@@ -127,25 +145,29 @@ func (m model) statusPanel(l layout) string {
 		shortAtt += fmt.Sprintf(", %d att", attached)
 		line = longAtt
 	}
-	right := "loading ..."
+	// Shorter forms for a narrow column, so the counts are not cut.
+	forms := [][2]string{{line, "loading ..."}, {short, "loading ..."}, {short, ""}}
 	if !m.updated.IsZero() {
-		// Shorter forms for a narrow column, so the counts are not cut.
 		mem, clock := display.Bytes(totalRSS(shown)), m.updated.Format("15:04:05")
-		for _, f := range [][2]string{
+		forms = [][2]string{
 			{longAtt, "mem " + mem + " " + clock},
 			{shortAtt, "mem " + mem + " " + clock},
 			{longAtt, mem + " " + clock},
 			{shortAtt, mem + " " + clock},
 			{short, mem + " " + clock},
-		} {
-			line, right = f[0], f[1]
-			if len(line)+1+len(right) <= inner {
-				break
-			}
+			{short, mem},
+			{short, ""},
+		}
+	}
+	right := ""
+	for _, f := range forms {
+		line, right = f[0], f[1]
+		if len(line)+1+len(right) <= inner {
+			break
 		}
 	}
 	return box(titleStyle.Render("lazyai"), []string{spread(line, dimStyle.Render(right), inner)},
-		l.leftW, l.statusH, false, "")
+		l.leftW, l.statusH, false, m.mode.String()+" layout")
 }
 
 // totalRSS adds the tree memory of agents. An agent that runs below another
@@ -207,6 +229,13 @@ func (m model) listPanel(i int, l layout) string {
 			suffix = " *"
 		}
 		right := fmt.Sprintf("%s %5.1f%% %5s", a.Status, a.TreeCPU, display.Bytes(a.TreeRSS))
+		if l.compact {
+			// The main panel beside it has the numbers; the label gets the room.
+			right = ""
+			if a.Status == "busy" {
+				right = a.Status
+			}
+		}
 		room := inner - len(right) - 1 - ansi.StringWidth(prefix+suffix)
 		lbl, isPath := rowLabel(a)
 		if isPath {
@@ -255,6 +284,9 @@ func (m model) listPanel(i int, l layout) string {
 // mainSize is the number of content lines and how many fit.
 func (m model) mainSize() (int, int) {
 	l := m.layout()
+	if l.rightW == 0 {
+		return 0, 1
+	}
 	return len(m.mainLines(l.rightW - 2)), max(l.bodyH-2, 1)
 }
 
@@ -393,6 +425,8 @@ func (m model) footer() string {
 		keys = "filter /" + m.filters[m.lastList] + "_   enter keep  esc clear  up/down move"
 	case m.focus == focusMain:
 		keys = footerMain
+	case m.mode == layoutLists:
+		keys = footerLists
 	}
 	right := dimStyle.Render("lazyai " + m.opts.Version)
 	if m.msg != "" {
@@ -412,7 +446,11 @@ func (m model) helpPopup() string {
 		}
 		lines = append(lines, titleStyle.Render(g.title))
 		for _, b := range g.bindings {
-			lines = append(lines, keyStyle.Render(fmt.Sprintf("  %-20s", b.keys))+" "+b.desc)
+			desc := b.desc
+			if b.keys == layoutKey {
+				desc += " (now " + m.mode.String() + ")"
+			}
+			lines = append(lines, keyStyle.Render(fmt.Sprintf("  %-20s", b.keys))+" "+desc)
 		}
 	}
 	lines = append(lines, "", dimStyle.Render("press any key to close"))

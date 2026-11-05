@@ -18,6 +18,8 @@ func key(s string) tea.KeyMsg {
 	switch s {
 	case "tab":
 		return tea.KeyMsg{Type: tea.KeyTab}
+	case "shift+tab":
+		return tea.KeyMsg{Type: tea.KeyShiftTab}
 	case "enter":
 		return tea.KeyMsg{Type: tea.KeyEnter}
 	case "esc":
@@ -175,21 +177,242 @@ func TestTotalRSS(t *testing.T) {
 	}
 }
 
+// inLayout is m switched to the given layout with v.
+func inLayout(m model, mode layoutMode) model {
+	for i := 0; i < int(numLayouts) && m.mode != mode; i++ {
+		m = press(m, "v")
+	}
+	return m
+}
+
 func TestViewFitsScreen(t *testing.T) {
-	for _, size := range [][2]int{{40, 10}, {80, 24}, {120, 30}, {200, 60}} {
-		m := loaded(size[0], size[1])
-		for _, keys := range [][]string{nil, {"]"}, {"]", "]"}, {"]", "]", "]"}, {"?"}, {"x"}, {"n"}} {
-			mm := press(m, keys...)
-			lines := strings.Split(mm.View(), "\n")
-			if len(lines) != size[1] {
-				t.Errorf("%v %v: %d lines, want %d", size, keys, len(lines), size[1])
-			}
-			for i, l := range lines {
-				if w := ansi.StringWidth(l); w > size[0] {
-					t.Errorf("%v %v: line %d is %d wide", size, keys, i, w)
+	for _, size := range [][2]int{{40, 10}, {48, 16}, {60, 20}, {80, 24}, {120, 30}, {200, 60}} {
+		for mode := range numLayouts {
+			m := inLayout(loaded(size[0], size[1]), mode)
+			for _, keys := range [][]string{nil, {"]"}, {"]", "]"}, {"]", "]", "]"}, {"?"}, {"x"}, {"n"}, {"/"}, {"enter"}} {
+				mm := press(m, keys...)
+				lines := strings.Split(mm.View(), "\n")
+				if len(lines) != size[1] {
+					t.Errorf("%v %v %v: %d lines, want %d", size, mode, keys, len(lines), size[1])
+				}
+				// Every line fills the width exactly, so a layout switch
+				// leaves nothing of the previous arrangement on the screen.
+				for i, l := range lines {
+					if w := ansi.StringWidth(l); w != size[0] {
+						t.Errorf("%v %v %v: line %d is %d wide", size, mode, keys, i, w)
+					}
 				}
 			}
 		}
+	}
+}
+
+func TestLayoutCycle(t *testing.T) {
+	m := loaded(120, 30)
+	if m.mode != layoutSplit {
+		t.Fatalf("start layout %v, want split", m.mode)
+	}
+	m = press(m, "j", "]", "]") // agent 2, Processes tab
+	for _, want := range []layoutMode{layoutDetail, layoutLists, layoutSplit} {
+		m = press(m, "v")
+		if m.mode != want {
+			t.Fatalf("v: layout %v, want %v", m.mode, want)
+		}
+		name := want.String() + " layout"
+		if !strings.Contains(m.msg, name) {
+			t.Errorf("message %q does not name the %s", m.msg, name)
+		}
+		if s := ansi.Strip(m.statusPanel(m.layout())); !strings.Contains(s, name) {
+			t.Errorf("status panel does not show the %s:\n%s", name, s)
+		}
+		if a, _ := m.selected(); a.PID != 2 || m.tab != tabProcesses || m.lastList != listAgents {
+			t.Errorf("%v: selected %d tab %d list %d", want, a.PID, m.tab, m.lastList)
+		}
+	}
+	// Lists hides the main panel: the focus goes back to the list.
+	if mm := press(m, "enter", "v", "v"); mm.mode != layoutLists || mm.focus != listAgents {
+		t.Errorf("lists from the main panel: layout %v focus %d", mm.mode, mm.focus)
+	}
+	// The x menu offers the next layout and runs it with its key.
+	mm := press(m, "x")
+	var item menuItem
+	for _, it := range mm.menu {
+		if it.key == "v" {
+			item = it
+		}
+	}
+	if !strings.Contains(item.label, "detail") {
+		t.Errorf("menu item v: %+v", item)
+	}
+	if mm = press(mm, "v"); mm.mode != layoutDetail || mm.popup != popupNone {
+		t.Errorf("v in the menu: layout %v popup %v", mm.mode, mm.popup)
+	}
+	// v typed into the filter or a popup is text.
+	if mm := press(m, "/", "v"); mm.mode != layoutSplit || mm.filters[listAgents] != "v" {
+		t.Errorf("v in the filter: layout %v filter %q", mm.mode, mm.filters[listAgents])
+	}
+	if mm := press(m, "n", "v"); mm.mode != layoutSplit || string(mm.buf) != "v" {
+		t.Errorf("v in the launch popup: layout %v input %q", mm.mode, string(mm.buf))
+	}
+}
+
+// panelRow is the first row of list i that contains s, without styles.
+func panelRow(m model, i int, s string) string {
+	for _, line := range strings.Split(ansi.Strip(m.listPanel(i, m.layout())), "\n") {
+		if strings.Contains(line, s) {
+			return line
+		}
+	}
+	return ""
+}
+
+func TestLayoutStructure(t *testing.T) {
+	split := loaded(120, 30)
+	detail := inLayout(split, layoutDetail)
+	lists := inLayout(split, layoutLists)
+	ls, ld, ll := split.layout(), detail.layout(), lists.layout()
+
+	if ls.leftW != 40 || ls.rightW != 80 {
+		t.Errorf("split widths %d + %d, want 40 + 80", ls.leftW, ls.rightW)
+	}
+	if ld.leftW >= ls.leftW || ld.rightW < ls.rightW+15 || ld.leftW+ld.rightW != 120 {
+		t.Errorf("detail widths %d + %d: the main panel must gain at least 15 columns", ld.leftW, ld.rightW)
+	}
+	if ll.leftW != 120 || ll.rightW != 0 {
+		t.Errorf("lists widths %d + %d, want 120 + 0", ll.leftW, ll.rightW)
+	}
+	if ld.listH != ls.listH || ll.listH != ls.listH || ld.listY != ls.listY || ll.listY != ls.listY {
+		t.Errorf("heights differ: split %v detail %v lists %v", ls.listH, ld.listH, ll.listH)
+	}
+
+	// Side by side: the main panel's corner sits where the column ends.
+	for _, c := range []struct {
+		name string
+		m    model
+		l    layout
+	}{{"split", split, ls}, {"detail", detail, ld}} {
+		top := []rune(ansi.Strip(strings.Split(c.m.View(), "\n")[0]))
+		if string(top[c.l.leftW]) != "╭" || !strings.Contains(string(top), "Info - Screen - Processes - Stats") {
+			t.Errorf("%s top line: %s", c.name, string(top))
+		}
+	}
+	if v := ansi.Strip(lists.View()); strings.Count(strings.Split(v, "\n")[0], "╭") != 1 || strings.Contains(v, "Info - Screen") {
+		t.Errorf("lists layout shows a main panel:\n%s", v)
+	}
+
+	// Rows: full in split and lists, compact in detail (no CPU or memory;
+	// status only when busy).
+	if r := panelRow(split, listServices, "codex"); !strings.Contains(r, "codex server w/p") || !strings.Contains(r, "idle") || !strings.Contains(r, "%") {
+		t.Errorf("split Services row: %q", r)
+	}
+	if r := panelRow(detail, listServices, "codex"); !strings.Contains(r, " codex server w/p ") || strings.Contains(r, "idle") || strings.Contains(r, "%") {
+		t.Errorf("detail Services row: %q", r)
+	}
+	busy := sample()
+	busy[2].Status = "busy"
+	next, _ := detail.Update(agentsMsg{agents: busy})
+	if r := panelRow(next.(model), listServices, "codex"); !strings.HasSuffix(strings.TrimRight(r, "│"), "busy") {
+		t.Errorf("detail busy row: %q", r)
+	}
+	if r := panelRow(detail, listAgents, "claude"); !strings.Contains(r, "@claude lazyai-c") {
+		t.Errorf("detail Agents row: %q", r)
+	}
+	if r := panelRow(lists, listAgents, "claude"); !strings.Contains(r, "@claude lazyai-c c-1") || !strings.Contains(r, "%") {
+		t.Errorf("lists Agents row: %q", r)
+	}
+
+	// Mouse: the same column is a list in split and the main panel in detail.
+	x := ld.leftW + 2
+	click := tea.MouseMsg{X: x, Y: ls.listY[listModels] + 2, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft}
+	if next, _ := split.Update(click); next.(model).focus != listModels {
+		t.Errorf("split click at x=%d: focus %d", x, next.(model).focus)
+	}
+	if next, _ := detail.Update(click); next.(model).focus != focusMain {
+		t.Errorf("detail click at x=%d: focus %d", x, next.(model).focus)
+	}
+	click.X = 100
+	next, _ = lists.Update(click)
+	if a, _ := next.(model).selected(); next.(model).focus != listModels || a.PID != 6 {
+		t.Errorf("lists click at x=100: focus %d selected %d", next.(model).focus, a.PID)
+	}
+}
+
+func TestLayoutListsHidesMain(t *testing.T) {
+	m := press(loaded(120, 30), "]") // Screen tab
+	if !m.capturing {
+		t.Fatal("split does not capture the Screen tab")
+	}
+	m.capturing = false
+	m = inLayout(m, layoutLists)
+	if m.capture() != nil {
+		t.Error("lists layout captures a hidden Screen tab")
+	}
+	// A capture that arrives while the panel is hidden is dropped.
+	next, _ := m.Update(screenMsg{pane: "%1", text: "old"})
+	if m = next.(model); m.screen.text != "" {
+		t.Errorf("hidden capture kept: %q", m.screen.text)
+	}
+	// tab cycles the lists only.
+	for i, want := range []int{listServices, listModels, listAgents} {
+		if m = press(m, "tab"); m.focus != want {
+			t.Errorf("tab %d: focus %d, want %d", i+1, m.focus, want)
+		}
+	}
+	if mm := press(m, "shift+tab"); mm.focus == focusMain {
+		t.Error("shift+tab focused the hidden main panel")
+	}
+	// Main panel keys say why they do nothing.
+	for _, k := range []string{"enter", "]", "["} {
+		mm := press(m, k)
+		if mm.focus == focusMain || mm.tab != tabScreen || !strings.Contains(mm.msg, "v") {
+			t.Errorf("%s in lists: focus %d tab %d msg %q", k, mm.focus, mm.tab, mm.msg)
+		}
+	}
+	// Back to a layout with the main panel: the Screen tab captures again.
+	if _, cmd := m.Update(key("v")); cmd == nil {
+		t.Error("leaving lists does not capture the Screen tab")
+	}
+}
+
+func TestLayoutNarrow(t *testing.T) {
+	for w := 30; w <= 250; w++ {
+		m := loaded(w, 30)
+		s, d := m.layout(), inLayout(m, layoutDetail).layout()
+		if d.leftW > w/2 || d.leftW > s.leftW || d.rightW < s.rightW || d.leftW+d.rightW != w {
+			t.Errorf("width %d: detail %d + %d, split %d + %d", w, d.leftW, d.rightW, s.leftW, s.rightW)
+		}
+	}
+	// Under 50 columns detail keeps split's widths.
+	if s, d := loaded(48, 20).layout(), inLayout(loaded(48, 20), layoutDetail).layout(); s.leftW != d.leftW {
+		t.Errorf("48 columns: split %d, detail %d", s.leftW, d.leftW)
+	}
+	// The counts are never cut in the narrow navigator.
+	for _, w := range []int{80, 120, 200} {
+		m := inLayout(attachedModel(w, 30), layoutDetail)
+		if s := ansi.Strip(m.statusPanel(m.layout())); !strings.Contains(s, "5 run, 0 busy") {
+			t.Errorf("detail status panel at %d:\n%s", w, s)
+		}
+	}
+}
+
+func TestLayoutHints(t *testing.T) {
+	m := loaded(120, 30)
+	if help := ansi.Strip(press(m, "?").View()); !strings.Contains(help, "split -> detail -> lists (now split)") {
+		t.Errorf("help lacks the layout key:\n%s", help)
+	}
+	if help := ansi.Strip(inLayout(m, layoutDetail).helpPopup()); !strings.Contains(help, "(now detail)") {
+		t.Errorf("help does not name the detail layout:\n%s", help)
+	}
+	if f := ansi.Strip(m.footer()); !strings.Contains(f, "v layout") || !strings.Contains(f, "[ ] tabs") {
+		t.Errorf("split footer: %s", f)
+	}
+	if f := ansi.Strip(press(m, "enter").footer()); !strings.Contains(f, "v layout") {
+		t.Errorf("main panel footer: %s", f)
+	}
+	lists := inLayout(m, layoutLists)
+	lists.msg = "" // the message would cut the hints
+	if f := ansi.Strip(lists.footer()); !strings.Contains(f, "v layout") || strings.Contains(f, "[ ] tabs") {
+		t.Errorf("lists footer: %s", f)
 	}
 }
 

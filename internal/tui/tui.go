@@ -67,6 +67,31 @@ const (
 
 var tabTitles = [numTabs]string{"Info", "Screen", "Processes", "Stats"}
 
+// layoutMode is how the dashboard arranges the lists and the main panel;
+// v cycles through the modes in this order (specs/tui.md, Layouts).
+type layoutMode int
+
+const (
+	layoutSplit  layoutMode = iota // lists left, main panel right; the start layout
+	layoutDetail                   // compact lists, wide main panel
+	layoutLists                    // lists across the whole width, no main panel
+	numLayouts
+)
+
+var (
+	layoutNames = [numLayouts]string{"split", "detail", "lists"}
+	layoutHints = [numLayouts]string{
+		"lists left, main panel right",
+		"compact lists, wide main panel",
+		"main panel hidden; v shows it",
+	}
+)
+
+func (l layoutMode) String() string { return layoutNames[l] }
+
+// hiddenMainMsg answers keys for the main panel in the lists layout.
+const hiddenMainMsg = "the lists layout hides the main panel; v shows it"
+
 type popupKind int
 
 const (
@@ -124,6 +149,7 @@ type model struct {
 	focus       int // a list index or focusMain
 	lastList    int // list whose selection the main panel shows
 	tab         int
+	mode        layoutMode
 	scroll      int  // main panel offset from the top
 	follow      bool // Screen sticks to the bottom
 	showHelpers bool
@@ -205,7 +231,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case screenMsg:
 		m.capturing = false
-		if a, ok := m.selected(); ok && a.TmuxPane == msg.pane {
+		if a, ok := m.selected(); ok && a.TmuxPane == msg.pane && m.mode != layoutLists {
 			m.screen = msg
 		}
 	case actionMsg:
@@ -283,7 +309,7 @@ func (m *model) selectionChanged() tea.Cmd {
 // capture fetches the selected agent's tmux pane when Screen is shown.
 func (m *model) capture() tea.Cmd {
 	a, ok := m.selected()
-	if m.tab != tabScreen || !ok || a.TmuxPane == "" || m.capturing {
+	if m.tab != tabScreen || m.mode == layoutLists || !ok || a.TmuxPane == "" || m.capturing {
 		return nil
 	}
 	m.capturing = true
@@ -316,12 +342,32 @@ func (m *model) focusList(i int) tea.Cmd {
 }
 
 func (m *model) cycleFocus(d int) tea.Cmd {
-	next := (m.focus + d + numLists + 1) % (numLists + 1)
+	n := numLists + 1
+	if m.mode == layoutLists {
+		n = numLists // the main panel is hidden
+	}
+	next := (m.focus + d + n) % n
 	if next == focusMain {
 		m.focus = focusMain
 		return nil
 	}
 	return m.focusList(next)
+}
+
+// cycleLayout switches to the next layout. The lists layout hides the main
+// panel, so it gives up the focus and its Screen capture, which would go
+// stale unseen; leaving the lists layout captures again.
+func (m *model) cycleLayout() tea.Cmd {
+	m.mode = (m.mode + 1) % numLayouts
+	m.setMsg(m.mode.String()+" layout: "+layoutHints[m.mode], false)
+	if m.mode == layoutLists {
+		if m.focus == focusMain {
+			m.focus = m.lastList
+		}
+		m.screen = screenMsg{}
+		return nil
+	}
+	return m.capture()
 }
 
 func (m *model) setTab(t int) tea.Cmd {
@@ -345,6 +391,13 @@ func (m model) updateKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 	inMain := m.focus == focusMain
 	page := max(m.layout().bodyH-4, 1)
+	if m.mode == layoutLists {
+		switch key {
+		case "enter", "]", "[", "pgdown", "pgup", "ctrl+d", "ctrl+u":
+			m.setMsg(hiddenMainMsg, false)
+			return m, nil
+		}
+	}
 	switch key {
 	case "q", "ctrl+c":
 		return m, tea.Quit
@@ -413,6 +466,8 @@ func (m model) action(key string) (tea.Model, tea.Cmd) {
 	switch key {
 	case "r":
 		return m, m.refresh()
+	case layoutKey:
+		return m, m.cycleLayout()
 	case "H":
 		m.showHelpers = !m.showHelpers
 		m.regroup()

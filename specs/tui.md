@@ -6,10 +6,13 @@ confirmations and input, key hints in the bottom line, mouse support.
 
 ## Layout
 
+The split layout, the one lazyai starts in (`v` changes it, see
+Layouts):
+
 ```
 + lazyai ------------------+ + Info - Screen - Processes - Stats ------+
 | 9 run, 3 busy, 1 att 3.3G| |                                          |
-+--------------------------+ |  details of the selected agent           |
++------------ split layout + |  details of the selected agent           |
 + 1 Agents ----------------+ |                                          |
 |>claude ai-d1 busy 2% 1G  | |                                          |
 | hermes h-ai idle 1% 90M  | |                                          |
@@ -25,7 +28,7 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
 
 - Left column: one third of the width, at least 32 columns (or half of a
   narrow screen), at most 56.
-- Status panel (3 rows): number of agents shown, how many are busy, how
+- Status panel (3 rows, in every layout): number of agents shown, how many are busy, how
   many have a tmux client attached (only when some shown agent runs in
   tmux: `9 running, 3 busy, 2 attached`), and on the right the total
   memory of the shown agents next to the time of
@@ -38,9 +41,15 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
   - Narrow column: the forms are tried in this order until one fits:
     `9 running, 3 busy, 2 attached` with `mem 3.3G 01:59:11`,
     `9 run, 3 busy, 2 att` with `mem ...`, the long counts without `mem `,
-    `9 run, 3 busy, 2 att` without `mem `, and last `9 run, 3 busy`.
+    `9 run, 3 busy, 2 att` without `mem `, `9 run, 3 busy` without
+    `mem `, then `9 run, 3 busy` with the memory total but no time, and
+    last `9 run, 3 busy` alone. Before the first refresh the right side
+    says `loading ...`, and is left out when it does not fit next to
+    `9 run, 3 busy`.
     Decision: the short words go before `mem `, so the attached count
-    does not push the memory total out at common widths.
+    does not push the memory total out at common widths. The counts
+    are never cut: the time goes first, then the memory total, which
+    keeps them whole in the narrow column of the detail layout.
   - Decision: memory of the agents, not of the whole machine. Reason:
     lazyai is about what the agents cost; the system total is in other
     tools.
@@ -89,6 +98,100 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
 - Footer: key hints for the focused side; on the right the last message
   (red for errors) or `lazyai VERSION`.
 
+## Layouts
+
+`v` cycles three arrangements of the same panels: split -> detail ->
+lists -> split. lazyai always starts in split, the layout drawn under
+Layout, and does not save the choice.
+
+| layout | left column                                  | main panel |
+|--------|----------------------------------------------|------------|
+| split  | lists: a third of the width, 32 to 56 columns | the rest   |
+| detail | compact lists: a fifth, 24 to 32 columns     | the rest   |
+| lists  | lists: the whole width                       | hidden     |
+
+```
+detail, 120 columns: the main panel is 96 wide instead of 80
++ lazyai ------------+ + Info - Screen - Processes - Stats -------------+
+| 9 run, 3 busy 3.3G | |                                                |
++----- detail layout + |  details of the selected agent                 |
++ 1 Agents ----------+ |                                                |
+|>claude ai-d1   busy| |                                                |
+| hermes h-ai        | |                                                |
++------------ 1 of 2 + |                                                |
++ 2 Services --------+ |                                                |
+| codex server alpha | |                                                |
++------------ 1 of 5 + +------------------------------------------------+
+
+lists: no main panel, the rows have the whole width
++ lazyai ----------------------------------------------------------------+
+| 9 running, 3 busy, 1 attached                        mem 3.3G 01:59:11 |
++---------------------------------------------------------- lists layout +
++ 1 Agents --------------------------------------------------------------+
+|>claude lazyai-web-docs docs-review-a1                busy  12.0%  1.0G |
++---------------------------------------------------------------- 1 of 2 +
+```
+
+- Only the widths and the rows change. The status panel, the three
+  lists with their heights (Layout, Heights), 1 2 3, the filters, the
+  selection, the tab, the menu, the actions and their confirmations work
+  the same in every layout.
+- Detail: the list column is a fifth of the width, at least 24 and at
+  most 32 columns, and the main panel gets the rest: 16 more columns than
+  split at 120, 24 more from 168 on. Rows are compact: the mark, kind,
+  role (Services and Models) and label as in split, then `busy` on the
+  right for a busy agent and nothing for an idle one. CPU and memory are
+  left out; the main panel beside shows them for the selected agent.
+  Busy and flagged rows keep their colors.
+- Lists: the lists take the whole width with the full rows, so long
+  labels and the Claude name after a tmux session fit. The main panel is
+  hidden:
+  - tab and shift+tab cycle the three lists only;
+  - enter, ] / [ and the page keys (pgdn, pgup, ctrl+d, ctrl+u) do
+    nothing and say "the lists layout hides the main panel; v shows it";
+  - switching to lists while the main panel has the focus moves the
+    focus to the list in use;
+  - the Screen tab is not captured while hidden, and a capture that
+    arrives then is dropped; leaving lists captures again, so the Screen
+    tab never shows an old screen.
+- The active layout shows:
+  - in the bottom border of the status panel: `split layout`,
+    `detail layout`, `lists layout`;
+  - in the message line when it changes:
+    `detail layout: compact lists, wide main panel`;
+  - in the `?` popup: `v  layout: split -> detail -> lists (now split)`;
+  - in the x menu: `v  switch to the detail layout`;
+  - as `v layout` in the footer. The lists footer leaves out `[ ] tabs`.
+- Narrow screens:
+  - Detail's column is never wider than half the screen, so under 50
+    columns it is as wide as split's column (half of a narrow screen)
+    and only the rows are compact. It is never wider than split's.
+  - Lists works at any width.
+  - Short screens follow the Heights rule in every layout: the list in
+    use takes the room.
+  - Every line of the screen is drawn to the full width in every layout,
+    so a switch leaves nothing of the previous one behind. The main
+    panel keeps its tab and scroll position across switches.
+- Decisions:
+  - One key cycles the layouts, like a preview toggle, rather than one
+    key per layout: there are only three, and 1 2 3 already pick the
+    lists. The order puts detail right after split: reading the Screen
+    or Processes tab is the usual reason to want more room.
+  - Detail keeps the three lists in a narrow column rather than a strip
+    above the main panel. Reason: keys, mouse and heights stay as in
+    split, and the main panel keeps the full height that Screen and
+    Processes need. The role stays in compact rows, so an engine and a
+    job of the same model in one directory do not look the same.
+  - The breakpoints follow the split column rule (a third, 32 to 56,
+    half of a narrow screen): a fifth with 24 to 32 columns leaves an
+    idle claude row in Agents 13 columns or more for its label.
+  - Lists hides the main panel instead of letting enter bring it back.
+    Reason: only v changes the layout, so a habitual enter does not undo
+    the choice.
+  - Start in split and do not save the layout, so every start looks as
+    it did before layouts existed. A `--layout` option or a saved
+    choice can come later if wanted.
+
 ## Tabs
 
 - Info: state with duration, the detail fields (display.Details; the
@@ -120,14 +223,11 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
 | tab / shift+tab      | next / previous panel (lists, then main)       |
 | 1 2 3                | Agents, Services, Models                       |
 | enter / esc          | focus the main panel / back to the list        |
-
-Left / right and h / l do not move the focus. Decision: only tab,
-shift+tab, 1 2 3 and enter / esc do, so a stray arrow key does not take
-the focus away from the list in use.
 | j / k, down / up     | move the selection, or scroll the main panel   |
 | g / G, home / end    | first / last; main panel top / bottom (follow) |
 | pgdn / pgup, ctrl+d / ctrl+u | scroll the main panel a page           |
 | ] / [                | next / previous tab                            |
+| v                    | next layout: split, detail, lists (Layouts)    |
 | x                    | action menu for the selected agent             |
 | a                    | attach (tmux only)                             |
 | p                    | send a prompt (tmux only); asks first when a client is attached (control.md, Send) |
@@ -139,8 +239,14 @@ the focus away from the list in use.
 | ?                    | keybindings popup                              |
 | q, ctrl+c            | quit                                           |
 
+Left / right and h / l do not move the focus. Decision: only tab,
+shift+tab, 1 2 3 and enter / esc do, so a stray arrow key does not take
+the focus away from the list in use.
+
 Mouse: click a list row to select it, click the main panel to focus it;
-the wheel moves the selection in a list or scrolls the main panel.
+the wheel moves the selection in a list or scrolls the main panel. The
+panels are found where the current layout draws them; in lists every
+click and wheel turn lands on a list.
 
 The menu (`x`) lists the actions with their keys; actions that cannot
 apply are dimmed with a short reason (not in tmux, lazyai's parent) and
