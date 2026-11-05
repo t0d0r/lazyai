@@ -6,6 +6,15 @@
 set -eu
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
+# running PID: whether the process still runs. A stopped agent stays a
+# zombie (state Z) until its parent, the tmux server, reaps it, which a busy
+# server may do after lazyai stop returns. A zombie runs nothing; lazyai
+# counts it as stopped too (agent.Alive).
+running() {
+	case $(ps -o stat= -p "$1") in
+	'' | Z*) return 1 ;;
+	esac
+}
 . /etc/os-release
 echo "== $PRETTY_NAME, $(tmux -V), $(ps --version)"
 
@@ -59,7 +68,7 @@ sleep 0.5
 echo "== stop"
 pid=$(echo "$codex" | jq -r .pid)
 $lazyai stop --yes "$pid" || fail stop
-! kill -0 "$pid" 2>/dev/null || fail "codex still running"
+! running "$pid" || fail "codex still running: $(ps -o stat=,args= -p "$pid")"
 $lazyai kill --yes claude-work || fail kill
 
 echo "== ok: $PRETTY_NAME"

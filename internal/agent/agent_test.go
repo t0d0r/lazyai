@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -280,17 +281,13 @@ func TestStopProtectedAndChanged(t *testing.T) {
 	}
 }
 
-func TestStopSendsSignal(t *testing.T) {
-	cmd := exec.Command("sleep", "30")
-	if err := cmd.Start(); err != nil {
-		t.Fatal(err)
-	}
-	done := make(chan struct{})
-	go func() { cmd.Wait(); close(done) }()
+// lookupChild returns the ps row of a child the test just started.
+func lookupChild(t *testing.T, cmd *exec.Cmd) Proc {
+	t.Helper()
 	var p Proc
 	var err error
 	for range 20 { // ps may not see the child for a moment
-		if p, err = Lookup(cmd.Process.Pid); err == nil && p.Args == "sleep 30" {
+		if p, err = Lookup(cmd.Process.Pid); err == nil && p.Args == strings.Join(cmd.Args, " ") {
 			break
 		}
 		time.Sleep(50 * time.Millisecond)
@@ -298,6 +295,17 @@ func TestStopSendsSignal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	return p
+}
+
+func TestStopSendsSignal(t *testing.T) {
+	cmd := exec.Command("sleep", "30")
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan struct{})
+	go func() { cmd.Wait(); close(done) }()
+	p := lookupChild(t, cmd)
 	if err := Stop(Agent{Proc: p}, false, 3*time.Second); err != nil {
 		t.Fatal(err)
 	}
@@ -305,6 +313,36 @@ func TestStopSendsSignal(t *testing.T) {
 	case <-done:
 	case <-time.After(time.Second):
 		t.Fatal("process still running")
+	}
+}
+
+// An agent that has exited stays a zombie until its parent waits for it.
+// For an agent launched in tmux the parent is the tmux server, not lazyai,
+// so Stop counts the zombie as stopped and returns; the PID exists, and
+// kill -0 succeeds, until the parent reaps it. Here the test is the parent
+// and waits only after Stop, as a busy tmux server may (test/linux/e2e.sh).
+func TestStopZombieCountsAsStopped(t *testing.T) {
+	cmd := exec.Command("sleep", "30")
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	defer cmd.Process.Kill()
+	p := lookupChild(t, cmd)
+	if err := Stop(Agent{Proc: p}, false, 3*time.Second); err != nil {
+		t.Fatal(err)
+	}
+	if err := syscall.Kill(p.PID, 0); err != nil {
+		t.Fatalf("kill -0 after Stop, before the parent waited: %v; want the zombie", err)
+	}
+	if cur, err := Lookup(p.PID); err != nil || cur.Stat[0] != 'Z' {
+		t.Fatalf("after Stop: %+v, %v; want state Z", cur, err)
+	}
+	if Alive(Agent{Proc: p}) {
+		t.Error("zombie reported alive")
+	}
+	cmd.Wait()
+	if err := syscall.Kill(p.PID, 0); err == nil {
+		t.Error("PID still there after the parent waited")
 	}
 }
 
