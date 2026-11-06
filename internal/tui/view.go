@@ -420,7 +420,12 @@ func (m model) screenPanel(l layout) string {
 	lines = lines[off:]
 	title := "Screen"
 	if a, ok := m.selected(); ok && a.TmuxSession != "" {
+		// The Claude session name says what the pane is about; the box
+		// cuts the title when the screen is too narrow for it.
 		title += " " + dimStyle.Render(a.TmuxSession)
+		if hint := nameHint(a); hint != "" {
+			title += " " + dimStyle.Render("-") + " " + hint
+		}
 	}
 	focused := m.focus == focusScreen
 	if focused {
