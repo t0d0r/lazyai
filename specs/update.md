@@ -55,7 +55,27 @@ resolving symlinks.
 | binary   | anything else                                      | download and check the tarball, replace PATH   |
 
 - homebrew: brew builds from the tap formula, so a release the tap has
-  not picked up yet is reported by brew as up to date.
+  not picked up yet cannot be installed with brew (brew says the
+  installed version is already current). After `update available`,
+  lazyai therefore reads the published formula,
+  `https://github.com/t0d0r/homebrew-tap/raw/HEAD/Formula/lazyai.rb`
+  (GitHub redirects to its raw file host; HTTPS only, same timeout and
+  size limit as downloads), and takes the version from its `version`
+  line, else from the `vX.Y.Z.tar.gz` archive in its `url`:
+  - tap version >= latest: as before.
+  - tap version <= installed: print `vNEW is released but the Homebrew
+    tap still has vTAP; brew upgrade cannot install it yet, run lazyai
+    update again later`, ask nothing, exit 0 (also with `--check`).
+  - in between: print `the Homebrew tap has vTAP, not yet vNEW; brew
+    upgrade installs vTAP` and offer `OLD -> vTAP`.
+  - formula not readable or without a version: print `could not read
+    the Homebrew formula (...); brew may not have vNEW yet` and go on as
+    before, so a GitHub hiccup does not block the upgrade.
+  Decision: the published formula on GitHub, not `brew info`. Reason:
+  `brew info` shows the local tap clone, which is only as fresh as the
+  last `brew update`, while `brew upgrade` updates the taps first; the
+  formula on GitHub is what it will then build. The raw file host can
+  cache the file for a few minutes after a tap push.
 - deb: downloads `lazyai_X.Y.Z_ARCH.deb` and `SHA256SUMS` into a new
   temporary directory (mode 0755, file 0644, so apt's sandbox user can
   read it), checks the sum, then runs `sudo apt-get install -y FILE` with
@@ -108,7 +128,9 @@ not signed (see release.md).
 ## Acceptance
 
 - Unit tests: version parsing and comparison, the latest-release
-  redirect, checksum mismatch and missing entry, tarball extraction (only
+  redirect, the formula version (version line, url, none) and its
+  fetch, the brew target for a tap that is current, behind, partly
+  behind and unreadable, checksum mismatch and missing entry, tarball extraction (only
   the expected regular file), replacing a file in a temporary directory,
   method detection by path.
 - By hand: a binary built as an older release version updates itself to
@@ -120,6 +142,9 @@ a symlink) and on Debian 13 as a normal user in ~/.local/bin; a read-only
 /usr/local/bin fails with the message above; deb method from the 0.2.1
 package as root and as a sudo user; homebrew detected for a Cellar path
 reached through a symlink.
+
+Checked against the published v0.10.0 tap: a 0.9.0 build in a Cellar
+path reads the formula from GitHub and offers v0.9.0 -> v0.10.0.
 
 Checked from the published v0.4.0 to v0.4.1: deb as a sudo user and
 binary in ~/.local/bin on Debian 13 (arm64 and amd64), and homebrew on

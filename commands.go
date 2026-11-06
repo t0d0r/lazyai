@@ -412,26 +412,56 @@ func selfUpdate(e env, check, yes bool) error {
 		return nil
 	}
 	fmt.Fprintf(e.out, "update available: %s -> %s\n", current, latest)
-	if check {
-		return nil
-	}
 	exe, err := update.Executable()
 	if err != nil {
 		return err
 	}
 	method := update.Detect(exe, runtime.GOOS, update.DpkgOwns)
-	q := fmt.Sprintf("Update lazyai %s -> %s (%s)?", current, latest, method)
+	target := latest
+	if method == update.Homebrew {
+		tap, tapErr := c.TapVersion()
+		var note string
+		target, note = brewTarget(current, latest, tap, tapErr)
+		if note != "" {
+			fmt.Fprintln(e.out, note)
+		}
+		if current.Compare(target) >= 0 {
+			return nil // brew has nothing newer yet; not an error
+		}
+	}
+	if check {
+		return nil
+	}
+	q := fmt.Sprintf("Update lazyai %s -> %s (%s)?", current, target, method)
 	if !yes && !confirm(e.out, bufio.NewReader(e.in), q) {
 		fmt.Fprintln(e.out, "skipped")
 		return nil
 	}
-	if err := c.Install(method, latest, exe); err != nil {
+	if err := c.Install(method, target, exe); err != nil {
 		return err
 	}
 	if method == update.Binary {
-		fmt.Fprintf(e.out, "updated lazyai %s -> %s (%s)\n", current, latest, exe)
+		fmt.Fprintf(e.out, "updated lazyai %s -> %s (%s)\n", current, target, exe)
 	}
 	return nil
+}
+
+// brewTarget is the version brew upgrade can install, given the version
+// the published tap formula has (or the error reading it), and a line
+// to print about the tap, or "". brew builds from the formula, so a
+// release the tap does not have yet cannot be installed with brew.
+func brewTarget(current, latest, tap update.Version, tapErr error) (update.Version, string) {
+	switch {
+	case tapErr != nil:
+		return latest, "could not read the Homebrew formula (" + tapErr.Error() +
+			"); brew may not have " + latest.String() + " yet"
+	case tap.Compare(current) <= 0:
+		return current, fmt.Sprintf("%s is released but the Homebrew tap still has %s; "+
+			"brew upgrade cannot install it yet, run lazyai update again later", latest, tap)
+	case tap.Compare(latest) < 0:
+		return tap, fmt.Sprintf("the Homebrew tap has %s, not yet %s; brew upgrade installs %s", tap, latest, tap)
+	}
+	return latest, ""
 }
 
 func find(ref string) (agent.Agent, error) {

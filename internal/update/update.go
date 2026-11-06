@@ -32,6 +32,10 @@ const (
 	Repo = "t0d0r/lazyai"
 	// Formula is the Homebrew formula that installs lazyai.
 	Formula = "t0d0r/tap/lazyai"
+	// TapRepo is the GitHub repository of the tap, and FormulaPath the
+	// formula's file in it.
+	TapRepo     = "t0d0r/homebrew-tap"
+	FormulaPath = "Formula/lazyai.rb"
 	// maxFile limits every download; the release files are a few MiB.
 	maxFile = 64 << 20
 )
@@ -90,10 +94,11 @@ type Client struct {
 	HTTP *http.Client
 	Base string // https://github.com; tests point it at a local server
 	Repo string
+	Tap  string // the tap's repository, TapRepo
 }
 
 func New() *Client {
-	return &Client{HTTP: &http.Client{Timeout: 2 * time.Minute}, Base: "https://github.com", Repo: Repo}
+	return &Client{HTTP: &http.Client{Timeout: 2 * time.Minute}, Base: "https://github.com", Repo: Repo, Tap: TapRepo}
 }
 
 // Latest reads the version from the redirect of releases/latest to
@@ -122,6 +127,49 @@ func (c *Client) Latest() (Version, error) {
 // Download fetches one file of release v. Redirects (GitHub sends asset
 // downloads to its asset host) must stay on HTTPS.
 func (c *Client) Download(v Version, name string) ([]byte, error) {
+	return c.get(fmt.Sprintf("%s/%s/releases/download/%s/%s", c.Base, c.Repo, v, name), name)
+}
+
+var (
+	formulaVersionRE = regexp.MustCompile(`(?m)^\s*version\s+"([^"]+)"`)
+	formulaURLRE     = regexp.MustCompile(`(?m)^\s*url\s+"[^"]*/v?(\d+\.\d+\.\d+)\.tar\.gz"`)
+)
+
+// FormulaVersion is the version a Homebrew formula installs: its version
+// line, or else the version in its url's archive name.
+func FormulaVersion(rb []byte) (Version, error) {
+	m := formulaVersionRE.FindSubmatch(rb)
+	if m == nil {
+		m = formulaURLRE.FindSubmatch(rb)
+	}
+	if m == nil {
+		return Version{}, errors.New("formula has no version or versioned url")
+	}
+	v, ok := Parse(string(m[1]))
+	if !ok {
+		return Version{}, fmt.Errorf("formula version %q is not a release version", m[1])
+	}
+	return v, nil
+}
+
+// TapVersion is the version the published tap formula installs, read
+// from the tap's default branch on GitHub: what brew upgrade gets once
+// brew has updated its taps.
+func (c *Client) TapVersion() (Version, error) {
+	rb, err := c.get(fmt.Sprintf("%s/%s/raw/HEAD/%s", c.Base, c.Tap, FormulaPath), "Homebrew formula")
+	if err != nil {
+		return Version{}, err
+	}
+	v, err := FormulaVersion(rb)
+	if err != nil {
+		return Version{}, fmt.Errorf("Homebrew formula: %w", err)
+	}
+	return v, nil
+}
+
+// get fetches url, following redirects only on HTTPS, at most maxFile
+// bytes. name names the file in errors.
+func (c *Client) get(url, name string) ([]byte, error) {
 	hc := *c.HTTP
 	hc.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		if req.URL.Scheme != "https" {
@@ -132,7 +180,6 @@ func (c *Client) Download(v Version, name string) ([]byte, error) {
 		}
 		return nil
 	}
-	url := fmt.Sprintf("%s/%s/releases/download/%s/%s", c.Base, c.Repo, v, name)
 	resp, err := hc.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("download %s: %w", name, err)

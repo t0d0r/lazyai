@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"lazyai/internal/agent"
+	"lazyai/internal/update"
 )
 
 func runCLI(args ...string) (int, string, string) {
@@ -187,5 +188,27 @@ func TestParsePermute(t *testing.T) {
 	pos, err = f.parse([]string{"--dir", "/x", "claude", "--model", "m"}, false)
 	if err != nil || *dir != "/x" || strings.Join(pos, " ") != "claude --model m" {
 		t.Errorf("launch: %v %v dir=%q", pos, err, *dir)
+	}
+}
+
+func TestBrewTarget(t *testing.T) {
+	v := func(s string) update.Version { x, _ := update.Parse(s); return x }
+	cur, latest := v("v0.9.0"), v("v0.10.0")
+	for _, tc := range []struct {
+		tap    string
+		err    error
+		want   string
+		inNote string
+	}{
+		{"v0.10.0", nil, "v0.10.0", ""},
+		{"v0.9.0", nil, "v0.9.0", "the Homebrew tap still has v0.9.0"},
+		{"v0.8.0", nil, "v0.9.0", "run lazyai update again later"},
+		{"v0.9.5", nil, "v0.9.5", "brew upgrade installs v0.9.5"},
+		{"", errors.New("404"), "v0.10.0", "could not read the Homebrew formula (404)"},
+	} {
+		got, note := brewTarget(cur, latest, v(tc.tap), tc.err)
+		if got.String() != tc.want || (tc.inNote == "") != (note == "") || !strings.Contains(note, tc.inNote) {
+			t.Errorf("tap %s: target %s, note %q", tc.tap, got, note)
+		}
 	}
 }

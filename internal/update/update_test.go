@@ -211,3 +211,42 @@ func TestInstallBinary(t *testing.T) {
 		t.Error("installed for a platform without a release file")
 	}
 }
+
+func TestFormulaVersion(t *testing.T) {
+	for _, tc := range []struct {
+		rb   string
+		want Version
+		ok   bool
+	}{
+		{`  url "https://github.com/t0d0r/lazyai/archive/refs/tags/v0.10.0.tar.gz"`, Version{0, 10, 0}, true},
+		{"  url \"https://example/lazyai-1.2.3.tar.gz\"\n  version \"1.2.4\"", Version{1, 2, 4}, true},
+		{`  url "https://github.com/t0d0r/lazyai.git", branch: "main"`, Version{}, false},
+		{`  version "dev"`, Version{}, false},
+	} {
+		v, err := FormulaVersion([]byte(tc.rb))
+		if (err == nil) != tc.ok || v != tc.want {
+			t.Errorf("FormulaVersion(%q) = %v, %v", tc.rb, v, err)
+		}
+	}
+}
+
+func TestTapVersion(t *testing.T) {
+	formula := "class Lazyai < Formula\n  url \"https://github.com/t0d0r/lazyai/archive/refs/tags/v0.9.0.tar.gz\"\nend\n"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/t0d0r/homebrew-tap/raw/HEAD/Formula/lazyai.rb" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Write([]byte(formula))
+	}))
+	defer srv.Close()
+	c := New()
+	c.Base = srv.URL
+	if v, err := c.TapVersion(); err != nil || v != (Version{0, 9, 0}) {
+		t.Fatalf("TapVersion() = %v, %v", v, err)
+	}
+	c.Tap = "t0d0r/missing"
+	if _, err := c.TapVersion(); err == nil {
+		t.Error("TapVersion() of a missing tap succeeded")
+	}
+}
