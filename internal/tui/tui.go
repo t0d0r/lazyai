@@ -3,6 +3,7 @@
 package tui
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -45,7 +46,17 @@ type (
 	actionMsg struct {
 		text string
 		err  error
+		// launched is the tmux session a successful launch created; the
+		// list selects that agent once discovery finds it.
+		launched string
 	}
+	flashEndMsg struct{}
+)
+
+// Launch feedback (specs/tui.md, Launch feedback).
+const (
+	flashTime   = 3 * time.Second  // how long a launched agent's row is yellow
+	pendingTime = 15 * time.Second // how long to look for it in the lists
 )
 
 // Left-hand list panels. focusMain is the main panel on the right.
@@ -106,6 +117,7 @@ const (
 	popupMenu
 	popupConfirm
 	popupInput
+	popupLaunchErr
 )
 
 type inputKind int
@@ -194,6 +206,14 @@ type model struct {
 
 	screen    screenMsg // last capture of the selected agent's pane
 	capturing bool
+
+	// pending is a launched session to select when it appears, until
+	// pendingUntil; flashKey is the agent row shown yellow until flashUntil.
+	pending      string
+	pendingUntil time.Time
+	flashKey     string
+	flashUntil   time.Time
+	launchErr    *tmux.ExitError // shown by popupLaunchErr
 }
 
 func newModel(opts Options) model {
@@ -245,19 +265,34 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.all = msg.agents
 		m.watcher.Update(m.all, m.updated)
 		m.regroup()
-		if after, _ := m.selected(); after.Key() != before.Key() {
-			return m, m.selectionChanged()
+		var flash tea.Cmd
+		if m.pending != "" {
+			flash = m.selectPending(m.updated)
 		}
+		if after, _ := m.selected(); after.Key() != before.Key() {
+			return m, tea.Batch(m.selectionChanged(), flash)
+		}
+		return m, flash
+	case flashEndMsg:
+		// Only redraws: the row style checks flashUntil.
 	case screenMsg:
 		m.capturing = false
 		if a, ok := m.selected(); ok && a.TmuxPane == msg.pane && m.mode != layoutLists {
 			m.screen = msg
 		}
 	case actionMsg:
-		if msg.err != nil {
+		var exitErr *tmux.ExitError
+		switch {
+		case errors.As(msg.err, &exitErr):
+			m.setMsg(msg.err.Error()+" (output shown; up in n brings the line back)", true)
+			m.launchErr, m.popup = exitErr, popupLaunchErr
+		case msg.err != nil:
 			m.setMsg(msg.err.Error(), true)
-		} else {
+		default:
 			m.setMsg(msg.text, false)
+			if msg.launched != "" {
+				m.pending, m.pendingUntil = msg.launched, time.Now().Add(pendingTime)
+			}
 		}
 		return m, m.refresh()
 	case tea.MouseMsg:
@@ -267,7 +302,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateFilter(msg)
 		}
 		switch m.popup {
-		case popupHelp:
+		case popupHelp, popupLaunchErr:
 			m.popup = popupNone
 			return m, nil
 		case popupMenu:
@@ -362,6 +397,33 @@ func (m *model) refresh() tea.Cmd {
 
 func (m *model) setMsg(s string, isErr bool) {
 	m.msg, m.msgErr = s, isErr
+}
+
+// selectPending selects the agent of the launched session m.pending in
+// its list, focuses that list and flashes the row. It gives up after
+// pendingUntil.
+func (m *model) selectPending(now time.Time) tea.Cmd {
+	for i := range numLists {
+		for r, a := range m.lists[i].rows {
+			if a.TmuxSession != m.pending {
+				continue
+			}
+			m.pending = ""
+			m.lists[i].cursor = r
+			m.focus, m.lastList = i, i
+			m.flashKey, m.flashUntil = a.Key(), now.Add(flashTime)
+			return tea.Tick(flashTime, func(time.Time) tea.Msg { return flashEndMsg{} })
+		}
+	}
+	if now.After(m.pendingUntil) {
+		m.pending = ""
+	}
+	return nil
+}
+
+// flashing reports whether a's row is shown yellow as just launched.
+func (m model) flashing(a agent.Agent, now time.Time) bool {
+	return m.flashKey != "" && a.Key() == m.flashKey && now.Before(m.flashUntil)
 }
 
 func (m *model) focusList(i int) tea.Cmd {
@@ -596,7 +658,7 @@ func (m model) action(key string) (tea.Model, tea.Cmd) {
 		case "a":
 			session := a.TmuxSession
 			return m, tea.ExecProcess(tmux.AttachCmd(session), func(err error) tea.Msg {
-				return actionMsg{"back from " + session, err}
+				return actionMsg{text: "back from " + session, err: err}
 			})
 		case "p":
 			if a.TmuxClients > 0 {
@@ -669,7 +731,7 @@ func (m model) updateConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	m.setMsg(fmt.Sprintf("stopping %s %d ...", a.Kind, a.PID), false)
 	return m, func() tea.Msg {
 		err := agent.Stop(a, force, agent.StopTimeout)
-		return actionMsg{fmt.Sprintf("%s %s %d", verb, a.Kind, a.PID), err}
+		return actionMsg{text: fmt.Sprintf("%s %s %d", verb, a.Kind, a.PID), err: err}
 	}
 }
 
@@ -720,7 +782,7 @@ func (m *model) submit(text string) tea.Cmd {
 		a := m.target
 		return func() tea.Msg {
 			err := tmux.Send(a.TmuxPane, text)
-			return actionMsg{fmt.Sprintf("sent %d chars to %s", len([]rune(text)), a.TmuxSession), err}
+			return actionMsg{text: fmt.Sprintf("sent %d chars to %s", len([]rune(text)), a.TmuxSession), err: err}
 		}
 	}
 	// Every line goes into the history, also one that does not parse, so
@@ -740,7 +802,10 @@ func (m *model) submit(text string) tea.Cmd {
 	}
 	return func() tea.Msg {
 		session, err := agent.Launch(spec.Kind, spec.Dir, spec.Name, spec.Args)
-		return actionMsg{"launched " + session + " (select it and press a to attach)", err}
+		if err != nil {
+			return actionMsg{err: err}
+		}
+		return actionMsg{text: "launched " + session + " (a attaches)", launched: session}
 	}
 }
 

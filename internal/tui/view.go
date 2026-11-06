@@ -28,6 +28,10 @@ var (
 	errStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true)
 	barStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))
 	keyStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("4")).Bold(true)
+	// A just-launched agent's row, for flashTime: yellow, and with a
+	// yellow background while it is the selected row.
+	flashStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Bold(true)
+	flashSelStyle = lipgloss.NewStyle().Background(lipgloss.Color("3")).Foreground(lipgloss.Color("0")).Bold(true)
 )
 
 // minEvenListH is the smallest list panel (borders plus 3 rows) for which
@@ -161,6 +165,8 @@ func (m model) View() string {
 		body = center(body, m.confirmPopup(), m.width, l.bodyH)
 	case popupInput:
 		body = center(body, m.inputPopup(), m.width, l.bodyH)
+	case popupLaunchErr:
+		body = center(body, m.launchErrPopup(), m.width, l.bodyH)
 	}
 	return body + "\n" + m.footer()
 }
@@ -311,6 +317,10 @@ func (m model) listPanel(i int, l layout) string {
 		}
 		row := spread(prefix+lbl+suffix, right, inner)
 		switch {
+		case m.flashing(a, now) && r == lst.cursor:
+			row = flashSelStyle.Render(ansi.Strip(row))
+		case m.flashing(a, now):
+			row = flashStyle.Render(ansi.Strip(row))
 		case r == lst.cursor && focused:
 			row = selStyle.Render(row)
 		case r == lst.cursor:
@@ -600,6 +610,22 @@ func (m model) menuPopup() string {
 		title = fmt.Sprintf("%s %d", a.Kind, a.PID)
 	}
 	return popupBox(title, lines, min(90, m.width-4))
+}
+
+// launchErrPopup shows the output of a launched command that exited at
+// once, so the reason is readable after its tmux session is gone.
+func (m model) launchErrPopup() string {
+	e := m.launchErr
+	w := min(100, m.width-4)
+	lines := []string{errStyle.Render(fmt.Sprintf("%s exited right after start, status %d", e.Command, e.Status)), ""}
+	if len(e.Output) == 0 {
+		lines = append(lines, dimStyle.Render("(no output)"))
+	}
+	for _, l := range e.Output {
+		lines = append(lines, ansi.Truncate(l, w-4, ".."))
+	}
+	lines = append(lines, "", dimStyle.Render("any key closes; up in n brings the line back"))
+	return popupBox("Launch failed", lines, w)
 }
 
 func (m model) confirmPopup() string {

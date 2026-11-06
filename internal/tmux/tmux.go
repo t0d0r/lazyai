@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -129,12 +130,87 @@ func Launch(session, dir string, argv []string) error {
 		}
 		cmd = []string{env, path}
 	}
-	args := append([]string{"new-session", "-d", "-s", session, "-c", dir, "--"}, cmd...)
-	if out, err := exec.Command("tmux", args...).CombinedOutput(); err != nil {
+	// remain-on-exit, set in the same tmux call so no exit can come
+	// first, keeps the pane and its output if the command dies at once.
+	// The explicit target matters inside tmux, where an untargeted
+	// set-option would change the window lazyai runs in.
+	args := append([]string{"new-session", "-d", "-P", "-F", "#{pane_id}", "-s", session, "-c", dir, "--"}, cmd...)
+	args = append(args, ";", "set-option", "-w", "-t", "="+session+":", "remain-on-exit", "on")
+	out, err := exec.Command("tmux", args...).CombinedOutput()
+	if err != nil {
 		return fmt.Errorf("tmux new-session: %s", strings.TrimSpace(string(out)))
+	}
+	pane := strings.TrimSpace(string(out))
+	if err := watchStart(session, pane, filepath.Base(argv[0]), LaunchWatch); err != nil {
+		return err
 	}
 	SetStatusHint(session, false)
 	return nil
+}
+
+// LaunchWatch is how long Launch waits for a new command to fail.
+var LaunchWatch = 1500 * time.Millisecond
+
+// launchLines is how many of the last output lines an ExitError keeps.
+const launchLines = 20
+
+// ExitError is a launched command that ended within LaunchWatch. Its
+// session is gone; Output is what it printed, the last launchLines lines.
+type ExitError struct {
+	Command string
+	Status  int
+	Output  []string
+}
+
+func (e *ExitError) Error() string {
+	msg := fmt.Sprintf("%s exited right after start (status %d)", e.Command, e.Status)
+	if n := len(e.Output); n > 0 {
+		msg += ": " + e.Output[n-1]
+	}
+	return msg
+}
+
+// watchStart waits up to d for the pane to die. A dead pane's output and
+// exit status become an ExitError and its session is killed; a pane
+// still running gets remain-on-exit off, so the session ends with the
+// command as before.
+func watchStart(session, pane, command string, d time.Duration) error {
+	for end := time.Now().Add(d); ; {
+		out, err := exec.Command("tmux", "display-message", "-p", "-t", pane,
+			"#{pane_dead} #{pane_dead_status}").Output()
+		if err != nil {
+			return nil // gone already; nothing left to read
+		}
+		var dead, status int
+		fmt.Sscan(string(out), &dead, &status)
+		if dead == 1 {
+			text, _ := exec.Command("tmux", "capture-pane", "-p", "-J", "-S", "-", "-t", pane).Output()
+			exec.Command("tmux", "kill-session", "-t", "="+session).Run()
+			return &ExitError{Command: command, Status: status, Output: deadOutput(string(text))}
+		}
+		if time.Now().After(end) {
+			exec.Command("tmux", "set-option", "-w", "-t", pane, "remain-on-exit", "off").Run()
+			return nil
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+// deadOutput is the text of a dead pane without tmux's "Pane is dead"
+// line and blank lines, the last launchLines lines.
+func deadOutput(text string) []string {
+	var lines []string
+	for _, l := range strings.Split(text, "\n") {
+		l = strings.TrimRight(l, " ")
+		if l == "" || strings.HasPrefix(l, "Pane is dead") {
+			continue
+		}
+		lines = append(lines, l)
+	}
+	if len(lines) > launchLines {
+		lines = lines[len(lines)-launchLines:]
+	}
+	return lines
 }
 
 // AttachCmd returns the command that puts the terminal on session. Inside

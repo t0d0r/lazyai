@@ -1,6 +1,7 @@
 package tmux
 
 import (
+	"errors"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -110,5 +111,56 @@ func TestParsePanes(t *testing.T) {
 	}
 	if p := got[1]; p.TTY != "pts/3" || p.Clients != 0 || !p.LastAttached.IsZero() {
 		t.Errorf("never attached pane: %+v", p)
+	}
+}
+
+// TestLaunchEarlyExit launches commands that die at once and one that
+// keeps running, in real tmux sessions on the default server.
+func TestLaunchEarlyExit(t *testing.T) {
+	if !Available() {
+		t.Skip("tmux not installed")
+	}
+	defer func(d time.Duration) { LaunchWatch = d }(LaunchWatch)
+	LaunchWatch = 500 * time.Millisecond
+	name := func(s string) string { return FreeSessionName("test-" + s + "-" + time.Now().Format("150405.000")) }
+
+	session := name("exit")
+	err := Launch(session, t.TempDir(), []string{"sh", "-c", "echo boom; echo why >&2; exit 3"})
+	var e *ExitError
+	if !errors.As(err, &e) || e.Command != "sh" || e.Status != 3 || strings.Join(e.Output, "|") != "boom|why" {
+		t.Fatalf("early exit: %#v (%v)", e, err)
+	}
+	if !strings.Contains(err.Error(), "sh exited right after start (status 3): why") {
+		t.Errorf("message: %v", err)
+	}
+	if HasSession(session) {
+		exec.Command("tmux", "kill-session", "-t", "="+session).Run()
+		t.Error("session of a dead command left behind")
+	}
+
+	// A single word runs through env, whose own error is kept.
+	if err := Launch(name("env"), t.TempDir(), []string{"false"}); !errors.As(err, &e) || e.Status != 1 {
+		t.Errorf("false: %v", err)
+	}
+
+	session = name("run")
+	if err := Launch(session, t.TempDir(), []string{"cat"}); err != nil {
+		t.Fatal(err)
+	}
+	defer exec.Command("tmux", "kill-session", "-t", "="+session).Run()
+	opt, _ := exec.Command("tmux", "show-options", "-w", "-v", "-t", "="+session+":", "remain-on-exit").Output()
+	if strings.TrimSpace(string(opt)) != "off" {
+		t.Errorf("running command: remain-on-exit %q, want off", opt)
+	}
+}
+
+func TestDeadOutput(t *testing.T) {
+	text := "a\n\nb  \n" + strings.Repeat("x\n", 30) + "\nPane is dead (status 1, Fri Nov  6 23:35:28 2026)\n"
+	got := deadOutput(text)
+	if len(got) != launchLines || got[0] != "x" {
+		t.Errorf("deadOutput: %d lines, first %q", len(got), got[0])
+	}
+	if got := deadOutput("only\n\nPane is dead (status 2)\n"); strings.Join(got, "|") != "only" {
+		t.Errorf("deadOutput: %q", got)
 	}
 }

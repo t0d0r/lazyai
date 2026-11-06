@@ -340,6 +340,24 @@ it:
   holds only what was chosen on purpose. The list in use, filters and
   helpers are not saved: they belong to what is being looked at now.
 
+Launch feedback (`n`):
+- Failure before the start (unknown command, not a directory, session
+  taken): the message line shows the error, as before.
+- Early exit (control.md, Launch): a `Launch failed` popup shows
+  `KIND exited right after start, status N` and the command's last
+  output lines (up to 20, cut at the popup width); any key closes it.
+  The message line keeps the one-line form. Up in `n` brings the line
+  back to fix it.
+- Success: the message line says `launched SESSION (a attaches)`. For up
+  to 15 s lazyai looks for an agent in that tmux session on each
+  refresh; when one appears it is selected, its list gets the focus and
+  its row is yellow for 3 s (yellow background while selected, yellow
+  text otherwise), then normal. A launch whose command discovery does
+  not list as an agent selects nothing.
+  Decision: select and flash instead of only a message, because a new
+  agent lands somewhere in a long list and the next step is usually to
+  attach to it.
+
 Launch input: DIR may use `~` and is relative to the directory lazyai was
 started in. Input popups treat both terminal backspace encodings (DEL and
 ctrl+h) as backspace.

@@ -53,6 +53,22 @@
   with characters outside `[A-Za-z0-9_-]` replaced by `-`. If taken, `-2`,
   `-3` ... is appended.
 - The tmux session ends when the agent exits.
+- Early exit: the session is created with `remain-on-exit on` in the
+  same tmux call (`new-session ... ; set-option -w -t =SESSION:
+  remain-on-exit on`, targeted so that inside tmux the option does not
+  land on lazyai's own window). For 1.5 s (tmux.LaunchWatch) lazyai
+  checks `#{pane_dead}` every 100 ms:
+  - pane dead: read its whole output (`capture-pane -p -J -S -`), kill
+    the session and fail with `KIND exited right after start (status N):
+    LAST LINE`, keeping the last 20 non-empty lines without tmux's
+    `Pane is dead` line (tmux.ExitError). The CLI prints the message and
+    exits 1.
+  - still running: set `remain-on-exit off`, so the session ends with
+    the agent as before.
+  Reason: without it a command that fails at once (unknown option,
+  missing login, bad arguments) takes its session and its error message
+  with it, and the launch looks successful. A command that fails later
+  than 1.5 s is not caught; its session ends as before.
 
 ## Attach
 

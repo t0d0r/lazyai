@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"lazyai/internal/agent"
+	"lazyai/internal/tmux"
 )
 
 func key(s string) tea.KeyMsg {
@@ -937,5 +938,41 @@ func TestScreenResize(t *testing.T) {
 	// Other layouts leave the size alone and say where it works.
 	if mm := press(loaded(120, 60), "-"); mm.screenTopPct != screenTopDefault || !strings.Contains(mm.msg, "screen layout") {
 		t.Errorf("- in split: top %d%%, msg %q", mm.screenTopPct, mm.msg)
+	}
+}
+
+func TestLaunchFeedback(t *testing.T) {
+	// A launch that dies at once shows its output in a popup.
+	m := loaded(120, 30)
+	next, _ := m.Update(actionMsg{err: &tmux.ExitError{Command: "claude", Status: 1, Output: []string{"error: unknown option '--bogus'"}}})
+	m = next.(model)
+	if m.popup != popupLaunchErr || !m.msgErr || !strings.Contains(m.msg, "claude exited right after start (status 1): error: unknown option") {
+		t.Fatalf("popup %d msg %q", m.popup, m.msg)
+	}
+	if v := ansi.Strip(m.View()); !strings.Contains(v, "Launch failed") || !strings.Contains(v, "unknown option '--bogus'") {
+		t.Errorf("launch error popup not shown:\n%s", v)
+	}
+	if m = press(m, "x"); m.popup != popupNone {
+		t.Errorf("a key does not close the popup: %d", m.popup)
+	}
+
+	// A launched session is selected, focused and yellow once it shows up.
+	m = press(loaded(120, 30), "2")
+	next, _ = m.Update(actionMsg{text: "launched lazyai-c", launched: "lazyai-c"})
+	m = next.(model)
+	next, _ = m.Update(agentsMsg{agents: sample()})
+	m = next.(model)
+	a, _ := m.selected()
+	if m.focus != listAgents || a.TmuxSession != "lazyai-c" || m.pending != "" {
+		t.Fatalf("after launch: focus %d selected %q pending %q", m.focus, a.TmuxSession, m.pending)
+	}
+	now := time.Now()
+	if !m.flashing(a, now) || m.flashing(a, now.Add(flashTime+time.Second)) {
+		t.Error("launched row does not flash for flashTime")
+	}
+	// A session that never appears is given up after pendingTime.
+	m.pending, m.pendingUntil = "lazyai-none", now.Add(-time.Second)
+	if m.selectPending(now); m.pending != "" {
+		t.Error("pending launch not given up")
 	}
 }

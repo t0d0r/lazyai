@@ -172,3 +172,6 @@
 - [ ] stop for container agents through docker (docker exec CTR kill),
       if it is wanted; refused for now (specs/control.md)
 - [ ] try a real Claude Code in a container and a VS Code devcontainer
+- [x] launch feedback: an agent that exits at once shows its output in
+      a popup; a launched agent is selected and its row is yellow for 3 s
+      (specs/control.md Launch, specs/tui.md Launch feedback)
