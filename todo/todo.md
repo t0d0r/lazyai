@@ -118,6 +118,11 @@
       (specs/tui.md, specs/discovery.md)
 - [x] release v0.8.0 with the focus key change and the parent chain
       (specs/release.md)
+- [ ] v0.9.0 follow-up: Homebrew tap still at 0.8.0, README install
+      examples at v0.8.0, no release session note (specs/release.md)
+- [ ] `lazyai update` with homebrew: compare with the tap formula
+      version and say "released, not yet in the Homebrew tap" instead
+      of offering an upgrade brew cannot do (specs/update.md)
 - [x] dashboard layouts: `v` cycles split, detail (compact lists, wide
       main panel) and lists (no main panel) (specs/tui.md, Layouts)
 - [ ] try the layouts in a real terminal: switch while resizing, mouse
