@@ -86,7 +86,7 @@ var (
 		"lists left, main panel right",
 		"compact lists, wide main panel",
 		"main panel hidden; v shows it",
-		"lists and tabs on top, Screen below",
+		"lists and tabs on top, Screen below (+ / - resize)",
 	}
 )
 
@@ -159,6 +159,9 @@ type model struct {
 	// panel of the screen layout, which shows beside the main panel.
 	screenScroll int
 	screenFollow bool
+	// screenTopPct is the share of the body, in percent, that the top
+	// row of the screen layout takes; the Screen panel gets the rest.
+	screenTopPct int
 	showHelpers  bool
 	filters      [numLists]string // text a list's rows must match, "" for all
 	filtering    bool             // keys go to the filter of lastList
@@ -194,7 +197,7 @@ func newModel(opts Options) model {
 	if opts.Interval <= 0 {
 		opts.Interval = 2 * time.Second
 	}
-	return model{opts: opts, watcher: watch.New(), loading: true, follow: true, screenFollow: true, width: 120, height: 30,
+	return model{opts: opts, watcher: watch.New(), loading: true, follow: true, screenFollow: true, screenTopPct: screenTopDefault, width: 120, height: 30,
 		hist: loadHistory(opts.HistoryFile)}
 }
 
@@ -455,6 +458,17 @@ func (m *model) scrollMain(d int) {
 	m.follow = m.scroll == maxScroll
 }
 
+// resizeScreen moves the top row of the screen layout by d percent of the
+// body, so the Screen panel below grows when d is negative.
+func (m *model) resizeScreen(d int) {
+	if m.mode != layoutScreen {
+		m.setMsg("+ and - resize the Screen panel in the screen layout", false)
+		return
+	}
+	m.screenTopPct = max(min(m.screenTopPct+d, screenTopHigh), screenTopLow)
+	m.setMsg(fmt.Sprintf("Screen %d%%, top row %d%% (+ / - resize)", 100-m.screenTopPct, m.screenTopPct), false)
+}
+
 func (m model) updateKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 	inMain := m.focus == focusMain || m.focus == focusScreen
@@ -492,6 +506,10 @@ func (m model) updateKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		} else if m.filters[m.focus] != "" {
 			return m, m.setFilter(m.focus, "")
 		}
+	case "+", "=":
+		m.resizeScreen(-screenTopStep)
+	case "-":
+		m.resizeScreen(screenTopStep)
 	case "]":
 		return m, m.setTab(m.tab + 1)
 	case "[":

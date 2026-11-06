@@ -4,8 +4,8 @@
 
 - Fourth layout on `v`: split -> detail -> lists -> screen -> split
   (specs/tui.md, Layouts, Screen).
-  - Top row (two fifths of the body, at least 8 rows): the status panel
-    and one list panel left (three fifths of the width, 32 to 90
+  - Top row (20% of the body at start, at least 8 rows): the status
+    panel and one list panel left (three fifths of the width, 32 to 90
     columns, full rows), with the lists as tabs in its title
     `1 Agents - 2 Services - 3 Models`; the main panel right with Info,
     Processes and Stats (] / [ skip Screen).
@@ -16,6 +16,10 @@
     and page keys scroll the focused panel; esc returns to the list;
     mouse click focuses, the wheel scrolls the panel under it.
   - Short screens: the status panel is dropped before the list.
+  - Screen panel 80% of the body at start (was 60%). `+` / `=` grow it
+    and `-` shrinks it by 10% a press, top row kept within 10-70%; the
+    message line shows the split. Not saved between runs. Covered by
+    TestScreenResize.
 - Model: focusScreen, screenScroll / screenFollow, screenShown() for
   capture; layout gains mainH, screenY, screenH and tabbed.
 - Help popup text shortened to `layout: split, detail, lists, screen`
@@ -37,7 +41,10 @@
 
 ## Open
 
-- Not released; the installed v0.9.0 has three layouts.
+- Not released; the installed v0.9.0 has three layouts. v0.10.0 is
+  prepared (README install examples) but not tagged.
+- Homebrew tap moved to 0.9.0 and pushed.
+- Possible: remember the Screen size between runs.
 - Not tried by hand: resize while in the screen layout.
 
 ## Files
@@ -52,5 +59,5 @@ reads screen layout and the selected agent's pane fills the bottom.
 
 ## Next step
 
-Release the screen layout together with the Homebrew v0.9.0 follow-up
-(specs/release.md).
+Tag and release v0.10.0 with the screen layout, then move the Homebrew
+tap to 0.10.0 (specs/release.md).

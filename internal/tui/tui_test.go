@@ -905,3 +905,32 @@ func TestLayoutScreen(t *testing.T) {
 		t.Errorf("v from Screen: layout %v focus %d", mm.mode, mm.focus)
 	}
 }
+
+func TestScreenResize(t *testing.T) {
+	m := inLayout(loaded(120, 60), layoutScreen)
+	l := m.layout()
+	if want := l.bodyH * screenTopDefault / 100; l.mainH != want {
+		t.Fatalf("top row %d rows, want %d (%d%% of %d)", l.mainH, want, screenTopDefault, l.bodyH)
+	}
+	// + grows the Screen panel, - shrinks it, within the limits.
+	if mm := press(m, "-"); mm.screenTopPct != screenTopDefault+screenTopStep || mm.layout().screenH >= l.screenH {
+		t.Errorf("-: top %d%%, Screen %d rows (was %d)", mm.screenTopPct, mm.layout().screenH, l.screenH)
+	}
+	if mm := press(m, "+"); mm.screenTopPct != screenTopLow || mm.layout().screenH <= l.screenH {
+		t.Errorf("+: top %d%%, Screen %d rows (was %d)", mm.screenTopPct, mm.layout().screenH, l.screenH)
+	}
+	if mm := press(m, "+", "=", "+"); mm.screenTopPct != screenTopLow {
+		t.Errorf("+ past the limit: top %d%%", mm.screenTopPct)
+	}
+	mm := m
+	for range 10 {
+		mm = press(mm, "-")
+	}
+	if mm.screenTopPct != screenTopHigh || mm.layout().screenH < screenMinH {
+		t.Errorf("- past the limit: top %d%%", mm.screenTopPct)
+	}
+	// Other layouts leave the size alone and say where it works.
+	if mm := press(loaded(120, 60), "-"); mm.screenTopPct != screenTopDefault || !strings.Contains(mm.msg, "screen layout") {
+		t.Errorf("- in split: top %d%%, msg %q", mm.screenTopPct, mm.msg)
+	}
+}

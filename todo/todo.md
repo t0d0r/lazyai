@@ -122,6 +122,8 @@
       examples moved on with v0.10.0 (specs/release.md)
 - [x] screen layout on v: lists as tabs and Info / Processes / Stats on
       top, Screen across the whole width below (specs/tui.md, Layouts)
+- [x] screen layout: Screen panel at 80% of the height, + / - resize it
+      (specs/tui.md, Layouts)
 - [~] release the screen layout as v0.10.0 (specs/release.md)
 - [ ] `lazyai update` with homebrew: compare with the tap formula
       version and say "released, not yet in the Homebrew tap" instead

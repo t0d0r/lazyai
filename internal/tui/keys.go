@@ -22,6 +22,7 @@ var keyHelp = []bindingGroup{
 		{"pgdn / pgup", "scroll the main panel a page"},
 		{"] / [", "next / previous tab"},
 		{layoutKey, "layout: split, detail, lists, screen"},
+		{"+ / -", "grow / shrink the Screen panel (screen layout)"},
 		{"/", "filter the list; enter keeps it, esc clears it"},
 		{"mouse", "click to select, wheel to move or scroll"},
 	}},

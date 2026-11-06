@@ -170,8 +170,15 @@ screen, 120x30: lists as tabs and the other tabs on top, Screen below
     arrives then is dropped; leaving lists captures again, so the Screen
     tab never shows an old screen.
 - Screen: one row on top and the Screen panel below.
-  - Top row: two fifths of the body height, at least 8 rows, leaving
-    the Screen panel at least 5. Left: the status panel and one list
+  - Top row: 20% of the body height at start, at least 8 rows, leaving
+    the Screen panel at least 5. `+` (or `=`) grows the Screen panel and
+    `-` shrinks it, by 10% of the body a press, with the top row kept
+    between 10% and 70%; the message line shows the new split
+    (`Screen 90%, top row 10% (+ / - resize)`). Outside the screen
+    layout the keys only say where they work. The size is not saved
+    between runs. Decision: the Screen panel gets most of the height by
+    default, because the pane is what the layout is for; the top row
+    still shows a few rows of the list and the Info lines. Left: the status panel and one list
     panel, three fifths of the width (at least 32 columns or half of a
     narrow screen, at most 90) with full rows. The list panel's title
     holds the three lists as tabs (`1 Agents - 2 Services - 3 Models`),

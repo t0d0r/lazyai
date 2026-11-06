@@ -41,13 +41,18 @@ const (
 	navMaxW = 32
 )
 
-// Screen layout: the top row takes this share of the body, at least
-// screenTopMin rows, and the Screen panel below keeps at least
-// screenMinH rows.
+// Screen layout: the top row takes screenTopPct percent of the body
+// (screenTopDefault at start, + and - move it by screenTopStep between
+// screenTopLow and screenTopHigh), at least screenTopMin rows, and the
+// Screen panel below keeps at least screenMinH rows.
 const (
-	screenTopMin = 8
-	screenMinH   = 5
-	screenLeftW  = 90 // widest list panel in the screen layout
+	screenTopMin     = 8
+	screenMinH       = 5
+	screenLeftW      = 90 // widest list panel in the screen layout
+	screenTopDefault = 20
+	screenTopStep    = 10
+	screenTopLow     = 10
+	screenTopHigh    = 70
 )
 
 // layout is where each panel sits. Mouse handling uses it too.
@@ -111,7 +116,7 @@ func (m model) screenLayout(l layout) layout {
 	l.tabbed = true
 	l.leftW = max(min(m.width*3/5, screenLeftW), min(32, m.width/2))
 	l.rightW = max(m.width-l.leftW, 10)
-	top := max(l.bodyH*2/5, screenTopMin)
+	top := max(l.bodyH*m.screenTopPct/100, screenTopMin)
 	top = max(min(top, l.bodyH-screenMinH), min(screenMinH, l.bodyH))
 	l.mainH = top
 	l.screenY, l.screenH = top, l.bodyH-top
