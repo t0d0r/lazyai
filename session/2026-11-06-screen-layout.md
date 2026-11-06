@@ -24,9 +24,10 @@
     and `-` shrinks it by 10% a press, top row kept within 10-70%; the
     message line shows the split. Not saved between runs. Covered by
     TestScreenResize.
-- Screen panel title: `Screen SESSION - NAME - DIR/DIR`, NAME being
-  the Claude session name when it differs from the tmux session
-  (nameHint), DIR/DIR the last two directories of the cwd (lastDirs). Checked
+- Screen panel title: `Screen SESSION - DIR/DIR - NAME`, DIR/DIR the
+  last two directories of the cwd (lastDirs), NAME the Claude session
+  name when it differs from the tmux session (nameHint). NAME is last
+  since long free-text names get cut at the border. Checked
   live with a long Cyrillic name: cut cleanly at the border.
 - Saved settings: S and the x menu item `save layout settings for the
   next start` write layout, tab and Screen share to

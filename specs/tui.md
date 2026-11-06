@@ -193,10 +193,11 @@ screen, 120x30: lists as tabs and the other tabs on top, Screen below
     selected agent's tmux pane as the Screen tab does, captured on every
     refresh whatever tab is shown, and follows the bottom like a log
     until scrolled. Its title names the tmux session, then the
-    Claude session name when it differs, then the last two directories
-    of the working directory
-    (`Screen claude-ticket-149856 - fix the backup cron - clients/hosts`),
-    cut at the panel's width. The name is often the only note of what the pane is
+    last two directories of the working directory, then the Claude
+    session name when it differs
+    (`Screen claude-ticket-149856 - clients/hosts - fix the backup cron`),
+    cut at the panel's width. The name goes last because it can be a
+    long free-text note; the short directory stays visible. The name is often the only note of what the pane is
     for, and the list row drops it when the row is too narrow.
   - Focus: tab / shift+tab cycle the list, the main panel and the Screen
     panel. j / k, g / G and the page keys scroll the focused panel; esc

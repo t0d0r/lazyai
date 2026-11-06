@@ -129,8 +129,8 @@
 - [x] S and an x menu item save layout, tab and Screen size to
       settings.json for the next start (specs/tui.md, Saved settings)
 - [x] release the screen layout as v0.10.0 (specs/release.md)
-- [x] Screen panel title shows the Claude session name and the last two
-      directories after the tmux session (specs/tui.md, Layouts)
+- [x] Screen panel title shows the last two directories and the Claude
+      session name after the tmux session (specs/tui.md, Layouts)
 - [x] `lazyai update` with homebrew: compare with the tap formula
       version and say "released, not yet in the Homebrew tap" instead
       of offering an upgrade brew cannot do (specs/update.md)
