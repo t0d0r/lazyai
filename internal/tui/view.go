@@ -120,9 +120,7 @@ func (m model) screenLayout(l layout) layout {
 	top = max(min(top, l.bodyH-screenMinH), min(screenMinH, l.bodyH))
 	l.mainH = top
 	l.screenY, l.screenH = top, l.bodyH-top
-	if top < l.statusH+screenMinH-1 {
-		l.statusH = 0 // too short: the list keeps the room
-	}
+	l.statusH = 0 // the list panel's title and bottom border carry the status
 	l.listY[m.lastList] = l.statusH
 	l.listH[m.lastList] = top - l.statusH
 	return l
@@ -168,6 +166,15 @@ func (m model) View() string {
 }
 
 func (m model) statusPanel(l layout) string {
+	line, right := m.statusText(l.leftW - 2)
+	return box(titleStyle.Render("lazyai"), []string{spread(line, dimStyle.Render(right), l.leftW-2)},
+		l.leftW, l.statusH, false, m.mode.String()+" layout")
+}
+
+// statusText is the status line in two parts, the counts and the memory
+// and clock, in the longest form whose parts fit w cells with one space
+// between them.
+func (m model) statusText(w int) (string, string) {
 	busy, inTmux, attached := 0, 0, 0
 	var shown []agent.Agent
 	for _, a := range m.all {
@@ -185,7 +192,6 @@ func (m model) statusPanel(l layout) string {
 			}
 		}
 	}
-	inner := l.leftW - 2
 	long := fmt.Sprintf("%d running, %d busy", len(shown), busy)
 	short := fmt.Sprintf("%d run, %d busy", len(shown), busy)
 	line, longAtt, shortAtt := long, long, short
@@ -212,12 +218,11 @@ func (m model) statusPanel(l layout) string {
 	right := ""
 	for _, f := range forms {
 		line, right = f[0], f[1]
-		if len(line)+1+len(right) <= inner {
+		if len(line)+1+len(right) <= w {
 			break
 		}
 	}
-	return box(titleStyle.Render("lazyai"), []string{spread(line, dimStyle.Render(right), inner)},
-		l.leftW, l.statusH, false, m.mode.String()+" layout")
+	return line, right
 }
 
 // totalRSS adds the tree memory of agents. An agent that runs below another
@@ -335,7 +340,18 @@ func (m model) listPanel(i int, l layout) string {
 			}
 			tabs = append(tabs, t)
 		}
-		title = strings.Join(tabs, " - ")
+		title = titleStyle.Render("lazyai") + " - " + strings.Join(tabs, " - ")
+		// The status line moves into the bottom border, before the position.
+		room := inner - 2 - len(pos) - 3 - 2 // note padding, " - ", some border
+		if line, right := m.statusText(room - 2); room > 10 {
+			status := line
+			if right != "" {
+				status += " - " + right
+			}
+			if len(status) <= room {
+				pos = strings.TrimSuffix(status+" - "+pos, " - ")
+			}
+		}
 	}
 	if f := m.filters[i]; f != "" || (m.filtering && i == m.lastList) {
 		title += " " + keyStyle.Render("/"+f)

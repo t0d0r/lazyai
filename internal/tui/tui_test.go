@@ -222,7 +222,8 @@ func TestLayoutCycle(t *testing.T) {
 		if !strings.Contains(m.msg, name) {
 			t.Errorf("message %q does not name the %s", m.msg, name)
 		}
-		if s := ansi.Strip(m.statusPanel(m.layout())); !strings.Contains(s, name) {
+		// The screen layout has no status panel; its list panel shows "lazyai".
+		if s := ansi.Strip(m.statusPanel(m.layout())); want != layoutScreen && !strings.Contains(s, name) {
 			t.Errorf("status panel does not show the %s:\n%s", name, s)
 		}
 		if a, _ := m.selected(); a.PID != 2 || m.tab != tabProcesses || m.lastList != listAgents {
@@ -837,8 +838,12 @@ func TestLayoutScreen(t *testing.T) {
 		t.Fatalf("screen layout sizes: %+v", l)
 	}
 	lines := strings.Split(ansi.Strip(m.View()), "\n")
-	if !strings.Contains(lines[l.statusH], "1 Agents - 2 Services - 3 Models") {
-		t.Errorf("list panel title: %q", lines[l.statusH])
+	if l.statusH != 0 || !strings.HasPrefix(lines[0], "╭ lazyai - 1 Agents - 2 Services - 3 Models") {
+		t.Errorf("list panel title: %q", lines[0])
+	}
+	// The status line sits in the list panel's bottom border, before the position.
+	if bottom := lines[l.mainH-1]; !strings.Contains(bottom, " running, ") || !strings.Contains(bottom, " - mem ") || !strings.Contains(bottom, " - 1 of 2 ╯╰") {
+		t.Errorf("list panel bottom border: %q", bottom)
 	}
 	if !strings.Contains(lines[0], "Info - Processes - Stats") || strings.Contains(lines[0], "Screen") {
 		t.Errorf("main panel tabs: %q", lines[0])

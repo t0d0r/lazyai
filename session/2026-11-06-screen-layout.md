@@ -4,8 +4,8 @@
 
 - Fourth layout on `v`: split -> detail -> lists -> screen -> split
   (specs/tui.md, Layouts, Screen).
-  - Top row (20% of the body at start, at least 8 rows): the status
-    panel and one list panel left (three fifths of the width, 32 to 90
+  - Top row (20% of the body at start, at least 8 rows): one list
+    panel left (three fifths of the width, 32 to 90
     columns, full rows), with the lists as tabs in its title
     `1 Agents - 2 Services - 3 Models`; the main panel right with Info,
     Processes and Stats (] / [ skip Screen).
@@ -15,7 +15,11 @@
   - tab / shift+tab: list -> main panel -> Screen panel. j / k, g / G
     and page keys scroll the focused panel; esc returns to the list;
     mouse click focuses, the wheel scrolls the panel under it.
-  - Short screens: the status panel is dropped before the list.
+  - No status panel: the list title reads
+    `lazyai - 1 Agents - 2 Services - 3 Models` and the status line
+    (counts, mem, clock) sits in the list panel's bottom border before
+    `N of M`, in shorter forms when narrow. Gives the list three rows
+    more. statusText() is shared with the status panel.
   - Screen panel 80% of the body at start (was 60%). `+` / `=` grow it
     and `-` shrinks it by 10% a press, top row kept within 10-70%; the
     message line shows the split. Not saved between runs. Covered by
@@ -34,8 +38,8 @@
 ## Decisions
 
 - Screen last in the cycle so the order of the existing layouts stays.
-- The status panel stays on top left (not in the sketch) since every
-  layout shows it; it gives way on short screens.
+- The status panel was dropped from the screen layout: its three rows
+  matter in the short top row, and the list borders hold the same text.
 - One Screen scroll position separate from the main panel's, so
   scrolling Processes does not move the pane.
 

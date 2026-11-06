@@ -124,6 +124,8 @@
       top, Screen across the whole width below (specs/tui.md, Layouts)
 - [x] screen layout: Screen panel at 80% of the height, + / - resize it
       (specs/tui.md, Layouts)
+- [x] screen layout: `lazyai` in the tabbed list title, status line in
+      its bottom border, no status panel (specs/tui.md, Layouts)
 - [~] release the screen layout as v0.10.0 (specs/release.md)
 - [ ] `lazyai update` with homebrew: compare with the tap formula
       version and say "released, not yet in the Homebrew tap" instead

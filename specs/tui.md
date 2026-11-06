@@ -28,8 +28,8 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
 
 - Left column: one third of the width, at least 32 columns (or half of a
   narrow screen), at most 56.
-- Status panel (3 rows, in every layout; the screen layout leaves it
-  out when its top row is too short): number of agents shown, how many are busy, how
+- Status panel (3 rows, in every layout but screen, which shows the
+  same line in its list panel's bottom border): number of agents shown, how many are busy, how
   many have a tmux client attached (only when some shown agent runs in
   tmux: `9 running, 3 busy, 2 attached`), and on the right the total
   memory of the shown agents next to the time of
@@ -135,12 +135,10 @@ lists: no main panel, the rows have the whole width
 ```
 
 screen, 120x30: lists as tabs and the other tabs on top, Screen below
-+ lazyai ---------------------------------+ + Info - Processes - Stats --+
-| 9 running, 3 busy, 1 attached  mem 3.3G | | state  busy 12m            |
-+-------------------------- screen layout + | tmux   lazyai-web pane %1  |
-+ 1 Agents - 2 Services - 3 Models -------+ |                            |
-|>claude lazyai-web    busy  12.0%  1.0G  | |                            |
-+---------------------------------- 1 of 2+ +----------------------------+
++ lazyai - 1 Agents - 2 Services - 3 Models + + Info - Processes - Stats -+
+|>claude lazyai-web      busy  12.0%  1.0G | | state  busy 12m           |
+| claude AI/lazyai       idle   0.4%  120M | | tmux   lazyai-web pane %1 |
++- 9 running, 3 busy - mem 1.1G - 1 of 2 --+ +---------------------------+
 + Screen lazyai-web -----------------------------------------------------+
 | the selected agent's tmux pane, live                                   |
 |                                                                        |
@@ -178,13 +176,18 @@ screen, 120x30: lists as tabs and the other tabs on top, Screen below
     layout the keys only say where they work. The size is not saved
     between runs. Decision: the Screen panel gets most of the height by
     default, because the pane is what the layout is for; the top row
-    still shows a few rows of the list and the Info lines. Left: the status panel and one list
+    still shows a few rows of the list and the Info lines. Left: one list
     panel, three fifths of the width (at least 32 columns or half of a
     narrow screen, at most 90) with full rows. The list panel's title
-    holds the three lists as tabs (`1 Agents - 2 Services - 3 Models`),
-    the one in use green; 1 2 3 switch it and the filters stay per list.
-    When the top row is too short for both, the status panel is left
-    out. Right: the main panel with Info, Processes and Stats; ] / [
+    holds `lazyai` and the three lists as tabs
+    (`lazyai - 1 Agents - 2 Services - 3 Models`), the one in use green;
+    1 2 3 switch it and the filters stay per list. There is no status
+    panel: its line goes in the list panel's bottom border before the
+    position (`33 running, 1 busy, 6 attached - mem 2.4G 23:08:46 -
+    7 of 30`), in the shorter forms of the status panel when the border
+    is narrow, and left out when even the shortest does not fit.
+    Decision: the status panel cost three rows of the short top row;
+    the borders had room for the same text. Right: the main panel with Info, Processes and Stats; ] / [
     skip Screen. Entering the layout from the Screen tab shows Info.
   - Screen panel: the whole width, the rest of the height. It shows the
     selected agent's tmux pane as the Screen tab does, captured on every
@@ -197,7 +200,8 @@ screen, 120x30: lists as tabs and the other tabs on top, Screen below
     Screen panel focused focuses the main panel.
 - The active layout shows:
   - in the bottom border of the status panel: `split layout`,
-    `detail layout`, `lists layout`, `screen layout`;
+    `detail layout`, `lists layout` (the screen layout has no status
+    panel; its tabbed title and the Screen panel name it);
   - in the message line when it changes:
     `detail layout: compact lists, wide main panel`;
   - in the `?` popup: `v  layout: split, detail, lists, screen (now split)`;
