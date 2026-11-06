@@ -128,7 +128,7 @@
       its bottom border, no status panel (specs/tui.md, Layouts)
 - [x] S and an x menu item save layout, tab and Screen size to
       settings.json for the next start (specs/tui.md, Saved settings)
-- [~] release the screen layout as v0.10.0 (specs/release.md)
+- [x] release the screen layout as v0.10.0 (specs/release.md)
 - [ ] `lazyai update` with homebrew: compare with the tap formula
       version and say "released, not yet in the Homebrew tap" instead
       of offering an upgrade brew cannot do (specs/update.md)
