@@ -20,7 +20,10 @@ type Options struct {
 	Interval    time.Duration // refresh period
 	LaunchDir   string        // default directory for new agents
 	HistoryFile string        // launch history; "" keeps it in memory only
-	Version     string
+	// SettingsFile holds the layout saved with S; "" starts with the
+	// defaults and S reports an error.
+	SettingsFile string
+	Version      string
 }
 
 // Run shows the dashboard until the user quits.
@@ -197,8 +200,14 @@ func newModel(opts Options) model {
 	if opts.Interval <= 0 {
 		opts.Interval = 2 * time.Second
 	}
-	return model{opts: opts, watcher: watch.New(), loading: true, follow: true, screenFollow: true, screenTopPct: screenTopDefault, width: 120, height: 30,
+	m := model{opts: opts, watcher: watch.New(), loading: true, follow: true, screenFollow: true, screenTopPct: screenTopDefault, width: 120, height: 30,
 		hist: loadHistory(opts.HistoryFile)}
+	s, err := loadSettings(opts.SettingsFile)
+	if err != nil {
+		m.setMsg("settings ignored: "+err.Error(), true)
+	}
+	m.applySettings(s)
+	return m
 }
 
 func discover() tea.Msg {
@@ -561,6 +570,8 @@ func (m model) action(key string) (tea.Model, tea.Cmd) {
 		return m, m.refresh()
 	case layoutKey:
 		return m, m.cycleLayout()
+	case saveKey:
+		m.saveLayout()
 	case "H":
 		m.showHelpers = !m.showHelpers
 		m.regroup()

@@ -142,7 +142,9 @@ Processes and Stats tabs on top and the live Screen of the selected
 agent across the whole width below, at 80% of the height; `+` and `-`
 make it bigger or smaller; there the status line moves into the list
 panel's bottom border. In the other layouts the status panel's bottom
-border names the current layout.
+border names the current layout. Press `S` (or pick it in the `x` menu) to
+keep the current layout, tab and Screen size for the next start; they
+are saved in `~/.config/lazyai/settings.json`.
 
 Every dashboard action also has a command:
 

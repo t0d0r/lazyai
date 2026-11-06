@@ -24,6 +24,14 @@
     and `-` shrinks it by 10% a press, top row kept within 10-70%; the
     message line shows the split. Not saved between runs. Covered by
     TestScreenResize.
+- Saved settings: S and the x menu item `save layout settings for the
+  next start` write layout, tab and Screen share to
+  `$XDG_CONFIG_HOME/lazyai/settings.json` (0600); newModel reads it
+  (Options.SettingsFile, tui.SettingsPath()). Unknown values are
+  ignored, a broken file falls back to defaults with a message. Code in
+  internal/tui/settings.go, tests in settings_test.go. Checked live:
+  saved the screen layout at 90%, restarted, it came back with the pane
+  captured.
 - Model: focusScreen, screenScroll / screenFollow, screenShown() for
   capture; layout gains mainH, screenY, screenH and tabbed.
 - Help popup text shortened to `layout: split, detail, lists, screen`
@@ -48,12 +56,13 @@
 - Not released; the installed v0.9.0 has three layouts. v0.10.0 is
   prepared (README install examples) but not tagged.
 - Homebrew tap moved to 0.9.0 and pushed.
-- Possible: remember the Screen size between runs.
+- Saving is explicit (S); v alone does not change the next start.
 - Not tried by hand: resize while in the screen layout.
 
 ## Files
 
-internal/tui/{tui.go,view.go,keys.go,tui_test.go}, specs/{tui.md,
+internal/tui/{tui.go,view.go,keys.go,settings.go,tui_test.go,
+settings_test.go}, commands.go, specs/{tui.md,
 README.md}, README.md, todo/todo.md.
 
 ## Run and verify

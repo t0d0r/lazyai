@@ -23,6 +23,7 @@ var keyHelp = []bindingGroup{
 		{"] / [", "next / previous tab"},
 		{layoutKey, "layout: split, detail, lists, screen"},
 		{"+ / -", "grow / shrink the Screen panel (screen layout)"},
+		{saveKey, "save layout, tab and Screen size for the next start"},
 		{"/", "filter the list; enter keeps it, esc clears it"},
 		{"mouse", "click to select, wheel to move or scroll"},
 	}},
@@ -50,6 +51,9 @@ const attachMark = "@"
 
 // attachedMark replaces attachMark while a tmux client shows the session.
 const attachedMark = ">"
+
+// saveKey saves the layout settings for the next start.
+const saveKey = "S"
 
 // layoutKey cycles the layouts; the ? popup adds the current one to it.
 const layoutKey = "v"
@@ -95,6 +99,7 @@ func (m model) menuItems() []menuItem {
 		menuItem{"n", "launch a new agent", ""},
 		menuItem{"H", helpers, ""},
 		menuItem{layoutKey, "switch to the " + ((m.mode + 1) % numLayouts).String() + " layout", ""},
+		menuItem{saveKey, "save layout settings for the next start", ""},
 		menuItem{"r", "refresh", ""},
 	)
 }

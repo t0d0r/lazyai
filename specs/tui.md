@@ -277,6 +277,8 @@ screen, 120x30: lists as tabs and the other tabs on top, Screen below
 | pgdn / pgup, ctrl+d / ctrl+u | scroll the main panel a page           |
 | ] / [                | next / previous tab                            |
 | v                    | next layout: split, detail, lists, screen (Layouts) |
+| + (=) / -            | screen layout: grow / shrink the Screen panel  |
+| S                    | save layout, tab and Screen size for the next start (Saved settings) |
 | x                    | action menu for the selected agent             |
 | a                    | attach (tmux only)                             |
 | p                    | send a prompt (tmux only); asks first when a client is attached (control.md, Send) |
@@ -299,7 +301,38 @@ click and wheel turn lands on a list.
 
 The menu (`x`) lists the actions with their keys; actions that cannot
 apply are dimmed with a short reason (not in tmux, lazyai's parent) and
-refused with the full reason. Enter or the item's key runs it.
+refused with the full reason. Enter or the item's key runs it. Besides
+the agent actions it offers launch (n), helpers (H), the next layout
+(v), `save layout settings for the next start` (S) and refresh (r).
+
+Saved settings: S (or the menu item) writes the current layout, main
+panel tab and Screen panel share of the screen layout to
+`$XDG_CONFIG_HOME/lazyai/settings.json` (default
+`~/.config/lazyai/settings.json`, directory 0700, file 0600, written to
+a temporary file and renamed), and the message line says
+`saved for the next start: screen layout, Info tab`. Every start reads
+it:
+
+```json
+{
+  "layout": "screen",
+  "tab": "Info",
+  "screen_percent": 80
+}
+```
+
+- Names, not numbers, so a later reordering of layouts or tabs keeps
+  old files working. Unknown names and a `screen_percent` outside
+  30-90 are ignored one by one; the rest still applies.
+- The screen layout never starts on the Screen tab (it shows Info), as
+  when entering it with v.
+- A missing file starts with the defaults (split, Info, 80%). A file
+  that is not valid JSON starts with the defaults and the message line
+  shows `settings ignored: ...`; it is not overwritten until S.
+- Saving is explicit. Decision: changing the layout with v does not
+  save it, so trying a layout does not change the next start; the file
+  holds only what was chosen on purpose. The list in use, filters and
+  helpers are not saved: they belong to what is being looked at now.
 
 Launch input: DIR may use `~` and is relative to the directory lazyai was
 started in. Input popups treat both terminal backspace encodings (DEL and
