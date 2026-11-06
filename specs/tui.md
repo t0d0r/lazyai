@@ -28,7 +28,8 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
 
 - Left column: one third of the width, at least 32 columns (or half of a
   narrow screen), at most 56.
-- Status panel (3 rows, in every layout): number of agents shown, how many are busy, how
+- Status panel (3 rows, in every layout; the screen layout leaves it
+  out when its top row is too short): number of agents shown, how many are busy, how
   many have a tmux client attached (only when some shown agent runs in
   tmux: `9 running, 3 busy, 2 attached`), and on the right the total
   memory of the shown agents next to the time of
@@ -100,8 +101,8 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
 
 ## Layouts
 
-`v` cycles three arrangements of the same panels: split -> detail ->
-lists -> split. lazyai always starts in split, the layout drawn under
+`v` cycles four arrangements of the same panels: split -> detail ->
+lists -> screen -> split. lazyai always starts in split, the layout drawn under
 Layout, and does not save the choice.
 
 | layout | left column                                  | main panel |
@@ -109,6 +110,7 @@ Layout, and does not save the choice.
 | split  | lists: a third of the width, 32 to 56 columns | the rest   |
 | detail | compact lists: a fifth, 24 to 32 columns     | the rest   |
 | lists  | lists: the whole width                       | hidden     |
+| screen | top row: status and one tabbed list left, the main panel right; Screen panel across the whole width below | |
 
 ```
 detail, 120 columns: the main panel is 96 wide instead of 80
@@ -132,7 +134,20 @@ lists: no main panel, the rows have the whole width
 +---------------------------------------------------------------- 1 of 2 +
 ```
 
-- Only the widths and the rows change. The status panel, the three
+screen, 120x30: lists as tabs and the other tabs on top, Screen below
++ lazyai ---------------------------------+ + Info - Processes - Stats --+
+| 9 running, 3 busy, 1 attached  mem 3.3G | | state  busy 12m            |
++-------------------------- screen layout + | tmux   lazyai-web pane %1  |
++ 1 Agents - 2 Services - 3 Models -------+ |                            |
+|>claude lazyai-web    busy  12.0%  1.0G  | |                            |
++---------------------------------- 1 of 2+ +----------------------------+
++ Screen lazyai-web -----------------------------------------------------+
+| the selected agent's tmux pane, live                                   |
+|                                                                        |
++------------------------------------------------------------------------+
+
+- Only the widths and the rows change (the screen layout also changes
+  the heights, see Screen below). The status panel, the three
   lists with their heights (Layout, Heights), 1 2 3, the filters, the
   selection, the tab, the menu, the actions and their confirmations work
   the same in every layout.
@@ -154,12 +169,31 @@ lists: no main panel, the rows have the whole width
   - the Screen tab is not captured while hidden, and a capture that
     arrives then is dropped; leaving lists captures again, so the Screen
     tab never shows an old screen.
+- Screen: one row on top and the Screen panel below.
+  - Top row: two fifths of the body height, at least 8 rows, leaving
+    the Screen panel at least 5. Left: the status panel and one list
+    panel, three fifths of the width (at least 32 columns or half of a
+    narrow screen, at most 90) with full rows. The list panel's title
+    holds the three lists as tabs (`1 Agents - 2 Services - 3 Models`),
+    the one in use green; 1 2 3 switch it and the filters stay per list.
+    When the top row is too short for both, the status panel is left
+    out. Right: the main panel with Info, Processes and Stats; ] / [
+    skip Screen. Entering the layout from the Screen tab shows Info.
+  - Screen panel: the whole width, the rest of the height. It shows the
+    selected agent's tmux pane as the Screen tab does, captured on every
+    refresh whatever tab is shown, and follows the bottom like a log
+    until scrolled. Its title names the tmux session.
+  - Focus: tab / shift+tab cycle the list, the main panel and the Screen
+    panel. j / k, g / G and the page keys scroll the focused panel; esc
+    goes back to the list from either. A click focuses a panel; the
+    wheel scrolls the one under the pointer. Leaving the layout with the
+    Screen panel focused focuses the main panel.
 - The active layout shows:
   - in the bottom border of the status panel: `split layout`,
-    `detail layout`, `lists layout`;
+    `detail layout`, `lists layout`, `screen layout`;
   - in the message line when it changes:
     `detail layout: compact lists, wide main panel`;
-  - in the `?` popup: `v  layout: split -> detail -> lists (now split)`;
+  - in the `?` popup: `v  layout: split, detail, lists, screen (now split)`;
   - in the x menu: `v  switch to the detail layout`;
   - as `v layout` in the footer. The lists footer leaves out `[ ] tabs`.
 - Narrow screens:
@@ -174,7 +208,7 @@ lists: no main panel, the rows have the whole width
     panel keeps its tab and scroll position across switches.
 - Decisions:
   - One key cycles the layouts, like a preview toggle, rather than one
-    key per layout: there are only three, and 1 2 3 already pick the
+    key per layout: there are only four, and 1 2 3 already pick the
     lists. The order puts detail right after split: reading the Screen
     or Processes tab is the usual reason to want more room.
   - Detail keeps the three lists in a narrow column rather than a strip
@@ -188,6 +222,10 @@ lists: no main panel, the rows have the whole width
   - Lists hides the main panel instead of letting enter bring it back.
     Reason: only v changes the layout, so a habitual enter does not undo
     the choice.
+  - Screen comes last in the cycle, after lists, so the order of the
+    existing layouts does not change. It is the layout for watching
+    agents work: the pane gets the full width, the width an agent's own
+    terminal has, and the lists become tabs so the top row stays short.
   - Start in split and do not save the layout, so every start looks as
     it did before layouts existed. A `--layout` option or a saved
     choice can come later if wanted.
@@ -227,7 +265,7 @@ lists: no main panel, the rows have the whole width
 | g / G, home / end    | first / last; main panel top / bottom (follow) |
 | pgdn / pgup, ctrl+d / ctrl+u | scroll the main panel a page           |
 | ] / [                | next / previous tab                            |
-| v                    | next layout: split, detail, lists (Layouts)    |
+| v                    | next layout: split, detail, lists, screen (Layouts) |
 | x                    | action menu for the selected agent             |
 | a                    | attach (tmux only)                             |
 | p                    | send a prompt (tmux only); asks first when a client is attached (control.md, Send) |

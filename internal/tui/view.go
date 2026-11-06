@@ -41,16 +41,34 @@ const (
 	navMaxW = 32
 )
 
+// Screen layout: the top row takes this share of the body, at least
+// screenTopMin rows, and the Screen panel below keeps at least
+// screenMinH rows.
+const (
+	screenTopMin = 8
+	screenMinH   = 5
+	screenLeftW  = 90 // widest list panel in the screen layout
+)
+
 // layout is where each panel sits. Mouse handling uses it too.
 type layout struct {
 	leftW, rightW, bodyH int // rightW is 0 when the main panel is hidden
+	mainH                int // height of the main panel: bodyH, or the top row
 	statusH              int
 	listY, listH         [numLists]int
 	compact              bool // rows leave out CPU and memory, and status unless busy
+	// The screen layout: one list panel with the lists as tabs in its
+	// title, and a Screen panel screenH rows high at row screenY.
+	tabbed           bool
+	screenY, screenH int
 }
 
 func (m model) layout() layout {
 	l := layout{bodyH: max(m.height-1, 6), statusH: 3}
+	l.mainH = l.bodyH
+	if m.mode == layoutScreen {
+		return m.screenLayout(l)
+	}
 	switch m.mode {
 	case layoutDetail:
 		l.leftW = min(max(min(m.width/5, navMaxW), navMinW), m.width/2)
@@ -86,6 +104,25 @@ func (m model) layout() layout {
 	return l
 }
 
+// screenLayout puts the status and the list in use (lists as tabs) left
+// and the main panel right in a top row, and the Screen panel across the
+// whole width below it.
+func (m model) screenLayout(l layout) layout {
+	l.tabbed = true
+	l.leftW = max(min(m.width*3/5, screenLeftW), min(32, m.width/2))
+	l.rightW = max(m.width-l.leftW, 10)
+	top := max(l.bodyH*2/5, screenTopMin)
+	top = max(min(top, l.bodyH-screenMinH), min(screenMinH, l.bodyH))
+	l.mainH = top
+	l.screenY, l.screenH = top, l.bodyH-top
+	if top < l.statusH+screenMinH-1 {
+		l.statusH = 0 // too short: the list keeps the room
+	}
+	l.listY[m.lastList] = l.statusH
+	l.listH[m.lastList] = top - l.statusH
+	return l
+}
+
 // listTop is the first row shown in list i, keeping the cursor visible.
 func (m model) listTop(i int, l layout) int {
 	visible := max(l.listH[i]-2, 1)
@@ -95,14 +132,22 @@ func (m model) listTop(i int, l layout) int {
 func (m model) View() string {
 	l := m.layout()
 	var left []string
-	left = append(left, m.statusPanel(l))
+	if l.statusH > 0 {
+		left = append(left, m.statusPanel(l))
+	}
 	for i := range numLists {
-		left = append(left, m.listPanel(i, l))
+		if l.listH[i] > 0 {
+			left = append(left, m.listPanel(i, l))
+		}
 	}
-	body := cropLines(strings.Join(left, "\n"), l.bodyH)
+	body := cropLines(strings.Join(left, "\n"), l.mainH)
 	if l.rightW > 0 {
-		body = cropLines(lipgloss.JoinHorizontal(lipgloss.Top, body, m.mainPanel(l)), l.bodyH)
+		body = cropLines(lipgloss.JoinHorizontal(lipgloss.Top, body, m.mainPanel(l)), l.mainH)
 	}
+	if l.screenH > 0 {
+		body += "\n" + m.screenPanel(l)
+	}
+	body = cropLines(body, l.bodyH)
 
 	switch m.popup {
 	case popupHelp:
@@ -275,6 +320,18 @@ func (m model) listPanel(i int, l layout) string {
 	if focused {
 		title = activeStyle.Render(fmt.Sprintf("%d %s", i+1, listTitles[i]))
 	}
+	if l.tabbed {
+		// One panel for the three lists: 1 2 3 pick the tab.
+		var tabs []string
+		for j := range numLists {
+			t := fmt.Sprintf("%d %s", j+1, listTitles[j])
+			if j == i {
+				t = activeStyle.Render(t)
+			}
+			tabs = append(tabs, t)
+		}
+		title = strings.Join(tabs, " - ")
+	}
 	if f := m.filters[i]; f != "" || (m.filtering && i == m.lastList) {
 		title += " " + keyStyle.Render("/"+f)
 	}
@@ -287,13 +344,13 @@ func (m model) mainSize() (int, int) {
 	if l.rightW == 0 {
 		return 0, 1
 	}
-	return len(m.mainLines(l.rightW - 2)), max(l.bodyH-2, 1)
+	return len(m.mainLines(l.rightW - 2)), max(l.mainH-2, 1)
 }
 
 func (m model) mainPanel(l layout) string {
 	inner := l.rightW - 2
 	lines := m.mainLines(inner)
-	visible := max(l.bodyH-2, 1)
+	visible := max(l.mainH-2, 1)
 	maxScroll := max(len(lines)-visible, 0)
 	off := min(m.scroll, maxScroll)
 	if m.follow && m.tab == tabScreen {
@@ -303,6 +360,9 @@ func (m model) mainPanel(l layout) string {
 
 	var tabs []string
 	for i, t := range tabTitles {
+		if l.tabbed && i == tabScreen {
+			continue // the Screen panel below shows it
+		}
 		if i == m.tab {
 			tabs = append(tabs, activeStyle.Render(t))
 		} else {
@@ -313,7 +373,43 @@ func (m model) mainPanel(l layout) string {
 	if maxScroll > 0 {
 		pos = fmt.Sprintf("%d-%d of %d", off+1, min(off+visible, off+len(lines)), off+len(lines))
 	}
-	return box(strings.Join(tabs, " - "), lines, l.rightW, l.bodyH, m.focus == focusMain, pos)
+	return box(strings.Join(tabs, " - "), lines, l.rightW, l.mainH, m.focus == focusMain, pos)
+}
+
+// screenPanelLines is the Screen panel's content in the screen layout.
+func (m model) screenPanelLines() []string {
+	a, ok := m.selected()
+	if !ok {
+		return m.mainLines(0) // "no agents running" and the like
+	}
+	return m.screenLines(a)
+}
+
+// screenPanel is the Screen tab as a panel of its own across the whole
+// width, below the lists and tabs of the screen layout. It follows the
+// bottom like a log until scrolled.
+func (m model) screenPanel(l layout) string {
+	lines := m.screenPanelLines()
+	visible := max(l.screenH-2, 1)
+	maxScroll := max(len(lines)-visible, 0)
+	off := min(m.screenScroll, maxScroll)
+	if m.screenFollow {
+		off = maxScroll
+	}
+	lines = lines[off:]
+	title := "Screen"
+	if a, ok := m.selected(); ok && a.TmuxSession != "" {
+		title += " " + dimStyle.Render(a.TmuxSession)
+	}
+	focused := m.focus == focusScreen
+	if focused {
+		title = activeStyle.Render("Screen") + strings.TrimPrefix(title, "Screen")
+	}
+	pos := ""
+	if maxScroll > 0 {
+		pos = fmt.Sprintf("%d-%d of %d", off+1, min(off+visible, off+len(lines)), off+len(lines))
+	}
+	return box(title, lines, m.width, l.screenH, focused, pos)
 }
 
 func (m model) mainLines(w int) []string {
@@ -331,7 +427,7 @@ func (m model) mainLines(w int) []string {
 		return processLines(a)
 	case tabStats:
 		t, _ := m.watcher.Tracker(a.Key())
-		return statsLines(a, t, w, max(m.layout().bodyH-2, 4))
+		return statsLines(a, t, w, max(m.layout().mainH-2, 4))
 	}
 	return m.infoLines(a)
 }
@@ -423,7 +519,7 @@ func (m model) footer() string {
 	switch {
 	case m.filtering:
 		keys = "filter /" + m.filters[m.lastList] + "_   enter keep  esc clear  up/down move"
-	case m.focus == focusMain:
+	case m.focus == focusMain || m.focus == focusScreen:
 		keys = footerMain
 	case m.mode == layoutLists:
 		keys = footerLists

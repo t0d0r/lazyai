@@ -213,7 +213,7 @@ func TestLayoutCycle(t *testing.T) {
 		t.Fatalf("start layout %v, want split", m.mode)
 	}
 	m = press(m, "j", "]", "]") // agent 2, Processes tab
-	for _, want := range []layoutMode{layoutDetail, layoutLists, layoutSplit} {
+	for _, want := range []layoutMode{layoutDetail, layoutLists, layoutScreen, layoutSplit} {
 		m = press(m, "v")
 		if m.mode != want {
 			t.Fatalf("v: layout %v, want %v", m.mode, want)
@@ -397,7 +397,7 @@ func TestLayoutNarrow(t *testing.T) {
 
 func TestLayoutHints(t *testing.T) {
 	m := loaded(120, 30)
-	if help := ansi.Strip(press(m, "?").View()); !strings.Contains(help, "split -> detail -> lists (now split)") {
+	if help := ansi.Strip(press(m, "?").View()); !strings.Contains(help, "layout: split, detail, lists, screen (now split)") {
 		t.Errorf("help lacks the layout key:\n%s", help)
 	}
 	if help := ansi.Strip(inLayout(m, layoutDetail).helpPopup()); !strings.Contains(help, "(now detail)") {
@@ -827,5 +827,81 @@ func TestParseLaunch(t *testing.T) {
 		if _, err := parseLaunch(bad, "/base"); err == nil {
 			t.Errorf("parseLaunch(%q) accepted", bad)
 		}
+	}
+}
+
+func TestLayoutScreen(t *testing.T) {
+	m := inLayout(loaded(120, 30), layoutScreen)
+	l := m.layout()
+	if !l.tabbed || l.screenH < screenMinH || l.mainH+l.screenH != l.bodyH || l.leftW+l.rightW != 120 {
+		t.Fatalf("screen layout sizes: %+v", l)
+	}
+	lines := strings.Split(ansi.Strip(m.View()), "\n")
+	if !strings.Contains(lines[l.statusH], "1 Agents - 2 Services - 3 Models") {
+		t.Errorf("list panel title: %q", lines[l.statusH])
+	}
+	if !strings.Contains(lines[0], "Info - Processes - Stats") || strings.Contains(lines[0], "Screen") {
+		t.Errorf("main panel tabs: %q", lines[0])
+	}
+	if !strings.HasPrefix(lines[l.screenY], "╭ Screen lazyai-c ") {
+		t.Errorf("Screen panel top border: %q", lines[l.screenY])
+	}
+
+	// The Screen panel is captured whatever the tab, and shows the pane.
+	if m.tab != tabInfo || !m.capturing {
+		t.Errorf("tab %d: entering the screen layout did not capture", m.tab)
+	}
+	next, _ := m.Update(screenMsg{pane: "%1", text: "hello from the pane"})
+	m = next.(model)
+	if !strings.Contains(ansi.Strip(m.View()), "hello from the pane") {
+		t.Error("Screen panel does not show the capture")
+	}
+
+	// ] and [ skip Screen, which has its own panel.
+	if mm := press(m, "]"); mm.tab != tabProcesses {
+		t.Errorf("]: tab %d, want Processes", mm.tab)
+	}
+	if mm := press(m, "["); mm.tab != tabStats {
+		t.Errorf("[: tab %d, want Stats", mm.tab)
+	}
+	// Coming from the Screen tab, the tabs show Info.
+	if mm := inLayout(press(loaded(120, 30), "]"), layoutScreen); mm.tab != tabInfo {
+		t.Errorf("screen layout from the Screen tab: tab %d", mm.tab)
+	}
+
+	// tab cycles the list, the main panel and the Screen panel.
+	var order []int
+	mm := m
+	for range 3 {
+		mm = press(mm, "tab")
+		order = append(order, mm.focus)
+	}
+	if fmt.Sprint(order) != fmt.Sprint([]int{focusMain, focusScreen, listAgents}) {
+		t.Errorf("tab order: %v", order)
+	}
+	// 2 shows Services in the one list panel.
+	if mm := press(m, "2"); mm.focus != listServices || !strings.Contains(ansi.Strip(mm.View()), "codex server") {
+		t.Errorf("2: focus %d", mm.focus)
+	}
+	// Keys scroll the focused Screen panel, not the list.
+	m.screen.text = strings.Repeat("line\n", 100)
+	mm = press(m, "tab", "tab", "k", "k")
+	if mm.focus != focusScreen || mm.screenFollow || mm.lists[listAgents].cursor != 0 {
+		t.Errorf("k in Screen: focus %d follow %v", mm.focus, mm.screenFollow)
+	}
+	if mm = press(mm, "G"); !mm.screenFollow {
+		t.Error("G does not follow the Screen panel again")
+	}
+	if mm = press(mm, "esc"); mm.focus != listAgents {
+		t.Errorf("esc from Screen: focus %d", mm.focus)
+	}
+	// Mouse: a click in the Screen panel focuses it.
+	next, _ = m.Update(tea.MouseMsg{X: 10, Y: l.screenY + 2, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+	if next.(model).focus != focusScreen {
+		t.Error("click did not focus the Screen panel")
+	}
+	// Leaving the layout from the Screen panel focuses the main panel.
+	if mm := press(m, "tab", "tab", "v"); mm.mode != layoutSplit || mm.focus != focusMain {
+		t.Errorf("v from Screen: layout %v focus %d", mm.mode, mm.focus)
 	}
 }

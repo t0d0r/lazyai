@@ -137,8 +137,10 @@ agent. The mouse works: click to select, wheel to scroll.
 `v` switches the layout. It starts in split, as described above; detail
 narrows the lists to a compact navigator so the tabs (Screen,
 Processes) get more width; lists hides the tabs and gives the lists the
-whole screen. The status panel's bottom border names the current
-layout.
+whole screen; screen puts the lists (as tabs 1 2 3) and the Info,
+Processes and Stats tabs on top and the live Screen of the selected
+agent across the whole width below. The status panel's bottom border
+names the current layout.
 
 Every dashboard action also has a command:
 
@@ -147,7 +149,7 @@ Every dashboard action also has a command:
 | tab, 1 2 3   | next panel; Agents, Services, Models            | -                   |
 | j / k        | move, or scroll the main panel                  | -                   |
 | ] / [        | next / previous tab                             | `show AGENT`        |
-| v            | layout: split, detail (wide tabs), lists only   | -                   |
+| v            | layout: split, detail, lists only, screen       | -                   |
 | a            | attach to the agent's tmux session              | `attach AGENT`      |
 | p            | type a prompt into the agent and press Enter    | `send AGENT TEXT`   |
 | n            | launch: `KIND [DIR] [NAME] [-- ARGS]`           | `launch`            |

@@ -51,7 +51,8 @@ const (
 	listServices
 	listModels
 	numLists
-	focusMain = numLists
+	focusMain   = numLists     // the main panel (tabs) on the right
+	focusScreen = numLists + 1 // the Screen panel of the screen layout
 )
 
 var listTitles = [numLists]string{"Agents", "Services", "Models"}
@@ -75,15 +76,17 @@ const (
 	layoutSplit  layoutMode = iota // lists left, main panel right; the start layout
 	layoutDetail                   // compact lists, wide main panel
 	layoutLists                    // lists across the whole width, no main panel
+	layoutScreen                   // tabbed list and tabs on top, Screen below
 	numLayouts
 )
 
 var (
-	layoutNames = [numLayouts]string{"split", "detail", "lists"}
+	layoutNames = [numLayouts]string{"split", "detail", "lists", "screen"}
 	layoutHints = [numLayouts]string{
 		"lists left, main panel right",
 		"compact lists, wide main panel",
 		"main panel hidden; v shows it",
+		"lists and tabs on top, Screen below",
 	}
 )
 
@@ -143,18 +146,22 @@ func (l *list) sync() {
 }
 
 type model struct {
-	opts        Options
-	all         []agent.Agent
-	lists       [numLists]list
-	focus       int // a list index or focusMain
-	lastList    int // list whose selection the main panel shows
-	tab         int
-	mode        layoutMode
-	scroll      int  // main panel offset from the top
-	follow      bool // Screen sticks to the bottom
-	showHelpers bool
-	filters     [numLists]string // text a list's rows must match, "" for all
-	filtering   bool             // keys go to the filter of lastList
+	opts     Options
+	all      []agent.Agent
+	lists    [numLists]list
+	focus    int // a list index or focusMain
+	lastList int // list whose selection the main panel shows
+	tab      int
+	mode     layoutMode
+	scroll   int  // main panel offset from the top
+	follow   bool // Screen sticks to the bottom
+	// screenScroll and screenFollow are scroll and follow of the Screen
+	// panel of the screen layout, which shows beside the main panel.
+	screenScroll int
+	screenFollow bool
+	showHelpers  bool
+	filters      [numLists]string // text a list's rows must match, "" for all
+	filtering    bool             // keys go to the filter of lastList
 
 	popup      popupKind
 	menu       []menuItem
@@ -187,7 +194,7 @@ func newModel(opts Options) model {
 	if opts.Interval <= 0 {
 		opts.Interval = 2 * time.Second
 	}
-	return model{opts: opts, watcher: watch.New(), loading: true, follow: true, width: 120, height: 30,
+	return model{opts: opts, watcher: watch.New(), loading: true, follow: true, screenFollow: true, width: 120, height: 30,
 		hist: loadHistory(opts.HistoryFile)}
 }
 
@@ -302,14 +309,27 @@ func (m model) selected() (agent.Agent, bool) {
 // selectionChanged resets the main panel for a newly selected agent.
 func (m *model) selectionChanged() tea.Cmd {
 	m.scroll, m.follow = 0, true
+	m.screenScroll, m.screenFollow = 0, true
 	m.screen = screenMsg{}
 	return m.capture()
+}
+
+// screenShown reports whether the selected agent's Screen is on the
+// screen: the Screen tab, or the Screen panel of the screen layout.
+func (m model) screenShown() bool {
+	switch m.mode {
+	case layoutLists:
+		return false
+	case layoutScreen:
+		return true
+	}
+	return m.tab == tabScreen
 }
 
 // capture fetches the selected agent's tmux pane when Screen is shown.
 func (m *model) capture() tea.Cmd {
 	a, ok := m.selected()
-	if m.tab != tabScreen || m.mode == layoutLists || !ok || a.TmuxPane == "" || m.capturing {
+	if !m.screenShown() || !ok || a.TmuxPane == "" || m.capturing {
 		return nil
 	}
 	m.capturing = true
@@ -342,6 +362,18 @@ func (m *model) focusList(i int) tea.Cmd {
 }
 
 func (m *model) cycleFocus(d int) tea.Cmd {
+	if m.mode == layoutScreen {
+		// One tabbed list, the main panel, the Screen panel.
+		order := []int{m.lastList, focusMain, focusScreen}
+		i := 0
+		for j, f := range order {
+			if f == m.focus {
+				i = j
+			}
+		}
+		m.focus = order[(i+d+len(order))%len(order)]
+		return nil
+	}
 	n := numLists + 1
 	if m.mode == layoutLists {
 		n = numLists // the main panel is hidden
@@ -360,6 +392,14 @@ func (m *model) cycleFocus(d int) tea.Cmd {
 func (m *model) cycleLayout() tea.Cmd {
 	m.mode = (m.mode + 1) % numLayouts
 	m.setMsg(m.mode.String()+" layout: "+layoutHints[m.mode], false)
+	if m.focus == focusScreen && m.mode != layoutScreen {
+		m.focus = focusMain
+	}
+	if m.mode == layoutScreen && m.tab == tabScreen {
+		// Screen has its own panel here; the tabs show the others.
+		m.tab = tabInfo
+		m.scroll = 0
+	}
 	if m.mode == layoutLists {
 		if m.focus == focusMain {
 			m.focus = m.lastList
@@ -371,9 +411,37 @@ func (m *model) cycleLayout() tea.Cmd {
 }
 
 func (m *model) setTab(t int) tea.Cmd {
+	d := 1
+	if t < m.tab {
+		d = -1
+	}
 	m.tab = (t + numTabs) % numTabs
+	if m.mode == layoutScreen && m.tab == tabScreen {
+		m.tab = (m.tab + d + numTabs) % numTabs // the Screen panel shows it
+	}
 	m.scroll, m.follow = 0, true
 	return m.capture()
+}
+
+// scrollScreen moves the Screen panel of the screen layout by d lines;
+// follow resumes at the bottom.
+func (m *model) scrollScreen(d int) {
+	total, visible := len(m.screenPanelLines()), max(m.layout().screenH-2, 1)
+	maxScroll := max(total-visible, 0)
+	if m.screenFollow {
+		m.screenScroll = maxScroll
+	}
+	m.screenScroll = max(min(m.screenScroll+d, maxScroll), 0)
+	m.screenFollow = m.screenScroll == maxScroll
+}
+
+// scrollFocused scrolls the focused panel, the main or the Screen panel.
+func (m *model) scrollFocused(d int) {
+	if m.focus == focusScreen {
+		m.scrollScreen(d)
+		return
+	}
+	m.scrollMain(d)
 }
 
 // scrollMain moves the main panel by d lines; follow resumes at the bottom.
@@ -389,8 +457,11 @@ func (m *model) scrollMain(d int) {
 
 func (m model) updateKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
-	inMain := m.focus == focusMain
-	page := max(m.layout().bodyH-4, 1)
+	inMain := m.focus == focusMain || m.focus == focusScreen
+	page := max(m.layout().mainH-4, 1)
+	if m.focus == focusScreen {
+		page = max(m.layout().screenH-4, 1)
+	}
 	if m.mode == layoutLists {
 		switch key {
 		case "enter", "]", "[", "pgdown", "pgup", "ctrl+d", "ctrl+u":
@@ -431,12 +502,16 @@ func (m model) updateKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			d = -1
 		}
 		if inMain {
-			m.scrollMain(d)
+			m.scrollFocused(d)
 			return m, nil
 		}
 		m.lists[m.focus].move(d)
 		return m, m.selectionChanged()
 	case "g", "home":
+		if m.focus == focusScreen {
+			m.screenScroll, m.screenFollow = 0, false
+			return m, nil
+		}
 		if inMain {
 			m.scroll, m.follow = 0, false
 			return m, nil
@@ -445,15 +520,15 @@ func (m model) updateKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, m.selectionChanged()
 	case "G", "end":
 		if inMain {
-			m.scrollMain(1 << 20)
+			m.scrollFocused(1 << 20)
 			return m, nil
 		}
 		m.lists[m.focus].move(len(m.lists[m.focus].rows))
 		return m, m.selectionChanged()
 	case "pgdown", "ctrl+d":
-		m.scrollMain(page)
+		m.scrollFocused(page)
 	case "pgup", "ctrl+u":
-		m.scrollMain(-page)
+		m.scrollFocused(-page)
 	default:
 		return m.action(key)
 	}
@@ -645,7 +720,8 @@ func (m model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	l := m.layout()
-	onLeft := msg.X < l.leftW
+	onScreen := l.screenH > 0 && msg.Y >= l.screenY
+	onLeft := msg.X < l.leftW && !onScreen
 	hit := -1
 	for i := range numLists {
 		if onLeft && msg.Y >= l.listY[i] && msg.Y < l.listY[i]+l.listH[i] {
@@ -658,6 +734,10 @@ func (m model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		if msg.Button == tea.MouseButtonWheelUp {
 			d = -1
 		}
+		if onScreen {
+			m.scrollScreen(3 * d)
+			return m, nil
+		}
 		if !onLeft {
 			m.scrollMain(3 * d)
 			return m, nil
@@ -668,6 +748,10 @@ func (m model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(cmd, m.selectionChanged())
 		}
 	case msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonLeft:
+		if onScreen {
+			m.focus = focusScreen
+			return m, nil
+		}
 		if !onLeft {
 			m.focus = focusMain
 			return m, nil

@@ -120,6 +120,9 @@
       (specs/release.md)
 - [ ] v0.9.0 follow-up: Homebrew tap still at 0.8.0, README install
       examples at v0.8.0, no release session note (specs/release.md)
+- [x] screen layout on v: lists as tabs and Info / Processes / Stats on
+      top, Screen across the whole width below (specs/tui.md, Layouts)
+- [ ] release the screen layout (specs/release.md)
 - [ ] `lazyai update` with homebrew: compare with the tap formula
       version and say "released, not yet in the Homebrew tap" instead
       of offering an upgrade brew cannot do (specs/update.md)
