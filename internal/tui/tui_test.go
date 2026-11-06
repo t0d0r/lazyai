@@ -848,7 +848,7 @@ func TestLayoutScreen(t *testing.T) {
 	if !strings.Contains(lines[0], "Info - Processes - Stats") || strings.Contains(lines[0], "Screen") {
 		t.Errorf("main panel tabs: %q", lines[0])
 	}
-	if !strings.HasPrefix(lines[l.screenY], "╭ Screen lazyai-c - c-1 ") {
+	if !strings.HasPrefix(lines[l.screenY], "╭ Screen lazyai-c - c-1 - w/p ") {
 		t.Errorf("Screen panel top border: %q", lines[l.screenY])
 	}
 

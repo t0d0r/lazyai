@@ -426,6 +426,9 @@ func (m model) screenPanel(l layout) string {
 		if hint := nameHint(a); hint != "" {
 			title += " " + dimStyle.Render("-") + " " + hint
 		}
+		if a.CWD != "" {
+			title += " " + dimStyle.Render("- "+lastDirs(a.CWD))
+		}
 	}
 	focused := m.focus == focusScreen
 	if focused {
