@@ -188,3 +188,6 @@
 - [x] release v0.10.1 with status colors, the `!` important mark, launch
       feedback and Screen colors; tap formula updated to 0.10.1
       (specs/release.md)
+- [x] agents do not rename their tmux window: launch names it after the
+      command with automatic-rename and allow-rename off; attach fixes
+      older lazyai-* sessions (specs/control.md Launch, Attach)

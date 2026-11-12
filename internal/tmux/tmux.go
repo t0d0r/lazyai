@@ -175,8 +175,15 @@ func Launch(session, dir string, argv []string) error {
 	// first, keeps the pane and its output if the command dies at once.
 	// The explicit target matters inside tmux, where an untargeted
 	// set-option would change the window lazyai runs in.
-	args := append([]string{"new-session", "-d", "-P", "-F", "#{pane_id}", "-s", session, "-c", dir, "--"}, cmd...)
-	args = append(args, ";", "set-option", "-w", "-t", "="+session+":", "remain-on-exit", "on")
+	// The window is named after the command, with renaming off, so the
+	// agent does not rename it: Claude Code's process name is its version
+	// ("2.1.322"), which automatic-rename would show.
+	window := "=" + session + ":"
+	args := append([]string{"new-session", "-d", "-P", "-F", "#{pane_id}", "-s", session, "-n", WindowName(argv[0]),
+		"-c", dir, "--"}, cmd...)
+	args = append(args, ";", "set-option", "-w", "-t", window, "remain-on-exit", "on",
+		";", "set-option", "-w", "-t", window, "automatic-rename", "off",
+		";", "set-option", "-w", "-t", window, "allow-rename", "off")
 	out, err := exec.Command("tmux", args...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("tmux new-session: %s", strings.TrimSpace(string(out)))
@@ -254,13 +261,37 @@ func deadOutput(text string) []string {
 	return lines
 }
 
+// WindowName is the tmux window name for an agent started as command:
+// its base name, "claude" for /usr/local/bin/claude.
+func WindowName(command string) string {
+	return filepath.Base(command)
+}
+
+// NameWindow names the window of pane name and turns off automatic-rename
+// and allow-rename there, for sessions launched before Launch did so. A
+// window whose automatic-rename is already off was named on purpose and
+// is left alone. Failures are ignored, as for the status hint.
+func NameWindow(pane, name string) {
+	out, err := exec.Command("tmux", "display-message", "-p", "-t", pane, "#{automatic-rename}").Output()
+	if err != nil || strings.TrimSpace(string(out)) != "1" {
+		return
+	}
+	exec.Command("tmux", "rename-window", "-t", pane, "--", name,
+		";", "set-option", "-w", "-t", pane, "automatic-rename", "off",
+		";", "set-option", "-w", "-t", pane, "allow-rename", "off").Run()
+}
+
 // AttachCmd returns the command that puts the terminal on session. Inside
 // tmux it switches the client; outside it attaches and returns on detach.
-// lazyai sessions get a status line hint for the way back.
-func AttachCmd(session string) *exec.Cmd {
+// lazyai sessions get a status line hint for the way back, and the
+// window of pane, when given, is named window (NameWindow).
+func AttachCmd(session, pane, window string) *exec.Cmd {
 	nested := os.Getenv("TMUX") != ""
 	if strings.HasPrefix(session, Prefix) {
 		SetStatusHint(session, nested)
+		if pane != "" {
+			NameWindow(pane, window)
+		}
 	}
 	if nested {
 		return exec.Command("tmux", "switch-client", "-t", "="+session)

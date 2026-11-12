@@ -26,10 +26,21 @@
   TestCheckSessionName and a rename step in TestLaunchSendPanes against
   a real tmux, a rename usage error in TestUsageErrors.
 
+- Window names: tmux showed lazyai-* windows as `0:2.1.322*`, because
+  automatic-rename uses the pane's process name and Claude Code's is its
+  version. Launch now passes `-n` with the command's base name and sets
+  automatic-rename and allow-rename off in the same tmux call; attach
+  (TUI `a`, CLI `attach`) applies the same to older lazyai-* windows
+  whose automatic-rename is still on (tmux.NameWindow). AttachCmd takes
+  the pane and window name. Tests: window state in
+  TestLaunchSendPanes, TestNameWindow.
+
 ## Decisions
 
 - Marks keyed by tmux session first: it is the name the work is known by
   and survives agent restarts; PIDs do not.
+- Windows someone renamed (automatic-rename off) are left alone at
+  attach.
 - Rename takes the name as given, without adding `lazyai-`; only
   letters, digits, - and _ are allowed so the name works in `a`,
   `attach` and scripts.
@@ -40,7 +51,7 @@
 
 - A session renamed away from `lazyai-` no longer gets its status-line
   hint refreshed on attach (documented in control.md).
-- Not released.
+- Release v0.10.2 in progress (session/2026-11-12-release-v0.10.2.md).
 
 ## Files
 

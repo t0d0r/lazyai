@@ -715,7 +715,7 @@ func (m model) action(key string) (tea.Model, tea.Cmd) {
 		switch key {
 		case "a":
 			session := a.TmuxSession
-			return m, tea.ExecProcess(tmux.AttachCmd(session), func(err error) tea.Msg {
+			return m, tea.ExecProcess(tmux.AttachCmd(session, a.TmuxPane, string(a.Kind)), func(err error) tea.Msg {
 				return actionMsg{text: "back from " + session, err: err}
 			})
 		case "p":

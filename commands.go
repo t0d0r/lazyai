@@ -355,7 +355,7 @@ func attach(ref string) error {
 	if a.TmuxSession == "" {
 		return fmt.Errorf("PID %d is not running in tmux", a.PID)
 	}
-	cmd := tmux.AttachCmd(a.TmuxSession)
+	cmd := tmux.AttachCmd(a.TmuxSession, a.TmuxPane, string(a.Kind))
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	return cmd.Run()
 }

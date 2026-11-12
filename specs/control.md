@@ -52,6 +52,12 @@
 - Session name is `lazyai-` plus the name (default `KIND-DIRBASENAME`)
   with characters outside `[A-Za-z0-9_-]` replaced by `-`. If taken, `-2`,
   `-3` ... is appended.
+- Window name: the session's window is named after the command's base
+  name (`-n claude`), and the same tmux call sets `automatic-rename off`
+  and `allow-rename off` on it. Reason: with automatic-rename tmux names
+  the window after the pane's process, and Claude Code's process name is
+  its version, so the status line showed `0:2.1.322*`; allow-rename off
+  keeps the agent's escape sequences from renaming it too.
 - The tmux session ends when the agent exits.
 - Early exit: the session is created with `remain-on-exit on` in the
   same tmux call (`new-session ... ; set-option -w -t =SESSION:
@@ -83,6 +89,11 @@
   `PREFIX L: back to lazyai` (last session), because detaching would leave
   tmux altogether. Global options and sessions not started by lazyai are
   never changed. Failures to set it are ignored.
+- Window name on attach: for `lazyai-*` sessions launched before the
+  window was named at launch, attach names the agent's window after its
+  kind (`claude`) and sets `automatic-rename off` and `allow-rename off`
+  there (tmux.NameWindow). A window whose automatic-rename is already off
+  was named on purpose and is left alone. Failures are ignored.
 
 ## Send
 

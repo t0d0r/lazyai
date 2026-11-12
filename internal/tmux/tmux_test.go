@@ -51,6 +51,12 @@ func TestLaunchSendPanes(t *testing.T) {
 	if err := Launch(session, t.TempDir(), []string{"cat"}); err == nil {
 		t.Error("second launch with the same name succeeded")
 	}
+	// The window is named after the command and cannot be renamed by it.
+	win, _ := exec.Command("tmux", "display-message", "-p", "-t", "="+session+":",
+		"#{window_name} #{automatic-rename} #{allow-rename}").Output()
+	if got := strings.TrimSpace(string(win)); got != "cat 0 0" {
+		t.Errorf("window name, automatic-rename, allow-rename: %q", got)
+	}
 	right, _ := exec.Command("tmux", "show-options", "-t", "="+session+":", "-v", "status-right").Output()
 	if !strings.Contains(string(right), " d: detach, back to lazyai") {
 		t.Errorf("status-right: %q", right)
@@ -117,6 +123,35 @@ func TestLaunchSendPanes(t *testing.T) {
 	}
 	if err := RenameSession("lazyai-no-such-session-x", "lazyai-no-such-y"); err == nil {
 		t.Error("renaming a missing session succeeded")
+	}
+}
+
+func TestNameWindow(t *testing.T) {
+	if !Available() {
+		t.Skip("tmux not installed")
+	}
+	// A session as older lazyai versions launched it: automatic-rename on.
+	session := FreeSessionName("test-win-" + time.Now().Format("150405.000"))
+	out, err := exec.Command("tmux", "new-session", "-d", "-P", "-F", "#{pane_id}", "-s", session, "cat").CombinedOutput()
+	if err != nil {
+		t.Fatalf("%v: %s", err, out)
+	}
+	defer exec.Command("tmux", "kill-session", "-t", "="+session).Run()
+	pane := strings.TrimSpace(string(out))
+	state := func() string {
+		out, _ := exec.Command("tmux", "display-message", "-p", "-t", pane,
+			"#{window_name} #{automatic-rename} #{allow-rename}").Output()
+		return strings.TrimSpace(string(out))
+	}
+	NameWindow(pane, "claude")
+	if got := state(); got != "claude 0 0" {
+		t.Errorf("after NameWindow: %q", got)
+	}
+	// A window named on purpose stays as it is.
+	exec.Command("tmux", "rename-window", "-t", pane, "mine").Run()
+	NameWindow(pane, "claude")
+	if got := state(); !strings.HasPrefix(got, "mine ") {
+		t.Errorf("named window renamed: %q", got)
 	}
 }
 
