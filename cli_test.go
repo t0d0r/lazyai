@@ -138,6 +138,7 @@ func TestUsageErrors(t *testing.T) {
 		{[]string{"stop"}, "lazyai stop: missing AGENT"},
 		{[]string{"launch"}, "lazyai launch: missing KIND"},
 		{[]string{"send", "x"}, "lazyai send: expected AGENT and TEXT"},
+		{[]string{"rename", "x"}, "lazyai rename: expected AGENT and NAME"},
 		{[]string{"watch", "-i"}, "lazyai watch: flag needs an argument: -i"},
 		{[]string{"--bogus"}, "lazyai: flag provided but not defined: -bogus\nRun 'lazyai --help' for usage."},
 	}

@@ -44,7 +44,7 @@ n launch, s stop, K kill, H helpers, ? all keys, q quit. Mouse works.`,
 					return err
 				}
 				return tui.Run(tui.Options{Interval: *interval, LaunchDir: cwd,
-					HistoryFile: tui.HistoryPath(), SettingsFile: tui.SettingsPath(), Version: version})
+					HistoryFile: tui.HistoryPath(), ImportantFile: tui.ImportantPath(), SettingsFile: tui.SettingsPath(), Version: version})
 			}
 		},
 	},
@@ -174,6 +174,23 @@ is text, joined with spaces, including words that start with "-".`,
 					return usagef("expected AGENT and TEXT")
 				}
 				return send(args[0], strings.Join(args[1:], " "))
+			}
+		},
+	},
+	{
+		name:     "rename",
+		synopsis: "AGENT NAME",
+		summary:  "rename an agent's tmux session",
+		about: `
+Rename the tmux session AGENT runs in to NAME, taken as given: letters,
+digits, - and _, with no lazyai- prefix added. Important marks set in
+the dashboard move to the new name.`,
+		setup: func(f *flagDefs) action {
+			return func(e env, args []string) error {
+				if len(args) != 2 {
+					return usagef("expected AGENT and NAME")
+				}
+				return rename(e, args[0], args[1])
 			}
 		},
 	},
@@ -352,6 +369,30 @@ func send(ref, text string) error {
 		return fmt.Errorf("PID %d is not running in tmux", a.PID)
 	}
 	return tmux.Send(a.TmuxPane, text)
+}
+
+func rename(e env, ref, name string) error {
+	if err := tmux.CheckSessionName(name); err != nil {
+		return err
+	}
+	a, err := find(ref)
+	if err != nil {
+		return err
+	}
+	if a.TmuxSession == "" {
+		return fmt.Errorf("PID %d is not running in tmux", a.PID)
+	}
+	if a.TmuxSession == name {
+		return nil
+	}
+	if err := tmux.RenameSession(a.TmuxSession, name); err != nil {
+		return err
+	}
+	fmt.Fprintf(e.out, "renamed %s to %s\n", a.TmuxSession, name)
+	if err := tui.RenameMarks(tui.ImportantPath(), a.TmuxSession, name); err != nil {
+		return fmt.Errorf("renamed, but important marks: %w", err)
+	}
+	return nil
 }
 
 func stop(e env, refs []string, force, yes bool) error {

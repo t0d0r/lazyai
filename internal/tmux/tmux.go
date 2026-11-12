@@ -84,6 +84,47 @@ func SessionName(name string) string {
 	return Prefix + strings.Trim(b.String(), "-")
 }
 
+// CheckSessionName refuses a name for RenameSession: empty, longer than
+// 100 characters, or with characters other than letters, digits, - and _.
+// tmux itself would change ":" and "." and allows spaces, which make a
+// session hard to name on a command line.
+func CheckSessionName(name string) error {
+	if name == "" {
+		return errors.New("empty session name")
+	}
+	if len(name) > 100 {
+		return errors.New("session name longer than 100 characters")
+	}
+	for _, r := range name {
+		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '_') {
+			return fmt.Errorf("session name %q: use letters, digits, - and _", name)
+		}
+	}
+	return nil
+}
+
+// RenameSession renames the tmux session from to to. The new name is
+// taken as given, with no lazyai- prefix added.
+func RenameSession(from, to string) error {
+	if err := CheckSessionName(to); err != nil {
+		return err
+	}
+	if from == to {
+		return nil
+	}
+	if HasSession(to) {
+		return fmt.Errorf("a tmux session named %s exists already", to)
+	}
+	out, err := exec.Command("tmux", "rename-session", "-t", "="+from, "--", to).CombinedOutput()
+	if err != nil {
+		if msg := strings.TrimSpace(string(out)); msg != "" {
+			return fmt.Errorf("tmux rename-session: %s", msg)
+		}
+		return fmt.Errorf("tmux rename-session: %w", err)
+	}
+	return nil
+}
+
 // HasSession reports whether a session with exactly this name exists.
 func HasSession(session string) bool {
 	return exec.Command("tmux", "has-session", "-t", "="+session).Run() == nil

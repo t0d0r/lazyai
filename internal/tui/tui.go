@@ -5,6 +5,7 @@ package tui
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -21,6 +22,8 @@ type Options struct {
 	Interval    time.Duration // refresh period
 	LaunchDir   string        // default directory for new agents
 	HistoryFile string        // launch history; "" keeps it in memory only
+	// ImportantFile holds the important marks; "" keeps them in memory.
+	ImportantFile string
 	// SettingsFile holds the layout saved with S; "" starts with the
 	// defaults and S reports an error.
 	SettingsFile string
@@ -49,6 +52,8 @@ type (
 		// launched is the tmux session a successful launch created; the
 		// list selects that agent once discovery finds it.
 		launched string
+		// renamed is the tmux session renamed from [0] to [1].
+		renamed [2]string
 	}
 	flashEndMsg struct{}
 )
@@ -125,6 +130,7 @@ type inputKind int
 const (
 	inputSend inputKind = iota
 	inputLaunch
+	inputRename
 )
 
 // screenHistory is how many lines above the visible pane Screen shows.
@@ -215,9 +221,9 @@ type model struct {
 	flashUntil   time.Time
 	launchErr    *tmux.ExitError // shown by popupLaunchErr
 
-	// important holds the keys of agents marked with importantKey; it
-	// lasts while lazyai runs.
-	important map[string]bool
+	// important holds the markIDs of agents marked with importantKey,
+	// oldest first, as saved in opts.ImportantFile.
+	important []string
 }
 
 func newModel(opts Options) model {
@@ -225,7 +231,7 @@ func newModel(opts Options) model {
 		opts.Interval = 2 * time.Second
 	}
 	m := model{opts: opts, watcher: watch.New(), loading: true, follow: true, screenFollow: true, screenTopPct: screenTopDefault, width: 120, height: 30,
-		hist: loadHistory(opts.HistoryFile)}
+		hist: loadHistory(opts.HistoryFile), important: loadMarks(opts.ImportantFile)}
 	s, err := loadSettings(opts.SettingsFile)
 	if err != nil {
 		m.setMsg("settings ignored: "+err.Error(), true)
@@ -296,6 +302,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.setMsg(msg.text, false)
 			if msg.launched != "" {
 				m.pending, m.pendingUntil = msg.launched, time.Now().Add(pendingTime)
+			}
+			if from, to := msg.renamed[0], msg.renamed[1]; from != "" {
+				if err := m.renameMarks(from, to); err != nil {
+					m.setMsg(msg.text+"; important marks: "+err.Error(), true)
+				}
 			}
 		}
 		return m, m.refresh()
@@ -432,22 +443,38 @@ func (m *model) toggleImportant() {
 		m.setMsg("no agent selected", true)
 		return
 	}
-	if m.important == nil {
-		m.important = map[string]bool{}
+	if m.opts.ImportantFile != "" {
+		m.important = loadMarks(m.opts.ImportantFile) // keep marks other lazyai instances made
 	}
-	k := a.Key()
-	if m.important[k] {
-		delete(m.important, k)
+	var on bool
+	m.important, on = toggleMark(m.important, markID(a))
+	if on {
+		m.setMsg(label(a)+" marked important", false)
+	} else {
 		m.setMsg(label(a)+" no longer important", false)
-		return
 	}
-	m.important[k] = true
-	m.setMsg(label(a)+" marked important", false)
+	if err := saveMarks(m.opts.ImportantFile, m.important); err != nil {
+		m.setMsg("important marks: "+err.Error(), true)
+	}
+}
+
+// renameMarks moves the important marks of tmux session from to to, in
+// memory and in the marks file.
+func (m *model) renameMarks(from, to string) error {
+	if m.opts.ImportantFile != "" {
+		m.important = loadMarks(m.opts.ImportantFile)
+	}
+	moved := moveMarks(m.important, from, to)
+	if slices.Equal(moved, m.important) {
+		return nil
+	}
+	m.important = moved
+	return saveMarks(m.opts.ImportantFile, m.important)
 }
 
 // isImportant reports whether a is marked with importantKey.
 func (m model) isImportant(a agent.Agent) bool {
-	return m.important[a.Key()]
+	return slices.Contains(m.important, markID(a))
 }
 
 // flashing reports whether a's row is shown yellow as just launched.
@@ -676,7 +703,7 @@ func (m model) action(key string) (tea.Model, tea.Cmd) {
 	case "n":
 		m.popup, m.input, m.buf, m.draft, m.choices = popupInput, inputLaunch, nil, nil, nil
 		m.histPos = len(m.hist)
-	case "a", "p", "s", "K":
+	case "a", "p", "s", "K", renameKey:
 		if !ok {
 			m.setMsg("nothing selected", true)
 			break
@@ -698,6 +725,8 @@ func (m model) action(key string) (tea.Model, tea.Cmd) {
 				break
 			}
 			m.popup, m.input, m.target, m.buf = popupInput, inputSend, a, nil
+		case renameKey:
+			m.popup, m.input, m.target, m.buf = popupInput, inputRename, a, []rune(a.TmuxSession)
 		default:
 			m.popup, m.target, m.force, m.confirmSend = popupConfirm, a, key == "K", false
 		}
@@ -711,6 +740,10 @@ func disabledReason(key string, a agent.Agent) string {
 	case "a", "p":
 		if a.TmuxPane == "" {
 			return "not running in tmux; start agents with n to attach or send prompts"
+		}
+	case renameKey:
+		if a.TmuxSession == "" {
+			return "not running in tmux; there is no session to rename"
 		}
 	case "s", "K":
 		if a.Protected {
@@ -808,6 +841,23 @@ func (m *model) submit(text string) tea.Cmd {
 	if text == "" {
 		m.setMsg("cancelled", false)
 		return nil
+	}
+	if m.input == inputRename {
+		from := m.target.TmuxSession
+		if text == from {
+			m.setMsg("name unchanged", false)
+			return nil
+		}
+		if err := tmux.CheckSessionName(text); err != nil {
+			m.setMsg(err.Error(), true)
+			return nil
+		}
+		return func() tea.Msg {
+			if err := tmux.RenameSession(from, text); err != nil {
+				return actionMsg{err: err}
+			}
+			return actionMsg{text: "renamed " + from + " to " + text, renamed: [2]string{from, text}}
+		}
 	}
 	if m.input == inputSend {
 		a := m.target

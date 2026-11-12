@@ -47,6 +47,10 @@ var examples = map[string][]example{
 	"send": {
 		{`lazyai send web "run the tests and fix what fails"`, "type a prompt and press Enter"},
 	},
+	"rename": {
+		{"lazyai rename web api-review", "rename lazyai-web to api-review"},
+		{"lazyai rename 12345 lazyai-docs", "by PID; keep the lazyai- prefix by typing it"},
+	},
 	"stop": {
 		{"lazyai stop web", "SIGTERM, after a y/N question"},
 		{"lazyai stop 12345 12346 --yes", "several agents, without asking"},

@@ -16,6 +16,7 @@ formatting.
 | `launch [-dir D] [-name N] KIND [DIR] [NAME] [-- ARGS]` | n | the `n` line; control.md |
 | `attach AGENT`                           | a        | see control.md                         |
 | `send AGENT TEXT...`                     | p        | words are joined with single spaces    |
+| `rename AGENT NAME`                      | R        | rename the tmux session; control.md    |
 | `stop [-force] [-yes] AGENT...`          | s        | asks `[y/N]` per agent unless `-yes`   |
 | `kill [-yes] AGENT...`                   | K        | `stop -force`                          |
 | `update [-check] [-yes]`                 | -        | install the latest release, update.md  |

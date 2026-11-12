@@ -70,7 +70,15 @@ func sample() []agent.Agent {
 }
 
 func loaded(w, h int) model {
-	m := newModel(Options{Version: "test"})
+	return loadedSize(Options{Version: "test"}, w, h)
+}
+
+func loadedWith(opts Options) model {
+	return loadedSize(opts, 120, 30)
+}
+
+func loadedSize(opts Options, w, h int) model {
+	m := newModel(opts)
 	next, _ := m.Update(tea.WindowSizeMsg{Width: w, Height: h})
 	next, _ = next.(model).Update(agentsMsg{agents: sample()})
 	return next.(model)

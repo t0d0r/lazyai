@@ -31,6 +31,7 @@ var keyHelp = []bindingGroup{
 		{"x", "menu of actions for the selected agent"},
 		{"a", "attach to the agent's tmux session"},
 		{"p", "type a prompt into the agent and press Enter"},
+		{renameKey, "rename the agent's tmux session"},
 		{"n", "launch a new agent in tmux"},
 		{"s", "stop (SIGTERM)"},
 		{"K", "kill (SIGKILL)"},
@@ -61,6 +62,9 @@ const importantKey = "!"
 // reads without colors and in the reversed selected row.
 const importantMark = "!"
 
+// renameKey renames the selected agent's tmux session.
+const renameKey = "R"
+
 // saveKey saves the layout settings for the next start.
 const saveKey = "S"
 
@@ -88,6 +92,7 @@ func (m model) menuItems() []menuItem {
 			{"p", "send a prompt"},
 			{"s", "stop (SIGTERM)"},
 			{"K", "kill (SIGKILL)"},
+			{renameKey, "rename tmux session"},
 		} {
 			reason := ""
 			switch disabledReason(it.key, a) {

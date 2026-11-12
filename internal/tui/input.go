@@ -15,13 +15,9 @@ const historyMax = 200
 // HistoryPath is the launch history file: $XDG_STATE_HOME/lazyai/launch_history,
 // with ~/.local/state as the default state directory. "" when there is no home.
 func HistoryPath() string {
-	dir := os.Getenv("XDG_STATE_HOME")
+	dir := stateDir()
 	if dir == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return ""
-		}
-		dir = filepath.Join(home, ".local", "state")
+		return ""
 	}
 	return filepath.Join(dir, "lazyai", "launch_history")
 }

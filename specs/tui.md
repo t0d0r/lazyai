@@ -85,12 +85,26 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
     and in the selected row. The message line says `LABEL marked
     important` / `LABEL no longer important`. The x menu offers
     `mark important` / `unmark important` for the selected agent.
-    Marks are kept by agent key (PID and start time) for as long as
-    lazyai runs; a restart clears them, and an agent that exits takes its
-    mark with it.
-    Decision: in memory only for now. Reason: a PID-and-start key does not
-    survive the agent's restart either, and saving marks needs a stable
-    agent identity (tmux session name, Claude session id) to be useful.
+    Marks are saved in `$XDG_STATE_HOME/lazyai/important` (default
+    `~/.local/state/lazyai/important`, mode 0600, directory 0700), one
+    mark per line, oldest first, at most 200 (the oldest are dropped).
+    lazyai reads the file at start and again before each toggle, so marks
+    made by another lazyai are kept. Without a home directory marks stay
+    in memory. A mark is saved under the most stable identity the agent
+    has:
+    - `tmux:SESSION:KIND:ROLE` for an agent in tmux: the mark stays when
+      the agent is restarted in the same session, and a new agent
+      launched under a marked session name is marked too. Agents of the
+      same kind and role in one session share the mark.
+    - `claude:SESSIONID` for a Claude agent outside tmux.
+    - `proc:KEY:START` (PID, or container ID and PID, and the start time
+      in Unix seconds) otherwise: it lasts as long as the process.
+    Renaming a tmux session (`R`, or the CLI `rename`) moves its marks to
+    the new name.
+    Decision: tmux session first. Reason: it is the name people give the
+    work and the one lazyai launches under; a PID changes on every agent
+    restart. The file is mode 0600 because session names and Claude
+    session ids say what the user works on.
   - An agent in tmux that also has a Claude session name shows it after
     the session, dimmed (`lazyai-sos-tasks hosts-various-a1`), only when
     it fits whole; otherwise it is left out. It is not dimmed in a row
@@ -326,6 +340,7 @@ screen, 120x30: lists as tabs and the other tabs on top, Screen below
 | /                    | filter the list in use; enter keeps, esc clears |
 | s / K                | stop (SIGTERM) / kill (SIGKILL), confirm with y |
 | !                    | mark / unmark the selected agent important     |
+| R                    | rename the agent's tmux session (Rename session) |
 | H                    | show / hide helper processes                   |
 | r                    | refresh now                                    |
 | ?                    | keybindings popup                              |
@@ -392,6 +407,15 @@ Launch feedback (`n`):
   Decision: select and flash instead of only a message, because a new
   agent lands somewhere in a long list and the next step is usually to
   attach to it.
+
+Rename session (`R`, also in the x menu): a popup `Rename SESSION` with
+the current name filled in; ctrl+u clears it. Enter renames the session
+with control.md Rename; the message line says `renamed OLD to NEW`. The
+same name says `name unchanged`; a name with characters other than
+letters, digits, `-` and `_` is refused in the message line before tmux
+is asked. An agent outside tmux has no session: `R` says so. The
+selection stays on the agent; important marks of the session follow
+the new name.
 
 Launch input: DIR may use `~` and is relative to the directory lazyai was
 started in. Input popups treat both terminal backspace encodings (DEL and

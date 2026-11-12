@@ -94,6 +94,43 @@ func TestLaunchSendPanes(t *testing.T) {
 	if err != nil || strings.Count(screen, text) != 2 || strings.HasSuffix(screen, "\n") {
 		t.Errorf("Capture: %v\n%q", err, screen)
 	}
+
+	// Rename: the session and its pane go on under the new name.
+	renamed := FreeSessionName(strings.TrimPrefix(session, Prefix) + "-renamed")
+	defer exec.Command("tmux", "kill-session", "-t", "="+renamed).Run()
+	if err := RenameSession(session, renamed); err != nil {
+		t.Fatal(err)
+	}
+	if HasSession(session) || !HasSession(renamed) {
+		t.Errorf("after rename: old %v new %v", HasSession(session), HasSession(renamed))
+	}
+	if err := RenameSession(renamed, renamed); err != nil {
+		t.Errorf("rename to the same name: %v", err)
+	}
+	other := FreeSessionName("test-other")
+	if err := Launch(other, t.TempDir(), []string{"cat"}); err != nil {
+		t.Fatal(err)
+	}
+	defer exec.Command("tmux", "kill-session", "-t", "="+other).Run()
+	if err := RenameSession(renamed, other); err == nil || !strings.Contains(err.Error(), "exists already") {
+		t.Errorf("rename onto a taken name: %v", err)
+	}
+	if err := RenameSession("lazyai-no-such-session-x", "lazyai-no-such-y"); err == nil {
+		t.Error("renaming a missing session succeeded")
+	}
+}
+
+func TestCheckSessionName(t *testing.T) {
+	for _, ok := range []string{"web", "lazyai-web_2", "A-b"} {
+		if err := CheckSessionName(ok); err != nil {
+			t.Errorf("%q refused: %v", ok, err)
+		}
+	}
+	for _, bad := range []string{"", "a b", "a:b", "a.b", "web/x", "\u00e9", strings.Repeat("a", 101)} {
+		if CheckSessionName(bad) == nil {
+			t.Errorf("%q accepted", bad)
+		}
+	}
 }
 
 func TestParsePanes(t *testing.T) {

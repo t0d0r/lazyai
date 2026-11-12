@@ -180,8 +180,11 @@
       state line (specs/tui.md Layout)
 - [x] `!` marks an agent important: ` !` after the label, magenta row,
       toggled again with `!` or from the x menu (specs/tui.md Layout)
-- [ ] keep important marks across restarts, keyed by a stable identity
-      (tmux session, Claude session id), if wanted (specs/tui.md)
+- [x] keep important marks across restarts in
+      ~/.local/state/lazyai/important, keyed by tmux session, Claude
+      session id, or process (specs/tui.md Layout)
+- [x] rename an agent's tmux session: `R` in the TUI, `lazyai rename`
+      in the CLI; marks follow (specs/control.md Rename, specs/tui.md)
 - [x] release v0.10.1 with status colors, the `!` important mark, launch
       feedback and Screen colors; tap formula updated to 0.10.1
       (specs/release.md)

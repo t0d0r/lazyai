@@ -749,8 +749,11 @@ func (m model) inputPopup() string {
 		kinds = append(kinds, string(k))
 	}
 	hint += strings.Join(kinds, " ") + ", or a command on PATH"
-	if m.input == inputSend {
+	switch m.input {
+	case inputSend:
 		title, hint = "Prompt for "+m.target.TmuxSession, "typed into the agent, then Enter"
+	case inputRename:
+		title, hint = "Rename "+m.target.TmuxSession, "new tmux session name: letters, digits, - and _ (ctrl+u clears)"
 	}
 	w := min(80, m.width-4)
 	text := string(m.buf) + "_"

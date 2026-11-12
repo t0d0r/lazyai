@@ -97,6 +97,22 @@
   would submit both. The CLI `send` does not ask: it runs from scripts
   that decided already.
 
+## Rename
+
+- Requires the agent to run in a tmux session.
+  `tmux rename-session -t =OLD -- NEW`.
+- NEW is taken as given, with no `lazyai-` prefix added: letters, digits,
+  `-` and `_`, 1 to 100 characters. Reason: tmux turns `:` and `.` into
+  `_` and allows spaces, which make the session hard to name in `a`,
+  `attach` and scripts. Renaming to the current name does nothing.
+- A NEW that names another session is refused (`a tmux session named NEW
+  exists already`), as are tmux's own errors, with tmux's message.
+- Important marks of OLD move to NEW (tui.md, Important mark).
+- A session renamed away from `lazyai-` keeps the status-line hint set at
+  launch, but attach no longer refreshes it, as for any session not
+  started by lazyai.
+- CLI targets as for Send.
+
 ## Redaction
 
 Command lines shown on screen or in JSON replace values of arguments whose
