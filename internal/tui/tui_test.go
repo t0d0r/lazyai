@@ -9,7 +9,9 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/muesli/termenv"
 
 	"lazyai/internal/agent"
 	"lazyai/internal/tmux"
@@ -1005,5 +1007,57 @@ func TestScreenText(t *testing.T) {
 	// Shown text is the same as without colors.
 	if s := ansi.Strip(strings.Join(got, "\n")); s != "blue    x\nbg starts\nstill bg plain\nevilok!" {
 		t.Errorf("stripped: %q", s)
+	}
+}
+
+func TestImportantMark(t *testing.T) {
+	m := loaded(120, 30)
+	a, _ := m.selected()
+	if m = press(m, "!"); !m.isImportant(a) || !strings.Contains(m.msg, "marked important") {
+		t.Fatalf("! does not mark: msg %q", m.msg)
+	}
+	row := ""
+	for _, l := range strings.Split(ansi.Strip(m.View()), "\n") {
+		if strings.Contains(l, label(a)) {
+			row = l
+			break
+		}
+	}
+	if !strings.Contains(row, label(a)+" "+importantMark) {
+		t.Errorf("row has no important mark: %q", row)
+	}
+	// The mark stays on the agent when the selection moves.
+	if m = press(m, "j"); !m.isImportant(a) {
+		t.Error("mark lost when the selection moved")
+	}
+	if m = press(m, "k", "!"); m.isImportant(a) || !strings.Contains(m.msg, "no longer important") {
+		t.Errorf("second ! does not unmark: msg %q", m.msg)
+	}
+	// The x menu offers it too.
+	m = press(m, "x", "!")
+	if !m.isImportant(a) || m.popup != popupNone {
+		t.Errorf("menu ! does not mark: popup %d", m.popup)
+	}
+}
+
+func TestStatusColors(t *testing.T) {
+	defer lipgloss.SetColorProfile(lipgloss.ColorProfile())
+	lipgloss.SetColorProfile(termenv.ANSI)
+	busy, idle := statusText("busy"), statusText("idle")
+	if busy == idle || ansi.Strip(busy) != "busy" || ansi.Strip(idle) != "idle" || busy == "busy" {
+		t.Errorf("busy %q idle %q", busy, idle)
+	}
+	if got := statusText("other"); got != "other" {
+		t.Errorf("unknown status styled: %q", got)
+	}
+	// The colored status does not change the row width.
+	m := loaded(120, 30)
+	for _, l := range strings.Split(m.View(), "\n") {
+		if w := ansi.StringWidth(l); w > 120 {
+			t.Errorf("line %d wide: %q", w, ansi.Strip(l))
+		}
+	}
+	if !strings.Contains(m.View(), idle) {
+		t.Error("idle status not colored in the list")
 	}
 }

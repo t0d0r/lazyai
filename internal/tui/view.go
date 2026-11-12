@@ -24,6 +24,8 @@ var (
 	selStyle    = lipgloss.NewStyle().Reverse(true)
 	selDimStyle = lipgloss.NewStyle().Bold(true)
 	busyStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
+	idleStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))
+	impStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("5")).Bold(true)
 	flagStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
 	dimStyle    = lipgloss.NewStyle().Foreground(dimColor)
 	errStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true)
@@ -287,18 +289,22 @@ func (m model) listPanel(i int, l layout) string {
 			prefix += string(a.Role) + " "
 		}
 		suffix := ""
-		if a.Protected {
-			suffix = " *"
+		important := m.isImportant(a)
+		if important {
+			suffix = " " + importantMark
 		}
-		right := fmt.Sprintf("%s %5.1f%% %5s", a.Status, a.TreeCPU, display.Bytes(a.TreeRSS))
+		if a.Protected {
+			suffix += " *"
+		}
+		right := fmt.Sprintf("%s %5.1f%% %5s", statusText(a.Status), a.TreeCPU, display.Bytes(a.TreeRSS))
 		if l.compact {
 			// The main panel beside it has the numbers; the label gets the room.
 			right = ""
 			if a.Status == "busy" {
-				right = a.Status
+				right = statusText(a.Status)
 			}
 		}
-		room := inner - len(right) - 1 - ansi.StringWidth(prefix+suffix)
+		room := inner - ansi.StringWidth(right) - 1 - ansi.StringWidth(prefix+suffix)
 		lbl, isPath := rowLabel(a)
 		if isPath {
 			lbl = shortenPath(lbl, room)
@@ -310,7 +316,7 @@ func (m model) listPanel(i int, l layout) string {
 		// The Claude name follows the tmux session only when it fits
 		// whole; dim unless the whole row gets a style.
 		if hint := nameHint(a); hint != "" && ansi.StringWidth(lbl)+1+ansi.StringWidth(hint) <= room {
-			if r == lst.cursor || flagged || a.Status == "busy" {
+			if r == lst.cursor || flagged || important || a.Status == "busy" {
 				lbl += " " + hint
 			} else {
 				lbl += " " + dimStyle.Render(hint)
@@ -328,6 +334,8 @@ func (m model) listPanel(i int, l layout) string {
 			row = selDimStyle.Render(row)
 		case flagged:
 			row = flagStyle.Render(row)
+		case important:
+			row = impStyle.Render(row)
 		case a.Status == "busy":
 			row = busyStyle.Render(row)
 		}
@@ -475,7 +483,9 @@ func (m model) mainLines(w int) []string {
 func (m model) infoLines(a agent.Agent) []string {
 	now := time.Now()
 	t, _ := m.watcher.Tracker(a.Key())
-	fields := append([]display.Field{{Name: "state", Value: display.Status(a, t, now)}}, display.Details(a)...)
+	state := display.Status(a, t, now)
+	state = statusText(a.Status) + strings.TrimPrefix(state, a.Status)
+	fields := append([]display.Field{{Name: "state", Value: state}}, display.Details(a)...)
 	fields = append(fields,
 		display.Field{Name: "resources", Value: fmt.Sprintf("%.1f%% CPU, %s, up %s",
 			a.CPU, display.Bytes(a.RSS), display.Duration(now.Sub(a.Start)))},
@@ -811,6 +821,20 @@ func fit(s string, w int) string {
 
 // spread puts left and right at the two ends of a w-cell line; left is cut
 // first when they do not fit.
+// statusText colors an agent status: busy green, idle cyan, anything
+// else plain. Rows show it on their right side, which the row styles
+// (selected, flagged, busy) leave plain, so the color shows in every row
+// except a launch flash, which strips it.
+func statusText(status string) string {
+	switch status {
+	case "busy":
+		return busyStyle.Render(status)
+	case "idle":
+		return idleStyle.Render(status)
+	}
+	return status
+}
+
 func spread(left, right string, w int) string {
 	rw := ansi.StringWidth(right)
 	if rw >= w {

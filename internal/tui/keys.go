@@ -34,6 +34,7 @@ var keyHelp = []bindingGroup{
 		{"n", "launch a new agent in tmux"},
 		{"s", "stop (SIGTERM)"},
 		{"K", "kill (SIGKILL)"},
+		{importantKey, "mark / unmark the agent important"},
 		{"H", "show / hide helper processes"},
 		{"r", "refresh now"},
 		{"?", "this help"},
@@ -42,6 +43,7 @@ var keyHelp = []bindingGroup{
 	{"Marks", []binding{
 		{attachMark + " before a row", "runs in tmux, detached: a attach and p prompt work"},
 		{attachedMark + " before a row", "runs in tmux and a client is attached now"},
+		{importantMark + " after a row", "marked important with " + importantKey + " (magenta)"},
 		{"* after a row", "lazyai's own parent: not stopped from here"},
 	}},
 }
@@ -51,6 +53,13 @@ const attachMark = "@"
 
 // attachedMark replaces attachMark while a tmux client shows the session.
 const attachedMark = ">"
+
+// importantKey toggles the important mark of the selected agent.
+const importantKey = "!"
+
+// importantMark ends the rows of agents marked important, so the mark
+// reads without colors and in the reversed selected row.
+const importantMark = "!"
 
 // saveKey saves the layout settings for the next start.
 const saveKey = "S"
@@ -94,6 +103,13 @@ func (m model) menuItems() []menuItem {
 	helpers := "show helper processes"
 	if m.showHelpers {
 		helpers = "hide helper processes"
+	}
+	if a, ok := m.selected(); ok {
+		mark := "mark important"
+		if m.isImportant(a) {
+			mark = "unmark important"
+		}
+		items = append(items, menuItem{importantKey, mark, ""})
 	}
 	return append(items,
 		menuItem{"n", "launch a new agent", ""},

@@ -66,9 +66,31 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
   colors and in the reversed selected row. Then the kind, role (not
   in Agents), label (the full tmux session name, else the Claude session
   name, else the last two directories of the working directory, home
-  shown as `~`: `alpha/web-frontend`), `*` for lazyai's own parent;
-  right-aligned status, tree CPU% and tree memory in every list. The `?`
-  popup explains `>`, `@` and `*` under Marks.
+  shown as `~`: `alpha/web-frontend`), `!` for an agent marked important,
+  `*` for lazyai's own parent; right-aligned status, tree CPU% and tree
+  memory in every list. The `?` popup explains `>`, `@`, `!` and `*`
+  under Marks.
+  - Status colors: the status word is green for `busy` and cyan for
+    `idle`, in every row and in the detail panel's `state` line; any
+    other status is plain. The row styles (selected, flagged, important,
+    busy) color the left part of the row, so the status color shows in
+    them too; only a launch flash, which colors the whole row, hides it.
+    Decision: color the word, not the row, for idle, so idle rows stay
+    quiet and busy rows still stand out by their green label.
+  - Important mark (`!` key): toggles a mark on the selected agent. A
+    marked row ends its label with ` !` (before `*`) and its left part is
+    bold magenta when it has no stronger style. Order of row styles:
+    launch flash, selected, flagged (red), important (magenta), busy
+    (green). The `!` character keeps the mark readable without colors
+    and in the selected row. The message line says `LABEL marked
+    important` / `LABEL no longer important`. The x menu offers
+    `mark important` / `unmark important` for the selected agent.
+    Marks are kept by agent key (PID and start time) for as long as
+    lazyai runs; a restart clears them, and an agent that exits takes its
+    mark with it.
+    Decision: in memory only for now. Reason: a PID-and-start key does not
+    survive the agent's restart either, and saving marks needs a stable
+    agent identity (tmux session name, Claude session id) to be useful.
   - An agent in tmux that also has a Claude session name shows it after
     the session, dimmed (`lazyai-sos-tasks hosts-various-a1`), only when
     it fits whole; otherwise it is left out. It is not dimmed in a row
@@ -81,7 +103,7 @@ x menu  a attach  p prompt  s stop ...                      lazyai VERSION
   the start of the last directory with `..` (`alpha/..nd`), or, with
   less room, the start of the whole label (`..ontend`); other labels
   are cut at the end. Selected row reversed in the focused list, bold
-  elsewhere; flagged rows red, busy rows green. The bottom border shows
+  elsewhere; flagged rows red, important rows magenta, busy rows green. The bottom border shows
   "N of M".
   - Decision: two directories, not one. Reason: the same project
     directory name under different parents (`alpha/web-frontend`,
@@ -155,7 +177,7 @@ screen, 120x30: lists as tabs and the other tabs on top, Screen below
   role (Services and Models) and label as in split, then `busy` on the
   right for a busy agent and nothing for an idle one. CPU and memory are
   left out; the main panel beside shows them for the selected agent.
-  Busy and flagged rows keep their colors.
+  Busy, important and flagged rows keep their colors, and the `!` mark.
 - Lists: the lists take the whole width with the full rows, so long
   labels and the Claude name after a tmux session fit. The main panel is
   hidden:
@@ -303,6 +325,7 @@ screen, 120x30: lists as tabs and the other tabs on top, Screen below
 | n                    | launch: `KIND [DIR] [NAME] [-- ARGS...]`; up / down history, tab completes |
 | /                    | filter the list in use; enter keeps, esc clears |
 | s / K                | stop (SIGTERM) / kill (SIGKILL), confirm with y |
+| !                    | mark / unmark the selected agent important     |
 | H                    | show / hide helper processes                   |
 | r                    | refresh now                                    |
 | ?                    | keybindings popup                              |

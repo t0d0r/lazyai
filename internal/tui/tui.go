@@ -214,6 +214,10 @@ type model struct {
 	flashKey     string
 	flashUntil   time.Time
 	launchErr    *tmux.ExitError // shown by popupLaunchErr
+
+	// important holds the keys of agents marked with importantKey; it
+	// lasts while lazyai runs.
+	important map[string]bool
 }
 
 func newModel(opts Options) model {
@@ -419,6 +423,31 @@ func (m *model) selectPending(now time.Time) tea.Cmd {
 		m.pending = ""
 	}
 	return nil
+}
+
+// toggleImportant marks the selected agent important, or unmarks it.
+func (m *model) toggleImportant() {
+	a, ok := m.selected()
+	if !ok {
+		m.setMsg("no agent selected", true)
+		return
+	}
+	if m.important == nil {
+		m.important = map[string]bool{}
+	}
+	k := a.Key()
+	if m.important[k] {
+		delete(m.important, k)
+		m.setMsg(label(a)+" no longer important", false)
+		return
+	}
+	m.important[k] = true
+	m.setMsg(label(a)+" marked important", false)
+}
+
+// isImportant reports whether a is marked with importantKey.
+func (m model) isImportant(a agent.Agent) bool {
+	return m.important[a.Key()]
 }
 
 // flashing reports whether a's row is shown yellow as just launched.
@@ -634,6 +663,8 @@ func (m model) action(key string) (tea.Model, tea.Cmd) {
 		return m, m.cycleLayout()
 	case saveKey:
 		m.saveLayout()
+	case importantKey:
+		m.toggleImportant()
 	case "H":
 		m.showHelpers = !m.showHelpers
 		m.regroup()

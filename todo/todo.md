@@ -176,3 +176,9 @@
 - [x] launch feedback: an agent that exits at once shows its output in
       a popup; a launched agent is selected and its row is yellow for 3 s
       (specs/control.md Launch, specs/tui.md Launch feedback)
+- [x] status colors: busy green, idle cyan in the rows and the detail
+      state line (specs/tui.md Layout)
+- [x] `!` marks an agent important: ` !` after the label, magenta row,
+      toggled again with `!` or from the x menu (specs/tui.md Layout)
+- [ ] keep important marks across restarts, keyed by a stable identity
+      (tmux session, Claude session id), if wanted (specs/tui.md)
