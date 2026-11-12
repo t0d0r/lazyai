@@ -82,7 +82,25 @@ install -m 0755 lazyai-vX.Y.Z-linux-amd64/lazyai ~/.local/bin/
 
 ## Security
 
-Run `gitleaks git` before pushing. Users should check downloads against
+Secrets are checked twice:
+
+- Before each commit: `.githooks/pre-commit` runs
+  `gitleaks git --pre-commit --staged --redact` on the staged changes
+  and refuses the commit when it finds something, printing the rule,
+  file and line with the secret itself redacted. Without gitleaks
+  installed it also refuses and says so, since an unscanned commit
+  would pass for a scanned one. `git commit --no-verify` skips the hook
+  (a false positive, or no gitleaks at hand).
+  - git does not carry hooks in a clone, so the hook lives in the
+    tracked `.githooks` directory and `make hooks` turns it on once per
+    clone (`git config core.hooksPath .githooks`). Decision: a tracked
+    directory and a make target instead of a copy in `.git/hooks`.
+    Reason: the hook is versioned with the project and every clone
+    gets the same one.
+- Before each push: `gitleaks git` over the commits not yet on the
+  remote, which also covers commits made with the hook off.
+
+Users should check downloads against
 `SHA256SUMS` (`sha256sum -c SHA256SUMS --ignore-missing`). The tarballs are
 not signed; the checksums only protect against corrupted downloads, not
 against a compromised release page.

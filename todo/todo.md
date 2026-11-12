@@ -63,7 +63,8 @@
 - [ ] colibri server status from `coli status` or its pid file, if it has
       one
 - [ ] run `make install` and confirm ~/.local/bin is on PATH in fish
-- [ ] add a gitleaks pre-commit hook
+- [x] add a gitleaks pre-commit hook: .githooks/pre-commit, turned on
+      with `make hooks` (specs/release.md, Security)
 - [ ] module path github.com/t0d0r/lazyai so `go install
       github.com/t0d0r/lazyai@latest` works
 - [x] LICENSE: BSD-2-Clause

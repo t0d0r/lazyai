@@ -1,0 +1,15 @@
+#!/bin/sh
+# Refuses a commit whose staged changes contain a secret, found by
+# gitleaks. Enabled for a clone with `make hooks` (specs/release.md,
+# Security). `git commit --no-verify` skips it.
+if ! command -v gitleaks >/dev/null 2>&1; then
+	echo "pre-commit: gitleaks is not installed, so the staged changes were not scanned." >&2
+	echo "pre-commit: install it (for example: brew install gitleaks), or commit with --no-verify." >&2
+	exit 1
+fi
+# --redact keeps the secret itself out of the terminal and its scrollback.
+if ! gitleaks git --pre-commit --staged --redact --no-banner --verbose; then
+	echo "pre-commit: gitleaks found a possible secret in the staged changes; the commit was refused." >&2
+	echo "pre-commit: remove it and stage again. For a false positive, commit with --no-verify." >&2
+	exit 1
+fi

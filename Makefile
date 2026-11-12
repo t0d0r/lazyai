@@ -13,7 +13,7 @@ DEB_ARCHES ?= amd64 arm64
 DEB_IMAGE ?= debian:latest
 DEB_MAINTAINER ?= $(shell git config user.name) <$(shell git config user.email)>
 
-.PHONY: help build test test-linux dist deb lint fmt check run clean install uninstall tidy
+.PHONY: help build test test-linux dist deb lint fmt check run clean install uninstall tidy hooks
 
 help: ## list targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-10s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -105,6 +105,11 @@ fmt: ## format all Go files
 	gofmt -w .
 
 check: lint test ## lint and test; must pass before a commit
+
+hooks: ## turn on the git hooks in .githooks for this clone (gitleaks before each commit)
+	git config core.hooksPath .githooks
+	@command -v gitleaks >/dev/null || echo "warning: gitleaks is not installed; commits are refused until it is"
+	@echo "pre-commit hook on: staged changes are scanned for secrets"
 
 run: build ## build and start the dashboard
 	./$(BIN)

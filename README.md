@@ -74,6 +74,7 @@ make build       # bin/lazyai
 make check       # gofmt, go vet, tests
 make run         # build and start the dashboard
 make install     # copy to ~/.local/bin (PREFIX=... to change)
+make hooks       # once per clone: scan staged changes with gitleaks before each commit
 make help        # all targets
 ```
 
