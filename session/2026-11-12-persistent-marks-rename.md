@@ -51,7 +51,7 @@
 
 - A session renamed away from `lazyai-` no longer gets its status-line
   hint refreshed on attach (documented in control.md).
-- Release v0.10.2 in progress (session/2026-11-12-release-v0.10.2.md).
+- Released in v0.10.2 (session/2026-11-12-release-v0.10.2.md).
 
 ## Files
 

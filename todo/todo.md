@@ -191,3 +191,6 @@
 - [x] agents do not rename their tmux window: launch names it after the
       command with automatic-rename and allow-rename off; attach fixes
       older lazyai-* sessions (specs/control.md Launch, Attach)
+- [x] release v0.10.2 with persistent important marks, tmux session
+      rename and fixed window names; tap formula updated to 0.10.2
+      (specs/release.md)
