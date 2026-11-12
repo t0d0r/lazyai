@@ -382,7 +382,7 @@ func (m *model) capture() tea.Cmd {
 	m.capturing = true
 	pane := a.TmuxPane
 	return func() tea.Msg {
-		text, err := tmux.Capture(pane, screenHistory)
+		text, err := tmux.Capture(pane, screenHistory, true)
 		return screenMsg{pane, text, err}
 	}
 }

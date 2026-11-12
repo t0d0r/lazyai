@@ -976,3 +976,34 @@ func TestLaunchFeedback(t *testing.T) {
 		t.Error("pending launch not given up")
 	}
 }
+
+func TestScreenText(t *testing.T) {
+	const esc = "\x1b"
+	in := esc + "[38;5;153mblue" + esc + "[39m\tx\n" +
+		esc + "[48;5;68mbg starts\n" + // background left on
+		"still bg" + esc + "[0m plain\n" +
+		"evil" + esc + "]52;c;aGVsbG8=" + "\a" + esc + "[2J" + esc + "[H" + esc + "]0;title" + esc + "\\" + "\r\bok" + esc + "c!"
+	got := screenText(in)
+	want := []string{
+		esc + "[38;5;153mblue" + esc + "[39m    x",
+		esc + "[38;5;153m" + esc + "[39m" + esc + "[48;5;68mbg starts",
+		esc + "[38;5;153m" + esc + "[39m" + esc + "[48;5;68mstill bg" + esc + "[0m plain",
+		"evilok!",
+	}
+	if len(got) != len(want) {
+		t.Fatalf("lines: %q", got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("line %d:\n got %q\nwant %q", i, got[i], want[i])
+		}
+	}
+	// "0;..." resets before setting: only it carries to the next line.
+	if got := screenText(esc + "[31ma" + esc + "[0;1mb\nc"); got[1] != esc+"[0;1mc" {
+		t.Errorf("0; reset carried as %q", got[1])
+	}
+	// Shown text is the same as without colors.
+	if s := ansi.Strip(strings.Join(got, "\n")); s != "blue    x\nbg starts\nstill bg plain\nevilok!" {
+		t.Errorf("stripped: %q", s)
+	}
+}

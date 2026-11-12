@@ -58,8 +58,8 @@
       processes; only grok was running when they were added
 - [ ] try the dashboard in a real terminal: mouse, attach and return,
       colors in light and dark themes
-- [ ] Screen tab with colors (`capture-pane -e`), if it stays readable when
-      lines are cut to the panel width
+- [x] Screen tab with colors (`capture-pane -e`), if it stays readable when
+      lines are cut to the panel width (specs/tui.md, Tabs)
 - [ ] colibri server status from `coli status` or its pid file, if it has
       one
 - [ ] run `make install` and confirm ~/.local/bin is on PATH in fish
@@ -139,9 +139,9 @@
 - [ ] try the layouts in a real terminal: switch while resizing, mouse
       in detail and lists, Screen tab after leaving lists
       (specs/tui.md, Layouts)
-- [ ] release the layouts with the next batch (specs/release.md)
-- [ ] `--layout` option or a saved layout, if wanted (specs/tui.md,
-      Layouts)
+- [x] release the layouts with the next batch: v0.10.0 (specs/release.md)
+- [x] `--layout` option or a saved layout, if wanted: saved with S
+      (specs/tui.md, Saved settings)
 - [ ] status panel: count agents outside tmux (`13 outside tmux`), if
       wanted (specs/tui.md)
 - [ ] optional `~` short form for `lazyai-` sessions in narrow rows, if

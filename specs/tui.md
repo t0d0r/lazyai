@@ -254,9 +254,21 @@ screen, 120x30: lists as tabs and the other tabs on top, Screen below
   2026-11-03 14:02` or `detached, never attached`),
   resources, process tree totals, flags.
 - Screen: the selected agent's tmux pane, captured with
-  `tmux capture-pane -p -S -1000` on every refresh while the tab is shown;
-  it follows the bottom like a log until scrolled. Agents outside tmux get
-  a hint instead.
+  `tmux capture-pane -p -e -S -1000` on every refresh while the tab is
+  shown; it follows the bottom like a log until scrolled. Agents outside
+  tmux get a hint instead.
+  - Colors: the pane's colors and attributes are kept. Of the captured
+    text only SGR sequences (`ESC [ params m`) pass; every other escape
+    sequence (cursor movement, OSC title, hyperlink or clipboard, DCS)
+    and control character is dropped, so pane content cannot act on
+    lazyai's terminal. Tabs become four spaces.
+  - Each line ends with a reset (the panel cuts lines at its width), so
+    the SGR sequences in effect at the end of a line are repeated at the
+    start of the next; `ESC[0m` / `ESC[m` clears them and `ESC[0;...m`
+    starts over. At most the last 16 are carried.
+  - Decision: colors on, no switch. Checked with Claude Code panes at
+    120 columns: cut lines keep the border aligned and stay readable.
+    A switch can be added if a pane's colors clash with a theme.
 - Processes: the chain of parents the agent was started from, topmost
   (usually PID 1, launchd or init) first, dimmed and indented one step
   per level; then the agent in bold and every descendant process in tree

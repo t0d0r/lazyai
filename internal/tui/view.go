@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -501,7 +502,87 @@ func (m model) screenLines(a agent.Agent) []string {
 	if m.screen.err != nil {
 		return []string{errStyle.Render(m.screen.err.Error())}
 	}
-	return strings.Split(strings.ReplaceAll(m.screen.text, "\t", "    "), "\n")
+	return screenText(m.screen.text)
+}
+
+// sgrRE matches one SGR escape sequence (colors and attributes).
+var sgrRE = regexp.MustCompile(`^\x1b\[[0-9;:]*m`)
+
+// screenText turns a colored capture into lines for a panel. Only SGR
+// sequences are kept: any other escape sequence or control character
+// from the pane is dropped, so pane content cannot move the cursor,
+// retitle the terminal or write the clipboard. The colors in effect at
+// the end of a line are repeated at the start of the next, since the
+// panel resets them at every line end and a line may be shown without
+// the ones above it.
+func screenText(text string) []string {
+	var lines []string
+	var active []string // SGR sequences since the last reset
+	for _, raw := range strings.Split(text, "\n") {
+		var b strings.Builder
+		b.WriteString(strings.Join(active, ""))
+		for i := 0; i < len(raw); {
+			c := raw[i]
+			switch {
+			case c == 0x1b:
+				if m := sgrRE.FindString(raw[i:]); m != "" {
+					b.WriteString(m)
+					switch {
+					case m == "\x1b[m" || m == "\x1b[0m":
+						active = active[:0]
+					case strings.HasPrefix(m, "\x1b[0;"):
+						active = append(active[:0], m) // a reset, then new attributes
+					default:
+						if active = append(active, m); len(active) > 16 {
+							active = active[len(active)-16:]
+						}
+					}
+					i += len(m)
+					continue
+				}
+				i += escLen(raw[i:])
+				continue
+			case c == '\t':
+				b.WriteString("    ")
+			case c < 0x20 || c == 0x7f:
+				// other control characters are dropped
+			default:
+				b.WriteByte(c)
+			}
+			i++
+		}
+		lines = append(lines, b.String())
+	}
+	return lines
+}
+
+// escLen is the length of the escape sequence at the start of s (which
+// begins with ESC), so it can be skipped: CSI up to its final byte, OSC
+// and other strings up to BEL or ST, or ESC and one more byte.
+func escLen(s string) int {
+	if len(s) < 2 {
+		return len(s)
+	}
+	switch s[1] {
+	case '[':
+		for i := 2; i < len(s); i++ {
+			if s[i] >= 0x40 && s[i] <= 0x7e {
+				return i + 1
+			}
+		}
+	case ']', 'P', '_', '^', 'X':
+		for i := 2; i < len(s); i++ {
+			if s[i] == 0x07 {
+				return i + 1
+			}
+			if s[i] == 0x1b && i+1 < len(s) && s[i+1] == '\\' {
+				return i + 2
+			}
+		}
+	default:
+		return 2
+	}
+	return len(s)
 }
 
 func processLines(a agent.Agent) []string {

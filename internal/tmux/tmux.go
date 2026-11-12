@@ -279,8 +279,16 @@ func KeyName(key string) string {
 
 // Capture returns a pane's visible screen plus up to history lines above
 // it, as plain text without trailing blank lines.
-func Capture(paneID string, history int) (string, error) {
-	out, err := exec.Command("tmux", "capture-pane", "-p", "-t", paneID, "-S", "-"+strconv.Itoa(history)).Output()
+//
+// With color, the text keeps the pane's colors and attributes as SGR
+// escape sequences (capture-pane -e); the caller must not pass anything
+// else from it to a terminal (see the TUI's sgrOnly).
+func Capture(paneID string, history int, color bool) (string, error) {
+	args := []string{"capture-pane", "-p", "-t", paneID, "-S", "-" + strconv.Itoa(history)}
+	if color {
+		args = append(args, "-e")
+	}
+	out, err := exec.Command("tmux", args...).Output()
 	if err != nil {
 		return "", fmt.Errorf("tmux capture-pane: %w", err)
 	}
