@@ -182,3 +182,6 @@
       toggled again with `!` or from the x menu (specs/tui.md Layout)
 - [ ] keep important marks across restarts, keyed by a stable identity
       (tmux session, Claude session id), if wanted (specs/tui.md)
+- [x] release v0.10.1 with status colors, the `!` important mark, launch
+      feedback and Screen colors; tap formula updated to 0.10.1
+      (specs/release.md)
