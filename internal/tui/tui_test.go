@@ -967,7 +967,11 @@ func TestLaunchFeedback(t *testing.T) {
 	}
 
 	// A launched session is selected, focused and yellow once it shows up.
-	m = press(loaded(120, 30), "2")
+	// The Agents cursor starts on another row (j), so the test sees a move.
+	m = press(press(loaded(120, 30), "j"), "2")
+	if l := m.lists[listAgents]; l.rows[l.cursor].TmuxSession == "lazyai-c" {
+		t.Fatal("setup: Agents cursor already on lazyai-c")
+	}
 	next, _ = m.Update(actionMsg{text: "launched lazyai-c", launched: "lazyai-c"})
 	m = next.(model)
 	next, _ = m.Update(agentsMsg{agents: sample()})
@@ -975,6 +979,13 @@ func TestLaunchFeedback(t *testing.T) {
 	a, _ := m.selected()
 	if m.focus != listAgents || a.TmuxSession != "lazyai-c" || m.pending != "" {
 		t.Fatalf("after launch: focus %d selected %q pending %q", m.focus, a.TmuxSession, m.pending)
+	}
+	// The selection survives the next refresh instead of jumping back to
+	// the row selected before the launch.
+	next, _ = m.Update(agentsMsg{agents: sample()})
+	m = next.(model)
+	if a2, _ := m.selected(); a2.TmuxSession != "lazyai-c" {
+		t.Fatalf("after the next refresh: selected %q, want lazyai-c", a2.TmuxSession)
 	}
 	now := time.Now()
 	if !m.flashing(a, now) || m.flashing(a, now.Add(flashTime+time.Second)) {

@@ -43,6 +43,8 @@
       the kind and the directory (specs/tui.md)
 - [x] `launch --attach`: launch and attach in one step, for wrapper
       scripts such as claude-bst (specs/control.md)
+- [x] fix: an agent launched with n stays selected after the next refresh
+      (specs/tui.md, Launch feedback)
 
 ## Next
 

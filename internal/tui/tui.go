@@ -424,7 +424,10 @@ func (m *model) selectPending(now time.Time) tea.Cmd {
 				continue
 			}
 			m.pending = ""
+			// sync records the row's key too; set would otherwise move
+			// the cursor back to the old row on the next refresh.
 			m.lists[i].cursor = r
+			m.lists[i].sync()
 			m.focus, m.lastList = i, i
 			m.flashKey, m.flashUntil = a.Key(), now.Add(flashTime)
 			return tea.Tick(flashTime, func(time.Time) tea.Msg { return flashEndMsg{} })
