@@ -45,7 +45,7 @@ which one: `x86_64` is amd64, `aarch64` is arm64.
 On Debian and Ubuntu, the .deb pulls in tmux and procps:
 
 ```sh
-V=0.10.2 A=amd64   # or arm64
+V=0.11.0 A=amd64   # or arm64
 curl -LO https://github.com/t0d0r/lazyai/releases/download/v$V/lazyai_${V}_$A.deb
 curl -LO https://github.com/t0d0r/lazyai/releases/download/v$V/SHA256SUMS
 sha256sum -c SHA256SUMS --ignore-missing
@@ -55,7 +55,7 @@ sudo apt install ./lazyai_${V}_$A.deb
 Or the plain binary:
 
 ```sh
-V=v0.10.2 A=linux-amd64
+V=v0.11.0 A=linux-amd64
 curl -LO https://github.com/t0d0r/lazyai/releases/download/$V/lazyai-$V-$A.tar.gz
 curl -LO https://github.com/t0d0r/lazyai/releases/download/$V/SHA256SUMS
 sha256sum -c SHA256SUMS --ignore-missing
@@ -102,6 +102,7 @@ bin/lazyai launch -dir ~/work/AI/x -name x codex
 bin/lazyai launch claude ~/work/x x -- --model sonnet   # the same line as n
 bin/lazyai launch ollama -- run llama3.2
 bin/lazyai launch claude-bst     # any command on PATH, e.g. a wrapper script
+bin/lazyai launch --attach claude-bst   # launch and attach in one step
 bin/lazyai attach claude-x
 bin/lazyai send claude-x "run the tests"
 bin/lazyai stop claude-x         # asks first; -yes skips, -force kills
