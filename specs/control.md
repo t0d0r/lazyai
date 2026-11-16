@@ -38,6 +38,15 @@
   profile. Only a bare name is accepted: no `/` and no leading `-`, so
   the command always comes from PATH. What it starts is classified by
   discovery as usual (a wrapper that execs claude shows as claude).
+- `--attach` attaches the terminal to the new session right after the
+  launch succeeds, the same way as `attach` (inside tmux it switches the
+  client instead), and prints no "launched" line. The agent keeps running
+  after the client detaches. It has no short form, since `-a` is `--all`
+  elsewhere.
+  - Decision: added so a wrapper script can start its agent under lazyai
+    and land in it in one step (`exec lazyai launch --attach claude-bst
+    -- "$@"`), without parsing the session name from the "launched" line;
+    the name may get a -2, -3 suffix when taken.
   - Decision: accept commands on PATH instead of a fixed list. Reason:
     agents are often started through wrapper scripts with other
     profiles or settings; the operator types the line, with the same

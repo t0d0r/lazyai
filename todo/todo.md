@@ -41,6 +41,8 @@
 
 - [x] launch popup: up/down history kept across restarts, tab completes
       the kind and the directory (specs/tui.md)
+- [x] `launch --attach`: launch and attach in one step, for wrapper
+      scripts such as claude-bst (specs/control.md)
 
 ## Next
 

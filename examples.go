@@ -39,6 +39,7 @@ var examples = map[string][]example{
 		{"lazyai launch claude . review -- --model sonnet", "arguments for the agent go after --"},
 		{"lazyai launch --dir ~/work codex alpha/api", "DIR relative to --dir"},
 		{"lazyai launch ollama -- run llama3.2", "ollama needs its arguments"},
+		{"lazyai launch --attach claude-bst", "launch and attach at once; the agent keeps running after detach"},
 	},
 	"attach": {
 		{"lazyai attach web", "attach to lazyai-web; leave with the tmux prefix and d"},

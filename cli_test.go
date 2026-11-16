@@ -107,6 +107,7 @@ func TestLaunchLine(t *testing.T) {
 		{[]string{"launch", "claude", "--model", "x"}, "agent arguments such as --model go after --"},
 		{[]string{"launch", "claude", "a", "b", "c"}, "expected KIND [DIR] [NAME] [-- ARGS...]"},
 		{[]string{"launch", "--name", "x", "claude", ".", "y"}, "NAME given twice"},
+		{[]string{"launch", "--attach", "--name", "x", "claude", ".", "y"}, "NAME given twice"},
 	} {
 		if code, _, errOut := runCLI(c.args...); code != 2 || !strings.Contains(errOut, c.want) {
 			t.Errorf("%v: %d %q", c.args, code, errOut)

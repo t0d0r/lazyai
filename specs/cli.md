@@ -13,7 +13,7 @@ formatting.
 | `list [-json] [-all]`                    | table, h | one snapshot; `-all` adds helpers      |
 | `show [-json] AGENT`                     | enter, d | detail fields, resources, flags        |
 | `watch [-json] [-all] [-interval D]`     | refresh  | stream of change events until ctrl+c   |
-| `launch [-dir D] [-name N] KIND [DIR] [NAME] [-- ARGS]` | n | the `n` line; control.md |
+| `launch [-dir D] [-name N] [-attach] KIND [DIR] [NAME] [-- ARGS]` | n | the `n` line; control.md |
 | `attach AGENT`                           | a        | see control.md                         |
 | `send AGENT TEXT...`                     | p        | words are joined with single spaces    |
 | `rename AGENT NAME`                      | R        | rename the tmux session; control.md    |
@@ -62,6 +62,7 @@ The CLI behaves like a standard Unix command:
 | `--interval DUR`  | `-i`  | tui, watch               |
 | `--dir DIR`       | `-d`  | launch                   |
 | `--name NAME`     | `-n`  | launch                   |
+| `--attach`        |       | launch                   |
 | `--force`         | `-f`  | stop                     |
 | `--yes`           | `-y`  | stop, kill, update       |
 | `--check`         | `-c`  | update                   |

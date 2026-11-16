@@ -112,10 +112,12 @@ started, exited, status (busy/idle) and flags. Runs until interrupted.`,
 Start KIND in a new detached tmux session named lazyai-NAME, the same
 line as n in the dashboard. KIND is a known kind or any command on PATH.
 DIR may use ~ and is relative to --dir (default: here). Options must
-come before KIND; agent arguments go after --, unchanged.`,
+come before KIND; agent arguments go after --, unchanged. With --attach
+the terminal is attached to the new session at once, as attach does.`,
 		setup: func(f *flagDefs) action {
 			dir := f.String("d", "dir", "DIR", "", "base directory for DIR (default: the current one)")
 			name := f.String("n", "name", "NAME", "", "session name (default KIND-DIRNAME)")
+			attachNow := f.Bool("", "attach", "attach to the new session after launching it")
 			return func(e env, args []string) error {
 				if len(args) == 0 {
 					return usagef("missing KIND")
@@ -138,6 +140,9 @@ come before KIND; agent arguments go after --, unchanged.`,
 				session, err := agent.Launch(spec.Kind, spec.Dir, spec.Name, spec.Args)
 				if err != nil {
 					return err
+				}
+				if *attachNow {
+					return attachSession(session, "", string(spec.Kind))
 				}
 				fmt.Fprintf(e.out, "launched %s; attach with: lazyai attach %s\n", session, session)
 				return nil
@@ -355,7 +360,13 @@ func attach(ref string) error {
 	if a.TmuxSession == "" {
 		return fmt.Errorf("PID %d is not running in tmux", a.PID)
 	}
-	cmd := tmux.AttachCmd(a.TmuxSession, a.TmuxPane, string(a.Kind))
+	return attachSession(a.TmuxSession, a.TmuxPane, string(a.Kind))
+}
+
+// attachSession puts the terminal on session (tmux.AttachCmd) and returns
+// when the client detaches; inside tmux it returns after the switch.
+func attachSession(session, pane, window string) error {
+	cmd := tmux.AttachCmd(session, pane, window)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	return cmd.Run()
 }
