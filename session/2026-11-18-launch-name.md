@@ -27,6 +27,24 @@
   sessions `lztest-N` and `lztest-N-2`, each with a window of the same
   name, the mark set and the status-line hint in place.
 
+## Release v0.12.0
+
+- Checks before the tag: make check, make test-linux (arm64) and
+  make test-linux LINUX_ARCH=amd64 pass on Ubuntu 24.04 and Debian 13.
+- v0.12.0 tagged (annotated) on main; artifacts built with make dist and
+  make deb VERSION=v0.12.0. README install examples point at v0.12.0.
+- main and the tag pushed (gitleaks over the 2 unpushed commits: no
+  leaks). GitHub release v0.12.0 published with the four tarballs, the
+  amd64 and arm64 .deb packages and SHA256SUMS; the downloaded assets
+  pass `shasum -a 256 -c SHA256SUMS`; the darwin-arm64 binary reports
+  v0.12.0.
+- Homebrew tap: Formula/lazyai.rb moved to the v0.12.0 source archive
+  (sha256 3da2f4fab186261eb560cf47a09d3ef9ff8b8fd2efeae075fcf800905783c29f,
+  the same on two downloads), committed and pushed. brew style and brew
+  audit --strict clean; brew upgrade built 0.12.0 and brew test passes.
+- Minor version: a launch with a NAME gives another session name than
+  before, which scripts see in `tmux ls` and in the "launched" line.
+
 ## Decisions
 
 - NAME is not prefixed. Reason: the name typed is the one to find in
@@ -41,8 +59,8 @@
 
 ## Open
 
-- Not released; the next release is v0.12.0 (launch naming changes what
-  scripts see in `tmux ls` and in the "launched" line).
+- Sessions launched with a NAME before v0.12.0 keep their `lazyai-NAME`
+  name and their window name; nothing is migrated.
 - A given NAME can now equal the name of a session not started by lazyai;
   launch then takes NAME-2, as for any taken name.
 - Tab completion does not understand quotes; the filter input (`/`) has
@@ -57,14 +75,15 @@ todo/todo.md.
 
 ## Run and verify
 
-make check. make build, then `bin/lazyai launch claude . web` and
+make check; brew upgrade lazyai && lazyai --version -> lazyai 0.12.0.
+make build, then `bin/lazyai launch claude . web` and
 `tmux list-windows -a -F '#{session_name} #{window_name} #{@lazyai}'`
 shows `web web 1`. In the dashboard (make run): `n`, `claude . web`,
 enter: the message line says `launched web (a attaches)`.
 
 ## Next step
 
-Release v0.12.0.
+Next open todo item.
 
 ## Security note
 

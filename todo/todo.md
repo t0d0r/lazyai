@@ -210,3 +210,6 @@
       carry the `@lazyai` mark (specs/control.md Launch, Attach, Rename)
 - [x] rename also renames a window named like the session, so session
       and window stay equal (specs/control.md Rename)
+- [x] release v0.12.0 with launch names used as typed for session and
+      window, and rename carrying the window; tap formula updated to
+      0.12.0 (specs/release.md)
