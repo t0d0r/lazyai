@@ -1117,6 +1117,7 @@ func TestInputLine(t *testing.T) {
 		{10, 5, "6789_"},
 		{0, 5, "01234"},
 		{7, 5, "34567"},
+		{3, 20, "0123456789"},
 	} {
 		if got := ansi.Strip(inputLine(buf, c.cur, c.w)); got != c.want {
 			t.Errorf("cur %d w %d: %q, want %q", c.cur, c.w, got, c.want)

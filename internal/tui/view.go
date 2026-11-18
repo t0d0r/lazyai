@@ -775,7 +775,10 @@ func (m model) inputPopup() string {
 // text is cut so that the cursor stays in view.
 func inputLine(buf []rune, cur, w int) string {
 	cur = min(max(cur, 0), len(buf))
-	cells := append(slices.Clone(buf), '_')
+	cells := slices.Clone(buf)
+	if cur == len(buf) {
+		cells = append(cells, '_')
+	}
 	width := func(r []rune) int { return ansi.StringWidth(string(r)) }
 	start := 0
 	for start < cur && width(cells[start:cur+1]) > w {
