@@ -203,5 +203,5 @@
 - [x] launch line in `n`: shell quoting, so `claude-bst . "home work"`
       launches instead of failing as a usage error (specs/tui.md, Launch
       input)
-- [~] release v0.11.1 with the input cursor and launch line quoting
-      (specs/release.md)
+- [x] release v0.11.1 with the input cursor and launch line quoting;
+      tap formula updated to 0.11.1 (specs/release.md)
