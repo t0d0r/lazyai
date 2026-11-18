@@ -208,3 +208,5 @@
 - [x] a NAME on the launch line (CLI and `n`) is the tmux session name
       and the window name as typed, with no `lazyai-` prefix; sessions
       carry the `@lazyai` mark (specs/control.md Launch, Attach, Rename)
+- [x] rename also renames a window named like the session, so session
+      and window stay equal (specs/control.md Rename)

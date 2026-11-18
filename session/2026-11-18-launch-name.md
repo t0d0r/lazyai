@@ -18,6 +18,10 @@
   (tmux.Mark). tmux.Launched is true for a session with the mark or with
   the `lazyai-` prefix. Attach uses it for the status-line hint and the
   window fix, which looked at the prefix only.
+- Rename (`R`, `lazyai rename`) renames a window that carries the
+  session's old name along with the session (tmux.RenameSession), so a
+  session launched with a name keeps session and window equal. Windows
+  named otherwise are left alone.
 - Help text, examples, README and specs describe the new naming.
 - Live check: `lazyai launch cat . lztest-N` and `-n lztest-N` gave the
   sessions `lztest-N` and `lztest-N-2`, each with a window of the same
@@ -41,8 +45,6 @@
   scripts see in `tmux ls` and in the "launched" line).
 - A given NAME can now equal the name of a session not started by lazyai;
   launch then takes NAME-2, as for any taken name.
-- Rename (`R`, `lazyai rename`) renames the session only; the window
-  keeps its name.
 - Tab completion does not understand quotes; the filter input (`/`) has
   no cursor (both from the earlier note of this day).
 
@@ -62,8 +64,7 @@ enter: the message line says `launched web (a attaches)`.
 
 ## Next step
 
-Decide whether rename should rename the window too when it has the
-session's name; then release v0.12.0.
+Release v0.12.0.
 
 ## Security note
 

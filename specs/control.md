@@ -149,8 +149,12 @@
 - A renamed session keeps its `@lazyai` mark, so attach still refreshes
   its status-line hint. A session launched before the mark existed and
   renamed away from `lazyai-` keeps the hint set at launch, but attach no
-  longer refreshes it, as for any session not started by lazyai. The
-  window keeps its name; only the session is renamed.
+  longer refreshes it, as for any session not started by lazyai.
+- A window of the session that is named like the session (OLD), as
+  launch with a NAME leaves it, is renamed to NEW too, so the two stay
+  equal. Windows with any other name (the command's name after a launch
+  without NAME, or a name set by hand) are left alone. A failure to
+  rename a window is ignored: the session is renamed already.
 - CLI targets as for Send.
 
 ## Redaction

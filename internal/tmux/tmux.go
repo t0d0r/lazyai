@@ -111,7 +111,9 @@ func CheckSessionName(name string) error {
 }
 
 // RenameSession renames the tmux session from to to. The new name is
-// taken as given, with no lazyai- prefix added.
+// taken as given, with no lazyai- prefix added. Windows of the session
+// that carry its old name, as a session launched with a name has, are
+// renamed with it; other windows keep their names.
 func RenameSession(from, to string) error {
 	if err := CheckSessionName(to); err != nil {
 		return err
@@ -129,7 +131,22 @@ func RenameSession(from, to string) error {
 		}
 		return fmt.Errorf("tmux rename-session: %w", err)
 	}
+	renameWindows(to, from, to)
 	return nil
+}
+
+// renameWindows renames the windows of session that are named from to
+// to. Failures are ignored: the session has its new name already.
+func renameWindows(session, from, to string) {
+	out, err := exec.Command("tmux", "-u", "list-windows", "-t", "="+session, "-F", "#{window_id}\t#{window_name}").Output()
+	if err != nil {
+		return
+	}
+	for line := range strings.SplitSeq(strings.TrimRight(string(out), "\r\n"), "\n") {
+		if id, name, ok := strings.Cut(line, "\t"); ok && name == from {
+			exec.Command("tmux", "rename-window", "-t", id, "--", to).Run()
+		}
+	}
 }
 
 // HasSession reports whether a session with exactly this name exists.

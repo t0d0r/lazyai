@@ -123,6 +123,22 @@ func TestLaunchSendPanes(t *testing.T) {
 		t.Errorf("Capture: %v\n%q", err, screen)
 	}
 
+	// Rename: a window named like its session follows the new name;
+	// allow-rename off does not stop tmux's own rename-window.
+	same := FreeName(session + "-same")
+	if err := Launch(same, same, t.TempDir(), []string{"cat"}); err != nil {
+		t.Fatal(err)
+	}
+	defer exec.Command("tmux", "kill-session", "-t", "="+same).Run()
+	defer exec.Command("tmux", "kill-session", "-t", "="+same+"-r").Run()
+	if err := RenameSession(same, same+"-r"); err != nil {
+		t.Fatal(err)
+	}
+	win, _ = exec.Command("tmux", "display-message", "-p", "-t", "="+same+"-r:", "#{window_name}").Output()
+	if got := strings.TrimSpace(string(win)); got != same+"-r" {
+		t.Errorf("window after rename: %q, want %q", got, same+"-r")
+	}
+
 	// Rename: the session and its pane go on under the new name.
 	renamed := FreeSessionName(strings.TrimPrefix(session, Prefix) + "-renamed")
 	defer exec.Command("tmux", "kill-session", "-t", "="+renamed).Run()
