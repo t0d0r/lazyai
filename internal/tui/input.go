@@ -44,10 +44,42 @@ func loadHistory(path string) []string {
 // addHistory appends line, dropping an older copy of it and the oldest
 // lines beyond historyMax.
 func addHistory(h []string, line string) []string {
-	line = strings.Join(strings.Fields(line), " ")
+	line = foldSpaces(line)
 	h = slices.DeleteFunc(slices.Clone(h), func(s string) bool { return s == line })
 	h = append(h, line)
 	return h[max(len(h)-historyMax, 0):]
+}
+
+// foldSpaces trims line and folds runs of spaces to one, except inside
+// quotes and after a backslash, where spaces are part of a word
+// (agent.SplitLine).
+func foldSpaces(line string) string {
+	var out []rune
+	quote, esc, sep := rune(0), false, false
+	for _, r := range strings.TrimSpace(line) {
+		wasSep := sep
+		sep = false
+		switch {
+		case esc:
+			esc = false
+		case r == '\\' && quote != '\'':
+			esc = true
+		case quote != 0:
+			if r == quote {
+				quote = 0
+			}
+		case r == '\'' || r == '"':
+			quote = r
+		case r == ' ' || r == '\t':
+			sep = true
+			if wasSep {
+				continue
+			}
+			r = ' '
+		}
+		out = append(out, r)
+	}
+	return string(out)
 }
 
 // saveHistory writes the history readable by the user only; launch lines
@@ -78,9 +110,9 @@ func (m *model) historyMove(d int) {
 	}
 	m.histPos = pos
 	if pos == len(m.hist) {
-		m.buf = m.draft
+		m.setBuf(m.draft)
 	} else {
-		m.buf = []rune(m.hist[pos])
+		m.setBuf([]rune(m.hist[pos]))
 	}
 }
 

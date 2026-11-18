@@ -200,6 +200,7 @@ type model struct {
 	hist        []string // launch lines, oldest first
 	histPos     int      // index into hist; len(hist) is the line being typed
 	draft       []rune   // the line being typed while browsing hist
+	cur         int      // cursor position in buf, in runes
 	choices     []string // completions shown under the launch input
 
 	msg     string
@@ -704,7 +705,8 @@ func (m model) action(key string) (tea.Model, tea.Cmd) {
 			m.setMsg("helpers hidden", false)
 		}
 	case "n":
-		m.popup, m.input, m.buf, m.draft, m.choices = popupInput, inputLaunch, nil, nil, nil
+		m.popup, m.input, m.draft, m.choices = popupInput, inputLaunch, nil, nil
+		m.setBuf(nil)
 		m.histPos = len(m.hist)
 	case "a", "p", "s", "K", renameKey:
 		if !ok {
@@ -727,9 +729,11 @@ func (m model) action(key string) (tea.Model, tea.Cmd) {
 				m.popup, m.target, m.confirmSend = popupConfirm, a, true
 				break
 			}
-			m.popup, m.input, m.target, m.buf = popupInput, inputSend, a, nil
+			m.popup, m.input, m.target = popupInput, inputSend, a
+			m.setBuf(nil)
 		case renameKey:
-			m.popup, m.input, m.target, m.buf = popupInput, inputRename, a, []rune(a.TmuxSession)
+			m.popup, m.input, m.target = popupInput, inputRename, a
+			m.setBuf([]rune(a.TmuxSession))
 		default:
 			m.popup, m.target, m.force, m.confirmSend = popupConfirm, a, key == "K", false
 		}
@@ -787,7 +791,8 @@ func (m model) updateConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	if send {
-		m.popup, m.input, m.buf = popupInput, inputSend, nil
+		m.popup, m.input = popupInput, inputSend
+		m.setBuf(nil)
 		return m, nil
 	}
 	a, force := m.target, m.force
@@ -804,6 +809,7 @@ func (m model) updateConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m model) updateInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	m.choices = nil
+	m.cur = min(max(m.cur, 0), len(m.buf))
 	if m.input == inputLaunch {
 		switch msg.Type {
 		case tea.KeyUp:
@@ -813,8 +819,10 @@ func (m model) updateInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.historyMove(1)
 			return m, nil
 		case tea.KeyTab:
-			line, choices := completeLaunch(string(m.buf), m.opts.LaunchDir)
-			m.buf, m.choices = []rune(line), choices
+			// Complete the word that ends at the cursor; the rest stays.
+			line, choices := completeLaunch(string(m.buf[:m.cur]), m.opts.LaunchDir)
+			head := []rune(line)
+			m.buf, m.cur, m.choices = append(head, m.buf[m.cur:]...), len(head), choices
 			return m, nil
 		}
 	}
@@ -826,18 +834,45 @@ func (m model) updateInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case tea.KeyEnter:
 		m.popup = popupNone
 		return m, m.submit(strings.TrimSpace(string(m.buf)))
+	case tea.KeyLeft, tea.KeyCtrlB:
+		m.cur = max(m.cur-1, 0)
+	case tea.KeyRight, tea.KeyCtrlF:
+		m.cur = min(m.cur+1, len(m.buf))
+	case tea.KeyHome, tea.KeyCtrlA:
+		m.cur = 0
+	case tea.KeyEnd, tea.KeyCtrlE:
+		m.cur = len(m.buf)
 	case tea.KeyBackspace, tea.KeyCtrlH:
-		if len(m.buf) > 0 {
-			m.buf = m.buf[:len(m.buf)-1]
+		if m.cur > 0 {
+			m.buf = slices.Delete(slices.Clone(m.buf), m.cur-1, m.cur)
+			m.cur--
+		}
+	case tea.KeyDelete, tea.KeyCtrlD:
+		if m.cur < len(m.buf) {
+			m.buf = slices.Delete(slices.Clone(m.buf), m.cur, m.cur+1)
 		}
 	case tea.KeyCtrlU:
-		m.buf = nil
+		m.setBuf(nil)
+	case tea.KeyCtrlK:
+		m.buf = m.buf[:m.cur]
 	case tea.KeySpace:
-		m.buf = append(m.buf, ' ')
+		m.insert(' ')
 	case tea.KeyRunes:
-		m.buf = append(m.buf, msg.Runes...)
+		m.insert(msg.Runes...)
 	}
 	return m, nil
+}
+
+// setBuf replaces the input text and puts the cursor at its end.
+func (m *model) setBuf(text []rune) {
+	m.buf, m.cur = text, len(text)
+}
+
+// insert adds runes at the cursor.
+func (m *model) insert(r ...rune) {
+	m.cur = min(max(m.cur, 0), len(m.buf))
+	m.buf = slices.Insert(slices.Clone(m.buf), m.cur, r...)
+	m.cur += len(r)
 }
 
 func (m *model) submit(text string) tea.Cmd {
@@ -1026,6 +1061,11 @@ func (m model) updateFilter(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 // parseLaunch reads a launch line typed into the n popup.
+// Quotes and backslashes group words as in a shell (agent.SplitLine).
 func parseLaunch(line, defaultDir string) (agent.LaunchSpec, error) {
-	return agent.ParseLaunch(strings.Fields(line), defaultDir)
+	words, err := agent.SplitLine(line)
+	if err != nil {
+		return agent.LaunchSpec{}, err
+	}
+	return agent.ParseLaunch(words, defaultDir)
 }

@@ -1,10 +1,12 @@
 package agent
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 	"testing"
@@ -372,5 +374,26 @@ func TestLaunchCommand(t *testing.T) {
 	got, err := LaunchCommand(KindClaude, []string{"--model", "x"})
 	if err != nil || len(got) != 3 || got[0] != "claude" {
 		t.Errorf("got %v, %v", got, err)
+	}
+}
+
+func TestSplitLine(t *testing.T) {
+	for line, want := range map[string][]string{
+		``:                             nil,
+		`  claude  .  `:                {"claude", "."},
+		`claude-bst . "home work"`:     {"claude-bst", ".", "home work"},
+		`x 'a "b" \c' "d \"e\" \\ \f"`: {"x", `a "b" \c`, `d "e" \ \f`},
+		`x a\ b "" c"d e"f`:            {"x", "a b", "", "cd ef"},
+		`x -- "--" $HOME *`:            {"x", "--", "--", "$HOME", "*"},
+	} {
+		got, err := SplitLine(line)
+		if err != nil || !slices.Equal(got, want) {
+			t.Errorf("%q: %q %v, want %q", line, got, err, want)
+		}
+	}
+	for _, line := range []string{`x "a`, `x 'a b`} {
+		if _, err := SplitLine(line); !errors.Is(err, ErrLaunchSyntax) {
+			t.Errorf("%q: %v, want a syntax error", line, err)
+		}
 	}
 }

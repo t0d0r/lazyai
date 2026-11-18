@@ -23,6 +23,9 @@
   word before `--` that starts with `-` is a usage error that says
   arguments go after `--`; so is a fourth word. NAME given both as
   `-name` and positionally is a usage error.
+  In the dashboard the line is split into words with shell quoting
+  (agent.SplitLine; specs/tui.md, Launch input), so `"home work"` is one
+  word there as it is after a shell on the command line.
   - Decision: one launch line for CLI and TUI. Reason: a line typed in
     `n` must work unchanged on the command line. This changes the CLI:
     agent arguments now need `--` (`lazyai launch ollama -- run

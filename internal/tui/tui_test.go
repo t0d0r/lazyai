@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -1078,5 +1079,60 @@ func TestStatusColors(t *testing.T) {
 	}
 	if !strings.Contains(m.View(), idle) {
 		t.Error("idle status not colored in the list")
+	}
+}
+
+func TestInputCursor(t *testing.T) {
+	m := press(loaded(120, 30), "n", "c", "l", "u", "d", "e", "left", "left", "left", "a")
+	if string(m.buf) != "claude" || m.cur != 3 {
+		t.Fatalf("insert at the cursor: %q cur %d", string(m.buf), m.cur)
+	}
+	if !strings.Contains(m.View(), "cla") {
+		t.Errorf("popup does not show the text")
+	}
+	m = press(m, "backspace", "right", "X")
+	if string(m.buf) != "cluXde" || m.cur != 4 {
+		t.Errorf("backspace, right, insert: %q cur %d", string(m.buf), m.cur)
+	}
+	for _, k := range []tea.KeyType{tea.KeyHome, tea.KeyDelete, tea.KeyEnd} {
+		next, _ := m.Update(tea.KeyMsg{Type: k})
+		m = next.(model)
+	}
+	if m = press(m, "!"); string(m.buf) != "luXde!" {
+		t.Errorf("home, delete, end: %q", string(m.buf))
+	}
+	// History and a new popup put the cursor at the end.
+	if m = press(m, "esc", "n", "a", "b", "left", "left", "left", "c"); string(m.buf) != "cab" {
+		t.Errorf("left stops at the start: %q", string(m.buf))
+	}
+}
+
+func TestInputLine(t *testing.T) {
+	buf := []rune("0123456789")
+	for _, c := range []struct {
+		cur, w int
+		want   string
+	}{
+		{10, 20, "0123456789_"},
+		{10, 5, "6789_"},
+		{0, 5, "01234"},
+		{7, 5, "34567"},
+	} {
+		if got := ansi.Strip(inputLine(buf, c.cur, c.w)); got != c.want {
+			t.Errorf("cur %d w %d: %q, want %q", c.cur, c.w, got, c.want)
+		}
+	}
+}
+
+func TestLaunchLineQuotes(t *testing.T) {
+	spec, err := parseLaunch(`claude . "home work" -- -p 'a  b'`, "/w")
+	if err != nil || spec.Dir != "/w" || spec.Name != "home work" || len(spec.Args) != 2 || spec.Args[1] != "a  b" {
+		t.Errorf("quoted line: %+v %v", spec, err)
+	}
+	if _, err := parseLaunch(`claude . "home work`, "/w"); !errors.Is(err, agent.ErrLaunchSyntax) {
+		t.Errorf("unclosed quote: %v", err)
+	}
+	if got := foldSpaces(`  claude   .  "a  b"  c\  d `); got != `claude . "a  b" c\  d` {
+		t.Errorf("foldSpaces: %q", got)
 	}
 }

@@ -124,6 +124,58 @@ func ParseLaunch(words []string, baseDir string) (LaunchSpec, error) {
 	return spec, nil
 }
 
+// SplitLine splits a launch line typed into the dashboard into words the
+// way a shell would, so the same line works on the command line: spaces
+// separate words, '...' is literal, "..." keeps spaces and reads \" and
+// \\ as the character, and a backslash outside quotes takes the next
+// character as it is. Nothing is expanded. An unclosed quote is an error.
+func SplitLine(line string) ([]string, error) {
+	var words []string
+	var cur []rune
+	inWord := false
+	quote := rune(0)
+	rs := []rune(line)
+	for i := 0; i < len(rs); i++ {
+		r := rs[i]
+		switch {
+		case quote == '\'':
+			if r == '\'' {
+				quote = 0
+			} else {
+				cur = append(cur, r)
+			}
+		case quote == '"':
+			switch {
+			case r == '"':
+				quote = 0
+			case r == '\\' && i+1 < len(rs) && (rs[i+1] == '"' || rs[i+1] == '\\'):
+				i++
+				cur = append(cur, rs[i])
+			default:
+				cur = append(cur, r)
+			}
+		case r == '\'' || r == '"':
+			quote, inWord = r, true
+		case r == '\\' && i+1 < len(rs):
+			i++
+			cur, inWord = append(cur, rs[i]), true
+		case r == ' ' || r == '\t':
+			if inWord {
+				words, cur, inWord = append(words, string(cur)), nil, false
+			}
+		default:
+			cur, inWord = append(cur, r), true
+		}
+	}
+	if quote != 0 {
+		return nil, fmt.Errorf("%w (unclosed %c quote)", ErrLaunchSyntax, quote)
+	}
+	if inWord {
+		words = append(words, string(cur))
+	}
+	return words, nil
+}
+
 // ExpandDir resolves p with "~" for the home directory and relative to base.
 func ExpandDir(p, base string) string {
 	if p == "~" || strings.HasPrefix(p, "~/") {

@@ -336,7 +336,7 @@ screen, 120x30: lists as tabs and the other tabs on top, Screen below
 | x                    | action menu for the selected agent             |
 | a                    | attach (tmux only)                             |
 | p                    | send a prompt (tmux only); asks first when a client is attached (control.md, Send) |
-| n                    | launch: `KIND [DIR] [NAME] [-- ARGS...]`; up / down history, tab completes |
+| n                    | launch: `KIND [DIR] [NAME] [-- ARGS...]`; up / down history, tab completes, left / right edit, quotes group words |
 | /                    | filter the list in use; enter keeps, esc clears |
 | s / K                | stop (SIGTERM) / kill (SIGKILL), confirm with y |
 | !                    | mark / unmark the selected agent important     |
@@ -418,11 +418,30 @@ selection stays on the agent; important marks of the session follow
 the new name.
 
 Launch input: DIR may use `~` and is relative to the directory lazyai was
-started in. Input popups treat both terminal backspace encodings (DEL and
-ctrl+h) as backspace.
+started in. The line is split into words the way a shell does it
+(agent.SplitLine), so a word may hold spaces: `'...'` is literal, `"..."`
+keeps spaces and reads `\"` and `\\` as the character, and a backslash
+outside quotes takes the next character as it is. Nothing is expanded
+(no `$VAR`, no globs). `claude-bst . "home work"` launches claude-bst in
+the current directory with the name `home work` (session
+`lazyai-home-work`). An unclosed quote is a usage error that says so.
+- Decision: shell quoting, not plain splitting on spaces. Reason: a line
+  typed in `n` must work unchanged on the command line (control.md,
+  Launch), and names and agent arguments with spaces need a way in.
+
+Input editing (the launch, prompt and rename popups): the text has a
+cursor, shown as `_` after the text or as the reversed character under
+it. Left / right (ctrl+b / ctrl+f) move it, home / end (ctrl+a / ctrl+e)
+jump to the ends, typed and pasted text goes in at the cursor, backspace
+(both terminal encodings, DEL and ctrl+h) deletes before it, delete
+(ctrl+d) under it, ctrl+k to the end of the line, ctrl+u the whole line.
+A text wider than the popup scrolls so that the cursor stays in view.
+A new popup, a history line and a completion put the cursor at the end
+of what they wrote; tab completes the word that ends at the cursor.
 
 Launch history: every launch line submitted is added to a history, with
-runs of spaces folded to one. A line that does not parse (unknown kind,
+runs of spaces folded to one (not inside quotes or after a backslash,
+where they belong to a word). A line that does not parse (unknown kind,
 too many words) or whose launch fails is kept too, so the next popup
 brings it back with up to be fixed; the error in the message line says
 so. Up shows the previous (older) line, down the

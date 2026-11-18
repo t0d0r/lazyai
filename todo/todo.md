@@ -198,3 +198,9 @@
 - [x] release v0.10.2 with persistent important marks, tmux session
       rename and fixed window names; tap formula updated to 0.10.2
       (specs/release.md)
+- [x] input popups: a cursor moved with left / right, home / end, with
+      insert and delete at the cursor (specs/tui.md, Input editing)
+- [x] launch line in `n`: shell quoting, so `claude-bst . "home work"`
+      launches instead of failing as a usage error (specs/tui.md, Launch
+      input)
+- [ ] release the input cursor and launch line quoting (specs/release.md)

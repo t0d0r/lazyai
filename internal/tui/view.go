@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -756,10 +757,7 @@ func (m model) inputPopup() string {
 		title, hint = "Rename "+m.target.TmuxSession, "new tmux session name: letters, digits, - and _ (ctrl+u clears)"
 	}
 	w := min(80, m.width-4)
-	text := string(m.buf) + "_"
-	if tw := ansi.StringWidth(text); tw > w-4 {
-		text = ansi.TruncateLeft(text, tw-(w-4), "")
-	}
+	text := inputLine(m.buf, m.cur, w-4)
 	keys := "enter to submit, esc to cancel"
 	if m.input == inputLaunch {
 		keys = "up/down history, tab completes, " + keys
@@ -770,6 +768,27 @@ func (m model) inputPopup() string {
 	}
 	lines = append(lines, dimStyle.Render(hint), dimStyle.Render(keys))
 	return popupBox(title, lines, w)
+}
+
+// inputLine draws the input text with its cursor in at most w cells: "_"
+// after the text, or the character under the cursor reversed. A longer
+// text is cut so that the cursor stays in view.
+func inputLine(buf []rune, cur, w int) string {
+	cur = min(max(cur, 0), len(buf))
+	cells := append(slices.Clone(buf), '_')
+	width := func(r []rune) int { return ansi.StringWidth(string(r)) }
+	start := 0
+	for start < cur && width(cells[start:cur+1]) > w {
+		start++
+	}
+	end := cur + 1
+	for end < len(cells) && width(cells[start:end+1]) <= w {
+		end++
+	}
+	if cur == len(buf) {
+		return string(cells[start:end])
+	}
+	return string(cells[start:cur]) + selStyle.Render(string(cells[cur])) + string(cells[cur+1:end])
 }
 
 // box draws a bordered panel w by h with a title in the top border and an
