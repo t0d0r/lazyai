@@ -423,8 +423,8 @@ started in. The line is split into words the way a shell does it
 keeps spaces and reads `\"` and `\\` as the character, and a backslash
 outside quotes takes the next character as it is. Nothing is expanded
 (no `$VAR`, no globs). `claude-bst . "home work"` launches claude-bst in
-the current directory with the name `home work` (session
-`lazyai-home-work`). An unclosed quote is a usage error that says so.
+the current directory with the name `home work` (session and window
+`home-work`; control.md, Launch). An unclosed quote is a usage error that says so.
 - Decision: shell quoting, not plain splitting on spaces. Reason: a line
   typed in `n` must work unchanged on the command line (control.md,
   Launch), and names and agent arguments with spaces need a way in.

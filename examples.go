@@ -25,7 +25,7 @@ var examples = map[string][]example{
 	},
 	"show": {
 		{"lazyai show 12345", "by PID"},
-		{"lazyai show web", "by tmux session (lazyai-web) or Claude session name"},
+		{"lazyai show web", "by tmux session (web or lazyai-web) or Claude session name"},
 		{"lazyai show web --json", "everything known, as JSON"},
 	},
 	"watch": {
@@ -35,22 +35,22 @@ var examples = map[string][]example{
 	"launch": {
 		{"lazyai launch claude", "Claude Code in the current directory"},
 		{"lazyai launch claude ~/work/alpha/web-frontend", "in another directory"},
-		{"lazyai launch claude-bst ~/work/alpha/web-frontend web", "a wrapper script on PATH, session lazyai-web"},
+		{"lazyai launch claude-bst ~/work/alpha/web-frontend web", "a wrapper script on PATH; session and window are named web"},
 		{"lazyai launch claude . review -- --model sonnet", "arguments for the agent go after --"},
 		{"lazyai launch --dir ~/work codex alpha/api", "DIR relative to --dir"},
 		{"lazyai launch ollama -- run llama3.2", "ollama needs its arguments"},
 		{"lazyai launch --attach claude-bst", "launch and attach at once; the agent keeps running after detach"},
 	},
 	"attach": {
-		{"lazyai attach web", "attach to lazyai-web; leave with the tmux prefix and d"},
+		{"lazyai attach web", "attach to the session web; leave with the tmux prefix and d"},
 		{"lazyai attach 12345", "by PID"},
 	},
 	"send": {
 		{`lazyai send web "run the tests and fix what fails"`, "type a prompt and press Enter"},
 	},
 	"rename": {
-		{"lazyai rename web api-review", "rename lazyai-web to api-review"},
-		{"lazyai rename 12345 lazyai-docs", "by PID; keep the lazyai- prefix by typing it"},
+		{"lazyai rename web api-review", "rename the session web to api-review"},
+		{"lazyai rename 12345 lazyai-docs", "by PID; the name is taken as typed"},
 	},
 	"stop": {
 		{"lazyai stop web", "SIGTERM, after a y/N question"},

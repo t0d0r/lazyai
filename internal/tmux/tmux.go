@@ -69,9 +69,16 @@ func parsePanes(out string) []Pane {
 	return panes
 }
 
-// SessionName turns a user-supplied name into an lazyai session name.
+// SessionName turns a name into an lazyai session name: Prefix plus
+// CleanName. It names the sessions launched without a name of their own.
 func SessionName(name string) string {
-	name = strings.TrimPrefix(name, Prefix)
+	return Prefix + CleanName(strings.TrimPrefix(name, Prefix))
+}
+
+// CleanName makes name usable as a tmux session name, with no prefix
+// added: characters other than letters, digits, - and _ become "-", and
+// "-" at either end is dropped. The result is empty when nothing is left.
+func CleanName(name string) string {
 	var b strings.Builder
 	for _, r := range name {
 		switch {
@@ -81,7 +88,7 @@ func SessionName(name string) string {
 			b.WriteRune('-')
 		}
 	}
-	return Prefix + strings.Trim(b.String(), "-")
+	return strings.Trim(b.String(), "-")
 }
 
 // CheckSessionName refuses a name for RenameSession: empty, longer than
@@ -132,7 +139,12 @@ func HasSession(session string) bool {
 
 // FreeSessionName returns SessionName(name), adding -2, -3 ... if taken.
 func FreeSessionName(name string) string {
-	base := SessionName(name)
+	return FreeName(SessionName(name))
+}
+
+// FreeName returns base, a session name taken as it is, adding -2, -3 ...
+// if a session of that name exists.
+func FreeName(base string) string {
 	session := base
 	for i := 2; HasSession(session); i++ {
 		session = base + "-" + strconv.Itoa(i)
@@ -140,8 +152,9 @@ func FreeSessionName(name string) string {
 	return session
 }
 
-// Launch starts argv in a new detached session rooted at dir.
-func Launch(session, dir string, argv []string) error {
+// Launch starts argv in a new detached session rooted at dir. Its window
+// is named window, or after the command (WindowName) when window is "".
+func Launch(session, window, dir string, argv []string) error {
 	if len(argv) == 0 {
 		return errors.New("nothing to launch")
 	}
@@ -175,15 +188,21 @@ func Launch(session, dir string, argv []string) error {
 	// first, keeps the pane and its output if the command dies at once.
 	// The explicit target matters inside tmux, where an untargeted
 	// set-option would change the window lazyai runs in.
-	// The window is named after the command, with renaming off, so the
-	// agent does not rename it: Claude Code's process name is its version
-	// ("2.1.322"), which automatic-rename would show.
-	window := "=" + session + ":"
-	args := append([]string{"new-session", "-d", "-P", "-F", "#{pane_id}", "-s", session, "-n", WindowName(argv[0]),
+	// The window is named, with renaming off, so the agent does not
+	// rename it: Claude Code's process name is its version ("2.1.322"),
+	// which automatic-rename would show.
+	// The Mark option tells lazyai's sessions from others, since a
+	// session launched with a name carries no prefix.
+	if window == "" {
+		window = WindowName(argv[0])
+	}
+	target := "=" + session + ":"
+	args := append([]string{"new-session", "-d", "-P", "-F", "#{pane_id}", "-s", session, "-n", window,
 		"-c", dir, "--"}, cmd...)
-	args = append(args, ";", "set-option", "-w", "-t", window, "remain-on-exit", "on",
-		";", "set-option", "-w", "-t", window, "automatic-rename", "off",
-		";", "set-option", "-w", "-t", window, "allow-rename", "off")
+	args = append(args, ";", "set-option", "-w", "-t", target, "remain-on-exit", "on",
+		";", "set-option", "-w", "-t", target, "automatic-rename", "off",
+		";", "set-option", "-w", "-t", target, "allow-rename", "off",
+		";", "set-option", "-t", target, Mark, "1")
 	out, err := exec.Command("tmux", args...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("tmux new-session: %s", strings.TrimSpace(string(out)))
@@ -194,6 +213,19 @@ func Launch(session, dir string, argv []string) error {
 	}
 	SetStatusHint(session, false)
 	return nil
+}
+
+// Mark is the tmux session option Launch sets on the sessions it creates.
+const Mark = "@lazyai"
+
+// Launched reports whether session was started by lazyai: it carries
+// Mark, or the Prefix of sessions launched before Mark existed.
+func Launched(session string) bool {
+	if strings.HasPrefix(session, Prefix) {
+		return true
+	}
+	out, err := exec.Command("tmux", "show-options", "-qv", "-t", "="+session+":", Mark).Output()
+	return err == nil && strings.TrimSpace(string(out)) == "1"
 }
 
 // LaunchWatch is how long Launch waits for a new command to fail.
@@ -287,7 +319,7 @@ func NameWindow(pane, name string) {
 // window of pane, when given, is named window (NameWindow).
 func AttachCmd(session, pane, window string) *exec.Cmd {
 	nested := os.Getenv("TMUX") != ""
-	if strings.HasPrefix(session, Prefix) {
+	if Launched(session) {
 		SetStatusHint(session, nested)
 		if pane != "" {
 			NameWindow(pane, window)

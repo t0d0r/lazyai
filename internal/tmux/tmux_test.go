@@ -22,6 +22,12 @@ func TestSessionName(t *testing.T) {
 			t.Errorf("SessionName(%q) = %q, want %q", in, got, want)
 		}
 	}
+	// A given name is cleaned the same way but gets no prefix.
+	for in, want := range map[string]string{"web": "web", "home work": "home-work", "a.b:c": "a-b-c", "lazyai-x": "lazyai-x", " .. ": ""} {
+		if got := CleanName(in); got != want {
+			t.Errorf("CleanName(%q) = %q, want %q", in, got, want)
+		}
+	}
 }
 
 func TestKeyName(t *testing.T) {
@@ -43,12 +49,12 @@ func TestLaunchSendPanes(t *testing.T) {
 		t.Skip("tmux not installed")
 	}
 	session := FreeSessionName("test-" + time.Now().Format("150405.000"))
-	if err := Launch(session, t.TempDir(), []string{"cat"}); err != nil {
+	if err := Launch(session, "", t.TempDir(), []string{"cat"}); err != nil {
 		t.Fatal(err)
 	}
 	defer exec.Command("tmux", "kill-session", "-t", "="+session).Run()
 
-	if err := Launch(session, t.TempDir(), []string{"cat"}); err == nil {
+	if err := Launch(session, "", t.TempDir(), []string{"cat"}); err == nil {
 		t.Error("second launch with the same name succeeded")
 	}
 	// The window is named after the command and cannot be renamed by it.
@@ -56,6 +62,22 @@ func TestLaunchSendPanes(t *testing.T) {
 		"#{window_name} #{automatic-rename} #{allow-rename}").Output()
 	if got := strings.TrimSpace(string(win)); got != "cat 0 0" {
 		t.Errorf("window name, automatic-rename, allow-rename: %q", got)
+	}
+	// The session carries the mark of a session started by lazyai.
+	mark, _ := exec.Command("tmux", "show-options", "-qv", "-t", "="+session+":", Mark).Output()
+	if got := strings.TrimSpace(string(mark)); got != "1" || !Launched(session) {
+		t.Errorf("%s option: %q", Mark, got)
+	}
+	// A given window name replaces the command's.
+	named := FreeName(session + "-named")
+	if err := Launch(named, "home-work", t.TempDir(), []string{"cat"}); err != nil {
+		t.Fatal(err)
+	}
+	defer exec.Command("tmux", "kill-session", "-t", "="+named).Run()
+	win, _ = exec.Command("tmux", "display-message", "-p", "-t", "="+named+":",
+		"#{window_name} #{automatic-rename} #{allow-rename}").Output()
+	if got := strings.TrimSpace(string(win)); got != "home-work 0 0" {
+		t.Errorf("named window: %q", got)
 	}
 	right, _ := exec.Command("tmux", "show-options", "-t", "="+session+":", "-v", "status-right").Output()
 	if !strings.Contains(string(right), " d: detach, back to lazyai") {
@@ -114,7 +136,7 @@ func TestLaunchSendPanes(t *testing.T) {
 		t.Errorf("rename to the same name: %v", err)
 	}
 	other := FreeSessionName("test-other")
-	if err := Launch(other, t.TempDir(), []string{"cat"}); err != nil {
+	if err := Launch(other, "", t.TempDir(), []string{"cat"}); err != nil {
 		t.Fatal(err)
 	}
 	defer exec.Command("tmux", "kill-session", "-t", "="+other).Run()
@@ -197,7 +219,7 @@ func TestLaunchEarlyExit(t *testing.T) {
 	name := func(s string) string { return FreeSessionName("test-" + s + "-" + time.Now().Format("150405.000")) }
 
 	session := name("exit")
-	err := Launch(session, t.TempDir(), []string{"sh", "-c", "echo boom; echo why >&2; exit 3"})
+	err := Launch(session, "", t.TempDir(), []string{"sh", "-c", "echo boom; echo why >&2; exit 3"})
 	var e *ExitError
 	if !errors.As(err, &e) || e.Command != "sh" || e.Status != 3 || strings.Join(e.Output, "|") != "boom|why" {
 		t.Fatalf("early exit: %#v (%v)", e, err)
@@ -211,12 +233,12 @@ func TestLaunchEarlyExit(t *testing.T) {
 	}
 
 	// A single word runs through env, whose own error is kept.
-	if err := Launch(name("env"), t.TempDir(), []string{"false"}); !errors.As(err, &e) || e.Status != 1 {
+	if err := Launch(name("env"), "", t.TempDir(), []string{"false"}); !errors.As(err, &e) || e.Status != 1 {
 		t.Errorf("false: %v", err)
 	}
 
 	session = name("run")
-	if err := Launch(session, t.TempDir(), []string{"cat"}); err != nil {
+	if err := Launch(session, "", t.TempDir(), []string{"cat"}); err != nil {
 		t.Fatal(err)
 	}
 	defer exec.Command("tmux", "kill-session", "-t", "="+session).Run()

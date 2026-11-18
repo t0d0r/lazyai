@@ -205,3 +205,6 @@
       input)
 - [x] release v0.11.1 with the input cursor and launch line quoting;
       tap formula updated to 0.11.1 (specs/release.md)
+- [x] a NAME on the launch line (CLI and `n`) is the tmux session name
+      and the window name as typed, with no `lazyai-` prefix; sessions
+      carry the `@lazyai` mark (specs/control.md Launch, Attach, Rename)

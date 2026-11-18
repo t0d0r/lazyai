@@ -109,14 +109,16 @@ started, exited, status (busy/idle) and flags. Runs until interrupted.`,
 		synopsis: "[OPTIONS] KIND [DIR] [NAME] [-- AGENT-ARGS...]",
 		summary:  "start an agent in a new tmux session",
 		about: `
-Start KIND in a new detached tmux session named lazyai-NAME, the same
-line as n in the dashboard. KIND is a known kind or any command on PATH.
+Start KIND in a new detached tmux session, the same line as n in the
+dashboard. NAME names the session and its window as typed; without it
+the session is lazyai-KIND-DIRNAME. KIND is a known kind or any command
+on PATH.
 DIR may use ~ and is relative to --dir (default: here). Options must
 come before KIND; agent arguments go after --, unchanged. With --attach
 the terminal is attached to the new session at once, as attach does.`,
 		setup: func(f *flagDefs) action {
 			dir := f.String("d", "dir", "DIR", "", "base directory for DIR (default: the current one)")
-			name := f.String("n", "name", "NAME", "", "session name (default KIND-DIRNAME)")
+			name := f.String("n", "name", "NAME", "", "session and window name (default: session lazyai-KIND-DIRNAME)")
 			attachNow := f.Bool("", "attach", "attach to the new session after launching it")
 			return func(e env, args []string) error {
 				if len(args) == 0 {

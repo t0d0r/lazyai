@@ -61,12 +61,26 @@
   its own place. A PATH containing `=` is refused there, because env would
   take it for a variable. No shell is involved, so nothing in names,
   paths or arguments is expanded.
-- Session name is `lazyai-` plus the name (default `KIND-DIRBASENAME`)
-  with characters outside `[A-Za-z0-9_-]` replaced by `-`. If taken, `-2`,
-  `-3` ... is appended.
-- Window name: the session's window is named after the command's base
-  name (`-n claude`), and the same tmux call sets `automatic-rename off`
-  and `allow-rename off` on it. Reason: with automatic-rename tmux names
+- Session name: a given NAME is the session name as typed, with no
+  `lazyai-` prefix added: `lazyai launch claude . web` and `claude . web`
+  in `n` both start the session `web`. Without NAME the session is
+  `lazyai-KIND-DIRBASENAME`. Either way characters outside
+  `[A-Za-z0-9_-]` are replaced by `-` and `-` at the ends is dropped
+  (`"home work"` gives `home-work`); if the name is taken, `-2`, `-3` ...
+  is appended. A NAME with nothing left after that (`...`) is refused.
+  - Decision: NAME is not prefixed. Reason: the name typed is the name
+    to find in `tmux ls`, on the tmux status line and in `attach`; up to
+    v0.11.1 `web` became `lazyai-web`. The default keeps the prefix, so
+    sessions nobody named are still easy to tell apart.
+- Mark: the same tmux call sets the session option `@lazyai 1`
+  (tmux.Mark). A session is lazyai's when it carries the mark or has the
+  `lazyai-` prefix of sessions launched before the mark (tmux.Launched).
+  Reason: without a prefix the name no longer says who started it.
+- Window name: with NAME the session's window has the same name as the
+  session (`web`, or `web-2` when `web` was taken). Without NAME it is
+  named after the command's base name (`-n claude`). The same tmux call
+  sets `automatic-rename off` and `allow-rename off` on the window.
+  Reason: with automatic-rename tmux names
   the window after the pane's process, and Claude Code's process name is
   its version, so the status line showed `0:2.1.322*`; allow-rename off
   keeps the agent's escape sequences from renaming it too.
@@ -94,14 +108,15 @@
 - Outside tmux: `tmux attach-session -t =SESSION` and return on detach.
   Inside tmux: `tmux switch-client -t =SESSION`.
 - The `=` prefix forces an exact session name match.
-- Status line hint: `lazyai-*` sessions get a session-only `status-right`
+- Status line hint: sessions started by lazyai (Launch, Mark) get a
+  session-only `status-right`
   of `PREFIX d: detach, back to lazyai | HH:MM`, where PREFIX is the tmux
   prefix in readable form (`ctrl+b`). It is set at launch and again at
   every attach; when lazyai itself runs inside tmux the hint is
   `PREFIX L: back to lazyai` (last session), because detaching would leave
   tmux altogether. Global options and sessions not started by lazyai are
   never changed. Failures to set it are ignored.
-- Window name on attach: for `lazyai-*` sessions launched before the
+- Window name on attach: for lazyai's sessions launched before the
   window was named at launch, attach names the agent's window after its
   kind (`claude`) and sets `automatic-rename off` and `allow-rename off`
   there (tmux.NameWindow). A window whose automatic-rename is already off
@@ -131,9 +146,11 @@
 - A NEW that names another session is refused (`a tmux session named NEW
   exists already`), as are tmux's own errors, with tmux's message.
 - Important marks of OLD move to NEW (tui.md, Important mark).
-- A session renamed away from `lazyai-` keeps the status-line hint set at
-  launch, but attach no longer refreshes it, as for any session not
-  started by lazyai.
+- A renamed session keeps its `@lazyai` mark, so attach still refreshes
+  its status-line hint. A session launched before the mark existed and
+  renamed away from `lazyai-` keeps the hint set at launch, but attach no
+  longer refreshes it, as for any session not started by lazyai. The
+  window keeps its name; only the session is renamed.
 - CLI targets as for Send.
 
 ## Redaction

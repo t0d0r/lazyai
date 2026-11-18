@@ -53,7 +53,10 @@ func LaunchCommand(kind Kind, extra []string) ([]string, error) {
 }
 
 // Launch starts an agent in a new tmux session and returns the session name.
-// An empty name defaults to "<kind>-<dir basename>".
+// A name is used as it is for both the session and its window, cleaned
+// for tmux (tmux.CleanName) and with -2, -3 ... added when taken. An
+// empty name gives the session "lazyai-<kind>-<dir basename>" and a
+// window named after the command.
 func Launch(kind Kind, dir, name string, extra []string) (string, error) {
 	argv, err := LaunchCommand(kind, extra)
 	if err != nil {
@@ -63,10 +66,15 @@ func Launch(kind Kind, dir, name string, extra []string) (string, error) {
 		return "", err
 	}
 	if name == "" {
-		name = string(kind) + "-" + filepath.Base(dir)
+		session := tmux.FreeSessionName(string(kind) + "-" + filepath.Base(dir))
+		return session, tmux.Launch(session, "", dir, argv)
 	}
-	session := tmux.FreeSessionName(name)
-	return session, tmux.Launch(session, dir, argv)
+	base := tmux.CleanName(name)
+	if base == "" {
+		return "", fmt.Errorf("name %q has no letters, digits or _ for a session name", name)
+	}
+	session := tmux.FreeName(base)
+	return session, tmux.Launch(session, session, dir, argv)
 }
 
 // IsCommand reports whether name is a bare command name (no path, no

@@ -397,3 +397,29 @@ func TestSplitLine(t *testing.T) {
 		}
 	}
 }
+
+// TestLaunchName starts cat in real tmux sessions: a given name is the
+// session name and the window name as typed, and a taken one gets -2.
+func TestLaunchName(t *testing.T) {
+	if !tmux.Available() {
+		t.Skip("tmux not installed")
+	}
+	name := "lazyai-test-name." + time.Now().Format("150405.000")
+	want := strings.ReplaceAll(name, ".", "-")
+	for _, want := range []string{want, want + "-2"} {
+		session, err := Launch("cat", t.TempDir(), name, nil)
+		if session != "" {
+			defer exec.Command("tmux", "kill-session", "-t", "="+session).Run()
+		}
+		if err != nil || session != want {
+			t.Fatalf("Launch = %q, %v; want %q", session, err, want)
+		}
+		win, _ := exec.Command("tmux", "display-message", "-p", "-t", "="+session+":", "#{window_name}").Output()
+		if got := strings.TrimSpace(string(win)); got != want {
+			t.Errorf("window name %q, want %q", got, want)
+		}
+	}
+	if _, err := Launch("cat", t.TempDir(), "...", nil); err == nil {
+		t.Error("a name with nothing usable was accepted")
+	}
+}

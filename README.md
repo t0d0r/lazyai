@@ -110,6 +110,10 @@ bin/lazyai kill 12345            # same as stop -force
 lazyai update                    # install the latest release; -check only reports
 ```
 
+A NAME on the launch line names the tmux session and its window as
+typed (`launch claude . web` starts the session `web`); without one the
+session is `lazyai-KIND-DIRNAME`.
+
 AGENT arguments accept a PID, a tmux session name (the `lazyai-` prefix
 is optional) or a Claude Code session name.
 

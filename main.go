@@ -152,7 +152,7 @@ Launch line, the same in 'lazyai launch' and n in the dashboard:
 KIND is one of:
 %s;
 or any other command on PATH, such as a wrapper script. DIR may use ~;
-NAME names the tmux session lazyai-NAME; agent arguments go after --.
+NAME names the tmux session and its window; agent arguments go after --.
 Colibri and mlx-lm are listed and watched, but started with their own
 tooling.
 
